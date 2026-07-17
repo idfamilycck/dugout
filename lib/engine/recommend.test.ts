@@ -81,15 +81,35 @@ describe("recommend", () => {
     }
   });
 
-  it("special(캡틴/맨마킹)이 추천 결과의 lineup/roles에도 유지된다", () => {
+  it("special(캡틴)이 추천 파이프라인 전체에서 유지되어 captain_mental 규칙이 발동한다", () => {
     const me = autoPlacedSetup("kor");
-    me.special = { ...me.special, captainId: me.lineup["cb1"] };
+    // kor_16(손흥민, mental=91 ≥ 85) — winprob.test.ts에서도 captain_mental을 검증하는
+    // 실데이터 리더. recommend()는 Recommendation 자체에 special을 반환하지 않으므로
+    // (special은 항상 호출자의 me에 남아있는다), 추천된 lineup/roles/instructions를
+    // 원래 me.special과 합성해 winProbability를 재평가하는 방식으로 "recommend가 만든
+    // 후보 평가 파이프라인이 special을 실제로 반영했는지"를 검증한다.
+    me.special = { ...me.special, captainId: "kor_16" };
     const opp = autoPlacedSetup("bra");
     const result = recommend(me, opp, "metlife");
 
-    // recommend는 me.special을 그대로 채택 후보(candidate)에 전달해야 하므로,
-    // 반환된 lineup은 autoPlace 산출물 형태(11명, 중복 없음)를 유지해야 한다.
     expect(Object.keys(result.lineup)).toHaveLength(11);
     expect(new Set(Object.values(result.lineup)).size).toBe(11);
+
+    const applied: SideSetup = {
+      ...me,
+      lineup: result.lineup,
+      roles: result.roles,
+      instructions: result.instructions,
+      // special은 me에서 그대로 가져온다 — recommend()가 candidate에 me.special을
+      // 전달했다면 이 재구성이 recommend 내부에서 실제로 평가된 것과 동일해야 한다.
+    };
+    const reEvaluated = winProbability(applied, opp, "metlife");
+    expect(reEvaluated.rules.some((r) => r.id === "captain_mental")).toBe(true);
+
+    // 대조군: 캡틴 미지정이면 같은 lineup/roles/instructions라도 captain_mental이 없어야
+    // 한다 — 위 통과가 우연(다른 규칙의 우연한 존재)이 아님을 보장한다.
+    const withoutCaptain: SideSetup = { ...applied, special: { ckBigMenForward: false } };
+    const reEvaluatedNoCaptain = winProbability(withoutCaptain, opp, "metlife");
+    expect(reEvaluatedNoCaptain.rules.some((r) => r.id === "captain_mental")).toBe(false);
   });
 });

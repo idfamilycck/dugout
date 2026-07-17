@@ -72,6 +72,13 @@ function now(): number {
 // 위 세 가지를 모두 적용하지 않으면 23,328회 전수 평가가 500ms 예산을 크게 초과한다
 // (직접 벤치마크로 단계별 기여도를 확인했다: 8.4s → poisson 최적화 후 ~2.3s →
 // lineStrengths/buildCtx 호이스팅 후 실측값은 self-review 리포트 참고).
+//
+// winDelta ≥ 0 보장: 탐색 후보는 모두 autoPlace가 만든 라인업에서 나오므로, 호출자가
+// 직접 짠 수동 라인업(me.lineup/me.roles)이 그 어떤 autoPlace 후보보다 강할 수도 있다.
+// 그런 역전을 막기 위해 me를 있는 그대로(lineup/roles/instructions 전부 원본) 마지막
+// 후보로 함께 평가한다(evaluated에도 포함, 총 23,329개). 이 "현재 설정" 후보가 이기면
+// 그대로 반환한다(winDelta = 0, topFactors는 현재 설정의 rules에서 계산) — 즉 recommend()
+// 는 호출자가 이미 가진 설정보다 절대 더 나쁜 winProb을 추천하지 않는다.
 export function recommend(me: SideSetup, opp: SideSetup, venueId: string): Recommendation {
   const start = now();
 
@@ -175,6 +182,19 @@ export function recommend(me: SideSetup, opp: SideSetup, venueId: string): Recom
         }
       }
     }
+  }
+
+  // "현재 설정" 후보: 호출자가 이미 가진 me.lineup/me.roles/me.instructions을 있는 그대로
+  // 평가한다. `current`는 함수 시작부에서 winProbability(me, opp, venueId)로 이미 계산해
+  // 두었으므로 재계산 없이 재사용한다. 동점(>=)이면 현재 설정을 채택해 winDelta가 정확히
+  // 0이 되도록 한다.
+  evaluated++;
+  if (current.win >= bestWin) {
+    bestWin = current.win;
+    bestInstructions = me.instructions;
+    bestLineup = me.lineup;
+    bestRoles = me.roles;
+    bestRules = current.rules;
   }
 
   const topFactors = [...bestRules]
