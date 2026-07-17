@@ -130,6 +130,46 @@ describe("match simulation", () => {
     expect(after.events.some((e) => e.type === "sub")).toBe(false);
   });
 
+  it("교체로 빠진 선수는 재투입 불가 (A→B 후 C→A 시도는 무시)", () => {
+    const kor = makeSetup("kor", "4-3-3");
+    const bra = makeSetup("bra", "4-3-3");
+    let state = initMatch(kor, bra, "metlife", 11);
+    state = runMinutes(state, 46);
+
+    const onPitchAt46 = Object.values(state.me.lineup);
+    const bench = playersOf("kor")
+      .map((p) => p.id)
+      .filter((id) => !onPitchAt46.includes(id));
+
+    // 46'에 A→B 교체 (A가 경기에서 빠짐)
+    const playerA = state.me.lineup["st"];
+    const playerB = bench[0];
+    state = applyIntervention(state, {
+      minute: state.minute,
+      side: "me",
+      subs: [{ out: playerA, in: playerB }],
+    });
+    expect(state.subsUsedMe).toBe(1);
+    expect(Object.values(state.me.lineup)).toContain(playerB);
+    expect(Object.values(state.me.lineup)).not.toContain(playerA);
+
+    state = runMinutes(state, 24); // 70분
+
+    // 70'에 C→A 교체 시도 (이미 빠진 A를 다시 투입) → 무시되어야 함
+    const playerC = Object.values(state.me.lineup)[5];
+    const lineupBefore = { ...state.me.lineup };
+    const after = applyIntervention(state, {
+      minute: state.minute,
+      side: "me",
+      subs: [{ out: playerC, in: playerA }],
+    });
+    expect(after.me.lineup).toEqual(lineupBefore); // 라인업 불변
+    expect(after.subsUsedMe).toBe(1); // 증가하지 않음
+    expect(Object.values(after.me.lineup)).not.toContain(playerA);
+    // 무시된 교체는 sub 이벤트를 남기지 않는다 (기존 1건만 유지)
+    expect(after.events.filter((e) => e.type === "sub")).toHaveLength(1);
+  });
+
   it("후반 평균 스태미나 < 전반 평균 스태미나", () => {
     const kor = makeSetup("kor", "4-3-3");
     const bra = makeSetup("bra", "4-3-3");

@@ -575,9 +575,17 @@ export function applyIntervention(state: MatchState, iv: Intervention): MatchSta
   const squad = playersOf(me.teamId);
   const nameOf = (id: string) => squad.find((p) => p.id === id)?.name ?? id;
 
+  // 이미 교체로 빠져나간 선수(과거 개입의 out)는 재투입 불가 — 규정상 교체된 선수는
+  // 경기에 복귀할 수 없다. 과거 interventions 이력에서 out으로 등장한 id를 모은다.
+  const subbedOff = new Set<string>();
+  for (const prev of state.interventions) {
+    for (const s of prev.subs ?? []) subbedOff.add(s.out);
+  }
+
   if (iv.subs) {
     for (const { out, in: inId } of iv.subs) {
       if (subsUsedMe >= MAX_SUBS) continue; // 5명 초과 교체는 무시
+      if (subbedOff.has(inId)) continue; // 교체로 빠진 선수는 재투입 불가
       const slotId = Object.keys(me.lineup).find((k) => me.lineup[k] === out);
       if (!slotId) continue; // out 선수가 현재 라인업에 없으면 무시
       if (Object.values(me.lineup).includes(inId)) continue; // in 선수가 이미 라인업에 있으면 무시(중복 배치 방지)

@@ -13,10 +13,19 @@ interface CrisisBannerProps {
   onIntervene: () => void;
 }
 
+// 마운트 시점의 "가장 최근 crisis" 키. 새로고침 시 이미 지나간 위기 배너를 다시 띄우지
+// 않도록, 마운트 이후 새로 추가된 crisis만 트리거하게 커서를 시드한다.
+function latestCrisisKey(events: MatchEvent[]): string {
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].type === "crisis") return `${i}-${events[i].minute}`;
+  }
+  return "";
+}
+
 export function CrisisBanner({ events, onIntervene }: CrisisBannerProps) {
   const [visible, setVisible] = useState(false);
   const [text, setText] = useState("");
-  const lastKeyRef = useRef<string>("");
+  const lastKeyRef = useRef<string>(latestCrisisKey(events));
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {

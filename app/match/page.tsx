@@ -35,6 +35,7 @@ export default function MatchPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [halftime, setHalftime] = useState(false);
   const halftimeHandledRef = useRef(false);
+  const halftimeSeededRef = useRef(false);
 
   // persist(sessionStorage) 재수화 완료 여부. zustand persist는 동기 스토리지라도
   // 첫 렌더 직후(마이크로태스크)에 재수화하므로, 재수화 전에는 match가 undefined다.
@@ -64,16 +65,28 @@ export default function MatchPage() {
     return () => clearInterval(id);
   }, [playing, sheetOpen, hasMatch, finished, speed, tickMinute]);
 
-  // 하프타임(45분) 자동 일시정지 — 한 번만.
+  // 하프타임 시드: 마운트(재수화 완료) 시점에 이미 하프타임 이벤트가 존재하면
+  // (=45분을 지난 뒤 새로고침한 경우) 이미 처리된 것으로 표시해 모달이 재생되지 않게 한다.
+  // 이 효과는 아래 감지 효과보다 먼저 선언돼, 같은 렌더에서 감지보다 먼저 실행된다.
+  useEffect(() => {
+    if (!hydrated || !match || halftimeSeededRef.current) return;
+    halftimeSeededRef.current = true;
+    if (match.events.some((e) => e.type === "halftime")) {
+      halftimeHandledRef.current = true;
+    }
+  }, [hydrated, match]);
+
+  // 하프타임(45분) 자동 일시정지 — 한 번만. 하프타임 이벤트가 방금 추가된 최신 이벤트이거나
+  // 정확히 45분 시점일 때만 트리거한다(마운트 후 뒤늦게 스테일 발동 방지).
   useEffect(() => {
     if (!match || match.finished) return;
-    if (!halftimeHandledRef.current && match.minute >= 45) {
-      const hasHT = match.events.some((e) => e.type === "halftime");
-      if (hasHT) {
-        halftimeHandledRef.current = true;
-        setPlaying(false);
-        setHalftime(true);
-      }
+    if (halftimeHandledRef.current || match.minute < 45) return;
+    const lastEvent = match.events[match.events.length - 1];
+    const halftimeIsLatest = lastEvent?.type === "halftime";
+    if ((halftimeIsLatest || match.minute === 45) && match.events.some((e) => e.type === "halftime")) {
+      halftimeHandledRef.current = true;
+      setPlaying(false);
+      setHalftime(true);
     }
   }, [match]);
 
@@ -291,6 +304,7 @@ export default function MatchPage() {
         oppSetup={match.opp}
         subsUsedMe={match.subsUsedMe}
         stamina={match.stamina}
+        interventions={match.interventions}
         onSubmit={submitIntervention}
         onClose={closeSheet}
       />

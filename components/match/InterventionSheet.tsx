@@ -97,6 +97,7 @@ interface InterventionSheetProps {
   oppSetup: SideSetup;
   subsUsedMe: number;
   stamina: Record<string, number>;
+  interventions: Intervention[];
   onSubmit: (iv: Omit<Intervention, "minute">) => void;
   onClose: () => void;
 }
@@ -106,6 +107,7 @@ export function InterventionSheet({
   oppSetup,
   subsUsedMe,
   stamina,
+  interventions,
   onSubmit,
   onClose,
 }: InterventionSheetProps) {
@@ -126,8 +128,17 @@ export function InterventionSheet({
   const pendingIn = new Set(subs.map((s) => s.in));
   const currentLineupIds = new Set(Object.values(meSetup.lineup));
 
+  // 과거 개입에서 교체로 빠진 선수(out)는 재투입 불가 — 후보에서 제외한다.
+  const subbedOff = useMemo(() => {
+    const set = new Set<string>();
+    for (const iv of interventions) for (const s of iv.subs ?? []) set.add(s.out);
+    return set;
+  }, [interventions]);
+
   const onPitch = startersOf(meSetup, squad).filter((p) => !pendingOut.has(p.id));
-  const bench = squad.filter((p) => !currentLineupIds.has(p.id) && !pendingIn.has(p.id));
+  const bench = squad.filter(
+    (p) => !currentLineupIds.has(p.id) && !pendingIn.has(p.id) && !subbedOff.has(p.id)
+  );
 
   const oppStarters = useMemo(
     () => [...startersOf(oppSetup, oppSquad)].sort((a, b) => threat(b) - threat(a)),

@@ -18,6 +18,17 @@ const GOAL_L_X = 12; // opp 공격(왼쪽) 목표
 
 const HIGHLIGHT_TYPES = new Set(["chance", "shot", "goal", "save", "corner"]);
 
+// 마운트 시점의 "가장 최근 하이라이트" 키. 새로고침으로 이미 지나간 이벤트를 다시
+// 재생(골 플래시 등)하지 않도록, 마운트 이후 추가된 이벤트만 트리거하게 커서를 시드한다.
+function latestHighlightKey(events: MatchEvent[]): string {
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (HIGHLIGHT_TYPES.has(events[i].type)) {
+      return `${i}-${events[i].minute}-${events[i].type}`;
+    }
+  }
+  return "";
+}
+
 interface Highlight {
   id: string;
   side: "me" | "opp";
@@ -35,7 +46,8 @@ export function LivePitch({ events, meTeamId, oppTeamId }: LivePitchProps) {
   const oppColor = teamById(oppTeamId)?.color1 ?? "var(--color-danger)";
 
   const [highlight, setHighlight] = useState<Highlight | null>(null);
-  const lastKeyRef = useRef<string>("");
+  // 마운트 시점의 최신 하이라이트로 커서를 시드 → 이후 추가분만 재생.
+  const lastKeyRef = useRef<string>(latestHighlightKey(events));
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
