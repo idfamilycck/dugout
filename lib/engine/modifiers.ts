@@ -160,7 +160,7 @@ function offsideTrapIsRisk(ctx: RuleCtx): boolean {
   return ctx.oppAttPaceAvg > 82;
 }
 
-// 14개 보정 규칙. 각 규칙은 me 시점 조건(when)을 평가하고, 발동 시
+// 15개 보정 규칙. 각 규칙은 me 시점 조건(when)을 평가하고, 발동 시
 // deltaAttack/deltaDefense(effect)와 근거 카드 문구(textKo)를 만든다.
 export const RULE_DEFS: RuleDef[] = [
   {
