@@ -1,6 +1,8 @@
 // 실제 국기를 모사하지 않는다. 팀의 color1/color2를 사선으로 조합한 자체 배지 +
 // 3글자 코드 텍스트만 사용한다(라이선스/엠블럼 이슈 회피, 브리프 지침).
 
+import { useId } from "react";
+
 interface FlagBadgeProps {
   code: string;
   color1: string;
@@ -19,7 +21,9 @@ function luminance(hex: string): number {
 }
 
 export function FlagBadge({ code, color1, color2, size = 44, className }: FlagBadgeProps) {
-  const id = `fb-${code.toLowerCase()}`;
+  // 같은 팀 배지가 한 화면에 두 번 렌더될 때(팀 그리드 + 하단 스코어보드) clipPath id가
+  // 충돌하지 않도록 useId로 인스턴스별 고유 접두사를 만든다.
+  const id = `fb-${code.toLowerCase()}-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   // 코드 텍스트는 배지 하단(color1 영역) 위에 올린다 → color1 밝기로 대비색 결정
   const textColor = luminance(color1) > 0.6 ? "#08160a" : "#f4fff2";
 

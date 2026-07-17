@@ -33,12 +33,12 @@ export function VenuePicker({ venueId, onSelect }: VenuePickerProps) {
                 type="button"
                 onClick={() => onSelect(v.id)}
                 aria-pressed={selected}
-                aria-label={`${v.nameKo}, ${v.cityKo}`}
                 className="panel relative flex h-full w-full flex-col gap-2 rounded-2xl p-3 text-left transition-colors duration-150 hover:border-white/25"
                 style={{ borderColor: selected ? "var(--color-accent)" : undefined }}
               >
+                {selected && <span className="sr-only">선택됨</span>}
                 {selected && (
-                  <span className="absolute right-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-black text-accent-ink">
+                  <span aria-hidden className="absolute right-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-black text-accent-ink">
                     선택됨
                   </span>
                 )}
@@ -47,20 +47,21 @@ export function VenuePicker({ venueId, onSelect }: VenuePickerProps) {
                     <div className="truncate text-sm font-bold text-ink">{v.nameKo}</div>
                     <div className="text-[11px] text-dim">{v.cityKo}</div>
                   </div>
-                  <div className="flex gap-0.5 text-base leading-none" aria-hidden>
+                  <div className="flex gap-0.5 text-base leading-none">
                     {traits.map((t) => (
-                      <span key={t.label} title={t.label}>
-                        {t.icon}
+                      <span key={t.label}>
+                        <span aria-hidden>{t.icon}</span>
+                        <span className="sr-only">{t.label}</span>
                       </span>
                     ))}
                   </div>
                 </div>
                 <div className="mt-auto flex items-center gap-3 border-t border-line pt-2 text-[11px] text-dim">
                   <span>
-                    <span className="stat-num text-ink">{v.altitude}</span>m
+                    고도 <span className="stat-num text-ink">{v.altitude}</span>m
                   </span>
                   <span>
-                    <span className="stat-num text-ink">{v.avgTempC}</span>℃
+                    기온 <span className="stat-num text-ink">{v.avgTempC}</span>℃
                   </span>
                 </div>
               </button>

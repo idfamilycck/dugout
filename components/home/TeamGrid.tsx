@@ -70,10 +70,11 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                 type="button"
                 onClick={() => onSelect(t.id)}
                 aria-pressed={selected}
-                aria-label={`${t.nameKo}${isMine ? " (내 팀)" : isOpp ? " (상대 팀)" : ""}`}
                 className="panel group relative flex h-full w-full flex-col gap-3 rounded-2xl p-3 text-left transition-colors duration-150 hover:border-white/25"
                 style={{ borderColor: selected ? ring : undefined }}
               >
+                {/* 선택 상태는 스크린리더에 텍스트로도 전달(색/리본은 시각 전용) */}
+                {selected && <span className="sr-only">{isMine ? "내 팀으로 선택됨" : "상대 팀으로 선택됨"}</span>}
                 {selected && (
                   <span
                     className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-black"
