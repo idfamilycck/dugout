@@ -16,6 +16,7 @@ import {
   ROLE_SHORT,
   POSITION_SHORT,
   jerseyOf,
+  badgesFor,
   type Selection,
 } from "./tactics-labels";
 import { ManMarkLine } from "./ManMarkLine";
@@ -26,14 +27,6 @@ interface PitchBoardProps {
   selected: Selection | null;
   onSelectPlayer: (sel: Selection) => void;
   onPlaceAtSlot: (slotId: string) => void;
-}
-
-function badgesFor(playerId: string, special: SideSetup["special"]): PlayerBadge[] {
-  const b: PlayerBadge[] = [];
-  if (special.captainId === playerId) b.push("C");
-  if (special.fkTakerId === playerId) b.push("FK");
-  if (special.ckTakerId === playerId) b.push("CK");
-  return b;
 }
 
 interface SlotProps {

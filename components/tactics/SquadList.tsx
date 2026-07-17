@@ -13,6 +13,7 @@ import {
   POSITION_STATS,
   statValue,
   jerseyOf,
+  badgesFor,
   type Selection,
 } from "./tactics-labels";
 
@@ -21,14 +22,6 @@ interface SquadListProps {
   teamColor: string;
   selected: Selection | null;
   onSelectPlayer: (sel: Selection) => void;
-}
-
-function badgesFor(playerId: string, special: SideSetup["special"]): PlayerBadge[] {
-  const b: PlayerBadge[] = [];
-  if (special.captainId === playerId) b.push("C");
-  if (special.fkTakerId === playerId) b.push("FK");
-  if (special.ckTakerId === playerId) b.push("CK");
-  return b;
 }
 
 interface RowProps {

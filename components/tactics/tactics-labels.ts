@@ -1,7 +1,8 @@
 // 작전실 UI 공용 라벨/헬퍼(순수 데이터 모듈, 스토어 비의존).
 // 축구를 잘 모르는 사용자도 이해할 수 있는 친절한 한국어 라벨을 지향한다.
 
-import type { Player, Position, RoleId } from "@/lib/types";
+import type { Player, Position, RoleId, SideSetup } from "@/lib/types";
+import type { PlayerBadge } from "@/components/ui/PlayerAvatar";
 
 // 탭-투-배치 선택 상태: 스쿼드 행이나 슬롯을 탭하면 이 값이 설정되고,
 // fromSlotId가 있으면 슬롯에서 집어든 것(슬롯↔슬롯 스왑), 없으면 벤치/스쿼드에서 집어든 것.
@@ -86,4 +87,14 @@ export function statValue(player: Player, key: StatKey): number {
 export function jerseyOf(id: string): number {
   const n = Number(id.split("_").pop());
   return Number.isFinite(n) ? n : 0;
+}
+
+// 주장(C)/프리킥(FK)/코너킥(CK) 배지를 special 지시에서 도출한다.
+// PitchBoard/SquadList 양쪽에서 공유.
+export function badgesFor(playerId: string, special: SideSetup["special"]): PlayerBadge[] {
+  const b: PlayerBadge[] = [];
+  if (special.captainId === playerId) b.push("C");
+  if (special.fkTakerId === playerId) b.push("FK");
+  if (special.ckTakerId === playerId) b.push("CK");
+  return b;
 }

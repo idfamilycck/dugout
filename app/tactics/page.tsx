@@ -10,7 +10,6 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -91,9 +90,12 @@ export default function TacticsPage() {
   const [selected, setSelected] = useState<Selection | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // PointerSensor 하나만 등록한다. TouchSensor를 함께 등록하면 터치 환경에서 센서가
+  // 경쟁(anti-pattern)하므로, 최신 브라우저의 포인터 이벤트를 처리하는 PointerSensor로
+  // 일원화한다. distance 활성 임계로 탭(이동 없음)은 click으로 통과되어 탭-투-배치가
+  // 그대로 동작하고, 이는 터치 환경의 보장된 대체 경로다.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   // 탭-투-배치: 선수 탭 → 선택(토글). 슬롯 탭 → 배치/스왑.
@@ -209,7 +211,11 @@ export default function TacticsPage() {
               key={t.id}
               type="button"
               role="tab"
+              id={`tab-${t.id}`}
               aria-selected={tab === t.id}
+              aria-controls={`panel-${t.id}`}
+              // 탭 전환 시 탭-투-배치 선택이 유지되도록(바깥 클릭 취소 대상에서 제외).
+              data-keep-selection
               onClick={() => setTab(t.id)}
               className={`flex-1 rounded-full py-2 text-sm font-bold transition-colors ${
                 tab === t.id
@@ -226,7 +232,12 @@ export default function TacticsPage() {
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-5 px-5 pt-5 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)_minmax(0,320px)]">
           {/* 스쿼드 열 */}
-          <div className={`${tab === "squad" ? "block" : "hidden"} lg:block`}>
+          <div
+            id="panel-squad"
+            role="tabpanel"
+            aria-labelledby="tab-squad"
+            className={`${tab === "squad" ? "block" : "hidden"} lg:block`}
+          >
             <SquadList
               me={me}
               teamColor={teamColor}
@@ -236,7 +247,12 @@ export default function TacticsPage() {
           </div>
 
           {/* 피치 열 */}
-          <div className={`${tab === "pitch" ? "block" : "hidden"} lg:block`}>
+          <div
+            id="panel-pitch"
+            role="tabpanel"
+            aria-labelledby="tab-pitch"
+            className={`${tab === "pitch" ? "block" : "hidden"} lg:block`}
+          >
             <PitchBoard
               me={me}
               teamColor={teamColor}
@@ -247,7 +263,12 @@ export default function TacticsPage() {
           </div>
 
           {/* 분석 열 */}
-          <div className={`${tab === "analysis" ? "block" : "hidden"} lg:block`}>
+          <div
+            id="panel-analysis"
+            role="tabpanel"
+            aria-labelledby="tab-analysis"
+            className={`${tab === "analysis" ? "block" : "hidden"} lg:block`}
+          >
             <AnalysisPanel />
           </div>
         </div>
