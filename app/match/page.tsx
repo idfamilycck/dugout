@@ -179,7 +179,7 @@ export default function MatchPage() {
         </div>
 
         {/* 라이브 피치 */}
-        <LivePitch events={match.events} meTeamId={match.me.teamId} oppTeamId={match.opp.teamId} />
+        <LivePitch events={match.events} meSetup={match.me} oppSetup={match.opp} />
 
         {/* 중계 + 승률 타임라인 */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

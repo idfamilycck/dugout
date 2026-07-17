@@ -7,10 +7,10 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MatchEvent } from "@/lib/engine/match";
+import type { SideSetup } from "@/lib/types";
 import { teamById } from "@/lib/data/teams";
-
-const VB_W = 300;
-const VB_H = 180;
+import { jerseyOf } from "@/components/tactics/tactics-labels";
+import { playerDots, VB_W, VB_H } from "./livepitch-geometry";
 const CX = VB_W / 2;
 const CY = VB_H / 2;
 const GOAL_R_X = 288; // me 공격(오른쪽) 목표
@@ -37,13 +37,13 @@ interface Highlight {
 
 interface LivePitchProps {
   events: MatchEvent[];
-  meTeamId: string;
-  oppTeamId: string;
+  meSetup: SideSetup;
+  oppSetup: SideSetup;
 }
 
-export function LivePitch({ events, meTeamId, oppTeamId }: LivePitchProps) {
-  const meColor = teamById(meTeamId)?.color2 ?? "var(--color-accent)";
-  const oppColor = teamById(oppTeamId)?.color1 ?? "var(--color-danger)";
+export function LivePitch({ events, meSetup, oppSetup }: LivePitchProps) {
+  const meColor = teamById(meSetup.teamId)?.color2 ?? "var(--color-accent)";
+  const oppColor = teamById(oppSetup.teamId)?.color1 ?? "var(--color-danger)";
 
   const [highlight, setHighlight] = useState<Highlight | null>(null);
   // 마운트 시점의 최신 하이라이트로 커서를 시드 → 이후 추가분만 재생.
@@ -116,6 +116,35 @@ export function LivePitch({ events, meTeamId, oppTeamId }: LivePitchProps) {
         <text x={VB_W - 10} y={16} textAnchor="end" fontSize="9" fill="var(--color-dim)">
           → 우리 공격
         </text>
+
+        {/* 양 팀 선수 22명: 포메이션 위치 상시 표시. 교체·포메이션 변경 시 부드럽게 이동 */}
+        {([
+          { setup: meSetup, side: "me" as const, color: meColor },
+          { setup: oppSetup, side: "opp" as const, color: oppColor },
+        ]).map(({ setup, side, color }) =>
+          playerDots(setup, side).map((d) => (
+            <motion.g
+              key={`${side}-${d.slotId}`}
+              initial={false}
+              animate={{ x: d.cx, y: d.cy }}
+              transition={{ type: "spring", stiffness: 120, damping: 18 }}
+            >
+              <circle r={5.5} fill={color} stroke="rgba(6,20,12,0.55)" strokeWidth={1} />
+              <text
+                textAnchor="middle"
+                dy={1.8}
+                fontSize="5"
+                fontWeight={700}
+                fill="#f2fff6"
+                stroke="rgba(0,0,0,0.45)"
+                strokeWidth={0.5}
+                paintOrder="stroke"
+              >
+                {jerseyOf(d.playerId)}
+              </text>
+            </motion.g>
+          ))
+        )}
 
         <AnimatePresence mode="wait">
           {highlight ? (
