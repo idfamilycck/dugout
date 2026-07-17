@@ -43,6 +43,7 @@ export interface RuleCtx {
   oppDefContribAvg: number;
   oppFbLContrib: number | null;
   oppFbRContrib: number | null;
+  oppAttDribblingAvg: number;
 }
 
 interface RuleDef {
@@ -79,6 +80,19 @@ function attPaceAvg(side: SideSetup, squad: Player[], formation: Formation): num
     .filter((v): v is number => v !== undefined);
   if (!paces.length) return 0;
   return paces.reduce((a, b) => a + b, 0) / paces.length;
+}
+
+// attPaceAvg와 동일한 att라인(WG/ST) 평균 산식이되, pace 대신 dribbling을 집계한다.
+// man_marking_scheme 규칙("맨마킹이 개인기 있는 드리블러에게는 뚫린다")의 조건에
+// 쓰인다 — instructions.marking(수비방식 UI 토글)이 아직 어떤 규칙에서도 읽히지
+// 않아 사장돼 있던 것을 이 규칙으로 살린다.
+function attDribblingAvg(side: SideSetup, squad: Player[], formation: Formation): number {
+  const slots = formation.slots.filter((s) => s.position === "WG" || s.position === "ST");
+  const vals = slots
+    .map((s) => playerAt(side, squad, s.id)?.attrs.dribbling)
+    .filter((v): v is number => v !== undefined);
+  if (!vals.length) return 0;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
 function defContribAvg(side: SideSetup, squad: Player[], formation: Formation): number {
@@ -138,6 +152,7 @@ export function buildCtx(
     oppDefContribAvg: defContribAvg(opp, oppSquad, oppFormation),
     oppFbLContrib: fbContribBySuffix(opp, oppSquad, oppFormation, "_l"),
     oppFbRContrib: fbContribBySuffix(opp, oppSquad, oppFormation, "_r"),
+    oppAttDribblingAvg: attDribblingAvg(opp, oppSquad, oppFormation),
   };
 }
 
@@ -230,6 +245,20 @@ export const RULE_DEFS: RuleDef[] = [
     when: (ctx) => !!ctx.me.special?.manMark,
     effect: () => ({ da: 0, dd: 0.05 }),
     textKo: () => "🧲 맨마킹으로 수비 조직력이 강화됩니다 +5%",
+    icon: () => "🧲",
+  },
+  {
+    id: "man_marking_scheme",
+    // instructions.marking(수비방식: 지역방어/맨마킹 UI 토글)은 이 규칙이 추가되기
+    // 전까지 어떤 규칙도 읽지 않는 사장된 값이었다. man_marking_fatigue(위)는
+    // special.manMark(특정 1인 전담 마크 지정)를 보는 별개 메커니즘이라 서로
+    // 독립적으로 발동할 수 있다.
+    when: (ctx) => ctx.me.instructions.marking === "man",
+    effect: (ctx) => (ctx.oppAttDribblingAvg >= 78 ? { da: 0, dd: -0.03 } : { da: 0, dd: 0.02 }),
+    textKo: (ctx) =>
+      ctx.oppAttDribblingAvg >= 78
+        ? "🧲 맨마킹, 상대의 뛰어난 개인기에 뚫릴 위험이 있습니다 −3%"
+        : "🧲 맨마킹으로 상대 공격을 밀착 봉쇄합니다 +2%",
     icon: () => "🧲",
   },
   {

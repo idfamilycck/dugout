@@ -31,6 +31,7 @@ function baseCtx(overrides: Partial<RuleCtx> = {}): RuleCtx {
     oppDefContribAvg: 60,
     oppFbLContrib: 60,
     oppFbRContrib: 60,
+    oppAttDribblingAvg: 70,
     ...overrides,
   };
 }
@@ -146,6 +147,22 @@ describe("RULE_DEFS 개별 규칙", () => {
     expect(rule.when(baseCtx())).toBe(false);
   });
 
+  it("man_marking_scheme: marking=man & 상대 att라인 드리블 평균>=78 → deltaDefense -0.03, 미만이면 +0.02", () => {
+    const rule = findRule("man_marking_scheme");
+    const vsDribbler = withMe(baseCtx({ oppAttDribblingAvg: 82 }), { marking: "man" });
+    expect(rule.when(vsDribbler)).toBe(true);
+    expect(rule.effect(vsDribbler)).toEqual({ da: 0, dd: -0.03 });
+    expect(rule.textKo(vsDribbler)).toContain("−3%");
+
+    const vsPlain = withMe(baseCtx({ oppAttDribblingAvg: 70 }), { marking: "man" });
+    expect(rule.when(vsPlain)).toBe(true);
+    expect(rule.effect(vsPlain)).toEqual({ da: 0, dd: 0.02 });
+    expect(rule.textKo(vsPlain)).toContain("+2%");
+
+    const zonal = withMe(baseCtx({ oppAttDribblingAvg: 82 }), { marking: "zonal" });
+    expect(rule.when(zonal)).toBe(false);
+  });
+
   it("altitude: venue.altitude>1500 & pressing=3 → deltaAttack -0.04", () => {
     const rule = findRule("altitude");
     const highAltVenue: Venue = {
@@ -251,6 +268,18 @@ describe("winProbability", () => {
 
     const resultWithout = winProbability(withoutCaptain, opp, "metlife");
     expect(resultWithout.rules.some((r) => r.id === "captain_mental")).toBe(false);
+  });
+
+  it("man_marking_scheme 통합: marking=man 지정 시 winProbability.rules에 man_marking_scheme 포함, zonal이면 미포함", () => {
+    const man = makeSetup("kor", "4-3-3", { marking: "man" });
+    const zonal = makeSetup("kor", "4-3-3", { marking: "zonal" });
+    const opp = makeSetup("jpn", "4-3-3");
+
+    const resultMan = winProbability(man, opp, "metlife");
+    expect(resultMan.rules.some((r) => r.id === "man_marking_scheme")).toBe(true);
+
+    const resultZonal = winProbability(zonal, opp, "metlife");
+    expect(resultZonal.rules.some((r) => r.id === "man_marking_scheme")).toBe(false);
   });
 
   // 주의: 이 테스트는 "규칙 엔진이 개입한 상태에서의 우위"를 검증하는 것이지,
