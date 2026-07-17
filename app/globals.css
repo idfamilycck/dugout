@@ -1,26 +1,120 @@
 @import "tailwindcss";
 
+/* ────────────────────────────────────────────────────────────
+   DUGOUT — 방송 중계 그래픽 + 감독의 작전실
+   다크 피치 그린 위에 형광 라임 액센트 하나만 절제해서 사용.
+   유리 = 초록/↑ · 불리 = 빨강/↓ 컨벤션을 앱 전역에서 공유한다.
+   ──────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-pitch: #06170d;
+  --color-pitch-2: #0a1f13;
+  --color-surface: #0e2417;
+  --color-surface-2: #163020;
+  --color-line: rgba(224, 255, 233, 0.1);
+  --color-ink: #eaf4ec;
+  --color-dim: #83998d;
+  --color-accent: #c8ff3c;
+  --color-accent-ink: #08160a;
+  --color-danger: #ff5c7a;
+  --color-gain: #3be38a;
+
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Apple SD Gothic Neo",
+    "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+/* 브리프가 요구하는 시맨틱 별칭(--pitch/--surface/--accent/--danger/--ink) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --pitch: var(--color-pitch);
+  --surface: var(--color-surface);
+  --accent: var(--color-accent);
+  --danger: var(--color-danger);
+  --gain: var(--color-gain);
+  --ink: var(--color-ink);
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-pitch);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(200, 255, 60, 0.06), transparent 55%),
+    radial-gradient(90% 60% at 50% 0%, rgba(59, 227, 138, 0.05), transparent 60%),
+    var(--color-pitch);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 잔디 이랑(모잉 스트라이프) — 히어로/작전실 바탕용 방송 질감 */
+.pitch-stripes {
+  background-image: repeating-linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0.022) 0 68px,
+    rgba(0, 0, 0, 0) 68px 136px
+  );
+}
+
+/* 방송 스코어보드 숫자: 고정폭 + 큰 무게 + 좁은 자간 (condensed 느낌) */
+.stat-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum" 1;
+}
+
+/* 대형 디스플레이 헤드라인 — 자간을 좁혀 중계 자막 톤 */
+.display {
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+}
+
+/* 방송 자막 하단 3분할(lower-third)의 라임 탭 */
+.lime-tab {
+  position: relative;
+}
+.lime-tab::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 68%;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+/* 라벨/아이브로 — 넓은 자간의 대문자 캡션 */
+.eyebrow {
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 0.68rem;
+}
+
+/* 카드 공통 */
+.panel {
+  background: linear-gradient(180deg, var(--color-surface), var(--color-pitch-2));
+  border: 1px solid var(--color-line);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
