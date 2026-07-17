@@ -24,11 +24,9 @@ test("퀵스타트 → 작전실 → 경기 완주 → 복기 도달", async ({ 
   await expect(beginBtn).toBeEnabled();
   await beginBtn.click();
 
-  // ── 경기: 배속 재생 + 하프타임 처리 ──────────────────────
+  // ── 경기: 하이라이트 점프 재생 + 하프타임 처리 ────────────
+  // 배속 버튼은 없다 — 스킵/장면 정지 페이싱이 자동이다.
   await expect(page).toHaveURL(/\/match/);
-  // 최고 배속으로.
-  await page.getByRole("button", { name: "4x" }).click();
-  // 재생 시작.
   await page.getByRole("button", { name: "재생" }).click();
 
   const resumeBtn = page.getByRole("button", { name: "이어서 재개" });
