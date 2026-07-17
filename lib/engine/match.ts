@@ -74,6 +74,15 @@ export interface MatchState {
   lambdaOpp: number;
   lines: { me: LineStrengths; opp: LineStrengths };
   injuryTime: number; // 0 = 아직 미계산, 계산 후 1~5
+  // --- Task 9 확장 필드 (브리프 명세 외, 추가적 변경) ---
+  // me/opp는 개입(교체·전술 변경) 적용 후의 "현재" 라인업/전술이라 카운터팩추얼
+  // (lib/engine/counterfactual.ts)이 "개입이 없었다면?"을 재현하려는 baseline
+  // 시뮬레이션의 입력으로 쓸 수 없다. 특히 교체는 비가역적이라 me/opp만 보고는
+  // initMatch 시점의 원본 라인업을 복원할 수 없으므로, initMatch가 채운 뒤
+  // simulateMinute/applyIntervention 어느 쪽도 갱신하지 않는 불변 스냅샷을
+  // 별도 필드로 들고 다닌다. UI 등 다른 소비자는 이 필드를 무시해도 동작한다.
+  initialMe: SideSetup;
+  initialOpp: SideSetup;
 }
 
 const MAX_SUBS = 5;
@@ -351,6 +360,8 @@ export function initMatch(me: SideSetup, opp: SideSetup, venueId: string, seed: 
     lambdaOpp: base.lambdaOpp,
     lines: base.lines,
     injuryTime: 0,
+    initialMe: me,
+    initialOpp: opp,
   };
 }
 
