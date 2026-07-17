@@ -119,6 +119,7 @@ export default function MatchPage() {
 
   return (
     <main className="flex flex-1 flex-col pb-10">
+      <h1 className="sr-only">경기 중계 — 실시간 지휘</h1>
       <CrisisBanner events={match.events} onIntervene={openSheet} />
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-5 sm:px-5">

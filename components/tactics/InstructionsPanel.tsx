@@ -87,7 +87,7 @@ export function InstructionsPanel() {
     <div data-keep-selection className="flex flex-col gap-6">
       {/* 포메이션 */}
       <section>
-        <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-accent">포메이션</h3>
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-accent">포메이션</h2>
         <div className="grid grid-cols-3 gap-2">
           {FORMATION_IDS.map((id) => {
             const active = instructions.formation === id;
@@ -111,7 +111,7 @@ export function InstructionsPanel() {
 
       {/* 슬라이더 */}
       <section className="flex flex-col gap-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-accent">성향 조절</h3>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-accent">성향 조절</h2>
         {SLIDERS.map(({ key, label, ticks }) => {
           const value = instructions[key];
           return (
@@ -145,7 +145,7 @@ export function InstructionsPanel() {
 
       {/* 토글 */}
       <section className="flex flex-col gap-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-accent">세부 지시</h3>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-accent">세부 지시</h2>
         {TOGGLES.map((tg) => (
           <div key={tg.key}>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">

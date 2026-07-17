@@ -113,7 +113,7 @@ export default function ResultPage() {
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6 sm:px-5">
       {/* 헤드라인 */}
       <header className="panel rounded-3xl px-4 py-5 text-center">
-        <p className="eyebrow text-accent">경기 복기</p>
+        <h1 className="eyebrow text-accent">경기 복기</h1>
         <div className="mt-3 flex items-center justify-center gap-2 text-xs font-bold text-dim">
           <span>{me?.code ?? "ME"}</span>
           <span className="stat-num display text-5xl text-ink">

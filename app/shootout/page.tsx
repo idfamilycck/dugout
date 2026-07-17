@@ -67,6 +67,7 @@ export default function ShootoutPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6 sm:px-5">
+      <h1 className="sr-only">승부차기</h1>
       <div className="flex items-center justify-between">
         <p className="stat-num text-sm text-dim">
           정규시간 {match.scoreMe} : {match.scoreOpp} 무승부

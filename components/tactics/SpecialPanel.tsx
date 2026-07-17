@@ -69,7 +69,7 @@ export function SpecialPanel() {
     <div data-keep-selection className="flex flex-col gap-6">
       {/* 세트피스 담당 */}
       <section className="flex flex-col gap-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-accent">담당 지정</h3>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-accent">담당 지정</h2>
         <LabeledSelect
           label="주장 (C)"
           value={special.captainId}
@@ -96,7 +96,7 @@ export function SpecialPanel() {
       {/* 맨마킹 */}
       <section className="flex flex-col gap-3">
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-accent">맨마킹</h3>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-accent">맨마킹</h2>
           <p className="mt-1 text-[10px] text-dim">우리 선수를 상대 위협 선수에게 밀착 배치합니다.</p>
         </div>
         <LabeledSelect

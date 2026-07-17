@@ -31,7 +31,7 @@ export function RolePicker() {
     <div data-keep-selection className="flex flex-col gap-4">
       {/* 슬롯 선택 */}
       <section>
-        <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-accent">선수 선택</h3>
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-accent">선수 선택</h2>
         <div className="grid grid-cols-2 gap-1.5">
           {slots.map((s) => {
             const p = squad.find((pl) => pl.id === me.lineup[s.id]);
@@ -62,7 +62,7 @@ export function RolePicker() {
       {slot && pos && (
         <section>
           <div className="mb-2 flex items-baseline gap-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-accent">역할</h3>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-accent">역할</h2>
             <span className="text-[11px] text-dim">
               {player?.name ?? "빈 슬롯"} · {POSITION_KO[pos]}
             </span>
