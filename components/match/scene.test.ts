@@ -10,6 +10,7 @@ import {
   isAttackScene,
   shouldStopScene,
   sceneDurationMs,
+  sceneChoreoType,
   SCENE_EVENT_TYPES,
 } from "./scene";
 
@@ -76,9 +77,20 @@ describe("shouldStopScene", () => {
 });
 
 describe("sceneDurationMs", () => {
-  it("골 장면은 3200ms, 그 외 정지 장면은 1800ms", () => {
-    expect(sceneDurationMs([ev(1, "chance"), ev(1, "shot"), ev(1, "goal")])).toBe(3200);
-    expect(sceneDurationMs([ev(1, "chance"), ev(1, "shot"), ev(1, "save")])).toBe(1800);
+  it("골 3600 > 코너 3000 > 슛 전개 2400 > 위기/카드 1800", () => {
+    expect(sceneDurationMs([ev(1, "chance"), ev(1, "shot"), ev(1, "goal")])).toBe(3600);
+    expect(sceneDurationMs([ev(1, "shot"), ev(1, "corner")])).toBe(3000);
+    expect(sceneDurationMs([ev(1, "chance"), ev(1, "shot"), ev(1, "save")])).toBe(2400);
+    expect(sceneDurationMs([ev(1, "crisis")])).toBe(1800);
+  });
+});
+
+describe("sceneChoreoType", () => {
+  it("골 > 코너 > 선방 > 슛 순으로 안무를 고르고, 위기/카드만 있으면 null", () => {
+    expect(sceneChoreoType([ev(1, "shot"), ev(1, "corner")])).toBe("corner");
+    expect(sceneChoreoType([ev(1, "shot"), ev(1, "goal"), ev(1, "corner")])).toBe("goal");
+    expect(sceneChoreoType([ev(1, "chance"), ev(1, "shot"), ev(1, "save")])).toBe("save");
+    expect(sceneChoreoType([ev(1, "crisis"), ev(1, "card")])).toBeNull();
   });
 });
 

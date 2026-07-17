@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { playerDots, followBall, VB_W, VB_H } from "./livepitch-geometry";
+import { playerDots, dynamicDots, followBall, VB_W, VB_H } from "./livepitch-geometry";
 import { makeSetup } from "@/lib/engine/__testutils__";
 import { FORMATIONS } from "@/lib/data/formations";
 
@@ -41,6 +41,37 @@ describe("playerDots (라이브 피치 선수 좌표)", () => {
     const oppSt = oppSlots.find((s) => s.position === "ST")!.id;
     const theirs = Object.fromEntries(playerDots(opp, "opp").map((d) => [d.slotId, d]));
     expect(theirs[oppGk].cx).toBeGreaterThan(theirs[oppSt].cx);
+  });
+
+  it("dynamicDots: 공세(tilt 0.85)면 팀이 하프라인을 넘어 상대 진영까지 올라간다", () => {
+    const dots = Object.fromEntries(dynamicDots(me, "me", 0.85).map((d) => [d.slotId, d]));
+    expect(dots["st"].cx).toBeGreaterThan(220); // 스트라이커는 상대 박스 근처
+    expect(dots["cm_l"].cx).toBeGreaterThan(VB_W / 2); // 미드필더도 상대 진영
+    expect(dots["cb1"].cx).toBeGreaterThan(130); // 센터백은 하프라인 부근
+    expect(dots["gk"].cx).toBeLessThan(50); // GK는 골문 근처
+  });
+
+  it("dynamicDots: 수세(tilt 0.15)면 전원이 자기 진영으로 내려앉는다", () => {
+    const dots = dynamicDots(me, "me", 0.15);
+    for (const d of dots) expect(d.cx).toBeLessThan(VB_W / 2);
+  });
+
+  it("dynamicDots: opp는 (1-tilt) 미러 — 우리 공세면 상대는 수세로 수축한다", () => {
+    const oppDots = Object.fromEntries(dynamicDots(opp, "opp", 0.85).map((d) => [d.slotId, d]));
+    // 상대 전원이 자기 진영(오른쪽 절반)으로 물러남
+    for (const d of Object.values(oppDots)) expect(d.cx).toBeGreaterThan(VB_W / 2);
+    expect(oppDots["gk"].cx).toBeGreaterThan(VB_W - 50);
+  });
+
+  it("dynamicDots: 중립(tilt 0.5)에서도 모든 점이 피치 안에 있다", () => {
+    for (const t of [0, 0.3, 0.5, 0.7, 1]) {
+      for (const d of [...dynamicDots(me, "me", t), ...dynamicDots(opp, "opp", t)]) {
+        expect(d.cx).toBeGreaterThan(6);
+        expect(d.cx).toBeLessThan(VB_W - 6);
+        expect(d.cy).toBeGreaterThan(6);
+        expect(d.cy).toBeLessThan(VB_H - 6);
+      }
+    }
   });
 
   it("followBall: 모든 선수가 공 방향으로 끌려가되 라인별 강도가 다르다", () => {

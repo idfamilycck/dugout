@@ -26,6 +26,7 @@ import {
   attackLean,
   shouldStopScene,
   sceneDurationMs,
+  sceneChoreoType,
 } from "@/components/match/scene";
 import { applyModifiers, type AppliedRule } from "@/lib/engine/modifiers";
 import { teamById } from "@/lib/data/teams";
@@ -231,8 +232,14 @@ export default function MatchPage() {
             oppSetup={match.opp}
             scene={(() => {
               const p = scene ? primaryEvent(scene) : undefined;
-              if (!p) return null;
-              return { key: `${p.minute}-${p.type}`, side: p.side, type: p.type, playerId: p.playerId };
+              if (!p || !scene) return null;
+              return {
+                key: `${p.minute}-${p.type}`,
+                side: p.side,
+                type: p.type,
+                choreo: sceneChoreoType(scene),
+                playerId: p.playerId,
+              };
             })()}
             lean={attackLean(match.events)}
           />

@@ -46,9 +46,21 @@ export function shouldStopScene(sceneEvents: MatchEvent[]): boolean {
   return sceneEvents.some((e) => e.type !== "chance");
 }
 
-// 장면 길이: 골은 길게, 나머지는 짧게.
+// 장면 길이: 안무 규모에 맞춘다 — 골(월패스+골망) > 코너(크로스+헤딩) > 슛 전개 > 위기/카드.
 export function sceneDurationMs(sceneEvents: MatchEvent[]): number {
-  return sceneEvents.some((e) => e.type === "goal") ? 3200 : 1800;
+  if (sceneEvents.some((e) => e.type === "goal")) return 3600;
+  if (sceneEvents.some((e) => e.type === "corner")) return 3000;
+  if (sceneEvents.some((e) => e.type === "shot" || e.type === "save")) return 2400;
+  return 1800;
+}
+
+// 안무 타입: 헤드라인(primaryEvent)과 별개로, 그 분의 가장 볼만한 전개를 고른다.
+// 골 > 코너(크로스+헤딩) > 선방 > 슛. (슛이 굴절돼 코너가 된 분은 코너 안무가 자연스럽다)
+export function sceneChoreoType(sceneEvents: MatchEvent[]): MatchEvent["type"] | null {
+  for (const t of ["goal", "corner", "save", "shot", "chance"] as const) {
+    if (sceneEvents.some((e) => e.type === t)) return t;
+  }
+  return null;
 }
 
 export function primaryEvent(sceneEvents: MatchEvent[]): MatchEvent | undefined {

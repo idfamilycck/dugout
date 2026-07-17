@@ -66,3 +66,35 @@ export function playerDots(setup: SideSetup, side: "me" | "opp"): PlayerDot[] {
   }
   return dots;
 }
+
+// ── 동적 전형: 경기 국면(tilt)에 따라 팀 전체가 하프라인을 넘나든다 ──
+// tilt: 0(우리 골문 앞 수세) ~ 1(상대 골문 앞 공세). me 기준이며 opp는 (1-tilt)를 쓴다.
+// 실제 축구처럼 공세일 땐 수비수가 하프라인 부근, 공격수는 상대 박스 근처까지 올라가고
+// 수세일 땐 전원이 자기 진영으로 내려앉는다. GK는 골문 근처에서 소폭만 움직인다.
+export function dynamicDots(setup: SideSetup, side: "me" | "opp", tilt: number): PlayerDot[] {
+  const t = Math.max(0, Math.min(1, side === "me" ? tilt : 1 - tilt));
+  const lerp = (a: number, b: number, f: number) => a + (b - a) * f;
+  const formation = FORMATIONS[setup.instructions.formation];
+  const defLine = lerp(24, 152, t); // 최후방 필드플레이어 기준선
+  const attLine = lerp(118, 272, t); // 최전방 기준선
+  const dots: PlayerDot[] = [];
+  for (const slot of formation.slots) {
+    const playerId = setup.lineup[slot.id];
+    if (!playerId) continue;
+    const cy = WIDTH_Y_MIN + (slot.x / 100) * WIDTH_Y_SPAN;
+    let cx: number;
+    if (slot.id === "gk") {
+      cx = lerp(13, 42, t);
+    } else {
+      const f = Math.min(1, slot.y / 85); // 슬롯 깊이 0~1
+      cx = defLine + f * (attLine - defLine);
+    }
+    cx = Math.max(10, Math.min(VB_W - 10, cx));
+    dots.push(
+      side === "me"
+        ? { slotId: slot.id, playerId, cx, cy }
+        : { slotId: slot.id, playerId, cx: VB_W - cx, cy: VB_H - cy }
+    );
+  }
+  return dots;
+}

@@ -1,10 +1,10 @@
 "use client";
 
-// 라이브 미니 피치: 가로형 SVG. 양 팀 22명을 포메이션 좌표대로 상시 표시한다.
-// 공은 항상 "선수와 함께" 움직인다 — 평상시엔 점유 팀(lean 부호) 선수들 사이를
-// 후방→전방 순서로 패스 순환하고, 공격 장면에선 동료 → 주인공(전진 위치) → 결과
-// 지점(골망/GK 앞/코너)으로 이동하며 주인공 선수 점이 실제로 전진한다. "me"는
-// 오른쪽 골문을 공격한다. 장면은 페이지(sceneSeenRef)가 단일 소스로 내려준다.
+// 라이브 미니 피치: 실제 축구처럼 팀 전체가 국면 따라 하프라인을 넘나든다.
+// - 동적 전형(tilt): 공세면 수비수까지 상대 진영 근처로 전진, 수세면 전원 수축.
+// - 평상시: 점유 팀 선수 사이 패스 순환 + 전원이 공 방향으로 흐름(followBall) + 미세 흔들림.
+// - 장면: livepitch-choreo가 만든 안무 — 2:1 월패스 슛, 코너킥 크로스+헤딩 경합(센터백 가담).
+// 장면은 페이지(sceneSeenRef)가 단일 소스로 내려준다. "me"는 오른쪽 골문을 공격한다.
 // (스펙 §6: docs/superpowers/specs/2026-07-18-match-highlight-jump-design.md)
 
 import { useEffect, useMemo, useState } from "react";
@@ -14,130 +14,84 @@ import type { SideSetup } from "@/lib/types";
 import { teamById } from "@/lib/data/teams";
 import { PLAYERS } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
-import { playerDots, followBall, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
+import { dynamicDots, followBall, VB_W, VB_H } from "./livepitch-geometry";
+import { buildSceneChoreo } from "./livepitch-choreo";
+
+const NAME_BY_ID = new Map(PLAYERS.map((p) => [p.id, p.name]));
+
+const CX = VB_W / 2;
+const CY = VB_H / 2;
+
+const PASS_MS = 1100; // 평상시 패스 순환 간격
+
+/** 페이지가 내려주는 장면 요약 */
+export interface ScenePlay {
+  key: string; // 장면 식별자 (분+타입) — 키프레임 재시작용
+  side: "me" | "opp";
+  type: MatchEventType; // 헤드라인(골 플래시 판단)
+  choreo: MatchEventType | null; // 안무 타입 (goal/corner/save/shot/chance, 없으면 null)
+  playerId?: string;
+}
 
 // 슬롯별 결정적 미세 움직임(제자리 흔들림) 파라미터 — 정지 순간에도 살아있는 느낌.
 function jitterOf(side: string, slotId: string): { ax: number; ay: number; dur: number } {
   let h = 0;
   for (const ch of `${side}-${slotId}`) h = (h * 31 + ch.charCodeAt(0)) % 997;
   return {
-    ax: 0.8 + (h % 5) * 0.25, // 0.8~1.8px
+    ax: 0.8 + (h % 5) * 0.25,
     ay: 0.8 + ((h >> 2) % 5) * 0.25,
-    dur: 2.2 + (h % 7) * 0.25, // 2.2~3.7s
+    dur: 2.2 + (h % 7) * 0.25,
   };
 }
-
-const NAME_BY_ID = new Map(PLAYERS.map((p) => [p.id, p.name]));
-
-const CX = VB_W / 2;
-const CY = VB_H / 2;
-const GOAL_R_X = 288; // me 공격(오른쪽) 목표
-const GOAL_L_X = 12; // opp 공격(왼쪽) 목표
-
-const PASS_MS = 1100; // 평상시 패스 순환 간격
-
-/** 페이지가 내려주는 장면 요약 (주 이벤트 기준) */
-export interface ScenePlay {
-  key: string; // 장면 식별자 (분+타입) — 키프레임 재시작용
-  side: "me" | "opp";
-  type: MatchEventType;
-  playerId?: string;
-}
-
-const BALL_SCENE_TYPES = new Set<MatchEventType>(["chance", "shot", "goal", "save", "corner"]);
 
 interface LivePitchProps {
   meSetup: SideSetup;
   oppSetup: SideSetup;
   scene?: ScenePlay | null;
-  /** 진형 쏠림 -1(상대 공세)~+1(우리 공세): 양 팀이 공 방향으로 살짝 이동 */
+  /** 진형 쏠림 -1(상대 공세)~+1(우리 공세) — 국면(tilt) 산출에 쓴다 */
   lean?: number;
-}
-
-function dist(a: PlayerDot, b: PlayerDot): number {
-  return (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2;
 }
 
 export function LivePitch({ meSetup, oppSetup, scene = null, lean = 0 }: LivePitchProps) {
   const meColor = teamById(meSetup.teamId)?.color2 ?? "var(--color-accent)";
   const oppColor = teamById(oppSetup.teamId)?.color1 ?? "var(--color-danger)";
 
-  const dotsMe = useMemo(() => playerDots(meSetup, "me"), [meSetup]);
-  const dotsOpp = useMemo(() => playerDots(oppSetup, "opp"), [oppSetup]);
+  const possession = lean >= 0 ? "me" : "opp";
 
-  // ── 평상시 패스 순환: 점유 팀 선수(GK 제외)를 후방→전방 순서로 도는 커서 ──
+  // 국면: 장면 중엔 공격 측으로 강하게, 평상시엔 점유+흐름(lean)에 따라 완만하게.
+  const tilt = scene
+    ? scene.side === "me"
+      ? 0.85
+      : 0.15
+    : 0.5 + lean * 0.16 + (possession === "me" ? 0.06 : -0.06);
+
+  const dotsMe = useMemo(() => dynamicDots(meSetup, "me", tilt), [meSetup, tilt]);
+  const dotsOpp = useMemo(() => dynamicDots(oppSetup, "opp", tilt), [oppSetup, tilt]);
+
+  // ── 장면 안무 ──
+  const choreo = useMemo(() => {
+    if (!scene || !scene.choreo) return null;
+    const attackDots = scene.side === "me" ? dotsMe : dotsOpp;
+    return buildSceneChoreo(scene.choreo, scene.side, attackDots, scene.playerId);
+  }, [scene, dotsMe, dotsOpp]);
+
+  // ── 평상시 패스 순환 ──
   const [passStep, setPassStep] = useState(0);
-  const ballScene = scene !== null && BALL_SCENE_TYPES.has(scene.type);
   useEffect(() => {
-    if (ballScene) return; // 장면 중엔 패스 순환 정지 (crisis/card는 순환 유지)
+    if (choreo) return;
     const id = setInterval(() => setPassStep((s) => s + 1), PASS_MS);
     return () => clearInterval(id);
-  }, [ballScene]);
+  }, [choreo]);
 
-  const possession = lean >= 0 ? "me" : "opp";
   const chain = (possession === "me" ? dotsMe : dotsOpp).filter((d) => d.slotId !== "gk");
   const holder = chain.length > 0 ? chain[passStep % chain.length] : undefined;
 
-  // ── 장면 연출: 주인공·동료 전진 오버라이드 + 공 키프레임 ──
-  const attackRight = scene?.side === "me";
-  const sceneDots = scene ? (scene.side === "me" ? dotsMe : dotsOpp) : [];
-  const shooter =
-    ballScene && scene
-      ? (sceneDots.find((d) => d.playerId === scene.playerId) ?? sceneDots[sceneDots.length - 1])
-      : undefined;
+  // 전원이 따라갈 공의 관심 지점: 안무 중엔 마지막 키프레임(결과 지점), 평상시엔 볼홀더.
+  const ballPoint = choreo
+    ? { cx: choreo.ball.xs[choreo.ball.xs.length - 1], cy: choreo.ball.ys[choreo.ball.ys.length - 1] }
+    : { cx: (holder?.cx ?? CX) + (possession === "me" ? 5 : -5), cy: holder?.cy ?? CY };
 
-  // 주인공 전진 위치: 공격 서드 박스 부근, 폭은 중앙 쪽으로 40% 수렴
-  const advanced = shooter
-    ? {
-        cx: attackRight ? Math.max(shooter.cx, VB_W - 66) : Math.min(shooter.cx, 66),
-        cy: shooter.cy + (CY - shooter.cy) * 0.4,
-      }
-    : undefined;
-
-  // 전진 동료 2명: 주인공과 가까운 같은 팀 필드플레이어
-  const mates = useMemo(() => {
-    if (!shooter) return new Set<string>();
-    return new Set(
-      sceneDots
-        .filter((d) => d.slotId !== "gk" && d.slotId !== shooter.slotId)
-        .sort((a, b) => dist(a, shooter) - dist(b, shooter))
-        .slice(0, 2)
-        .map((d) => d.slotId)
-    );
-    // sceneDots는 shooter에서 파생되므로 shooter만 의존해도 충분하다.
-  }, [shooter, sceneDots]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 공 목표: 골=골망 안, 선방=GK 앞, 코너=코너 깃발, 찬스/슛=골문 근처
-  const outcome = (() => {
-    if (!scene || !ballScene) return undefined;
-    const gx = attackRight ? GOAL_R_X : GOAL_L_X;
-    switch (scene.type) {
-      case "goal":
-        return { cx: attackRight ? gx + 2 : gx - 2, cy: CY };
-      case "save":
-        return { cx: attackRight ? gx - 10 : gx + 10, cy: CY };
-      case "corner":
-        return { cx: attackRight ? VB_W - 8 : 8, cy: 10 };
-      default:
-        return { cx: attackRight ? gx - 16 : gx + 16, cy: CY + 10 };
-    }
-  })();
-
-  // 공 출발점: 주인공과 가장 가까운 동료(후방 전개 느낌), 없으면 주인공 원위치
-  const ballStart = (() => {
-    if (!shooter) return undefined;
-    const mateId = [...mates][0];
-    const mate = sceneDots.find((d) => d.slotId === mateId);
-    return mate ?? shooter;
-  })();
-
-  const dir = attackRight ? 1 : -1;
-
-  // 전원이 따라갈 공의 현재 관심 지점: 장면 중엔 결과 지점, 평상시엔 볼홀더.
-  const ballPoint =
-    ballScene && outcome
-      ? outcome
-      : { cx: (holder?.cx ?? CX) + (possession === "me" ? 5 : -5), cy: holder?.cy ?? CY };
+  const pulseSlot = choreo?.shooterSlot ?? choreo?.headerSlot;
 
   return (
     <motion.div
@@ -179,29 +133,22 @@ export function LivePitch({ meSetup, oppSetup, scene = null, lean = 0 }: LivePit
           { dots: dotsMe, side: "me" as const, color: meColor },
           { dots: dotsOpp, side: "opp" as const, color: oppColor },
         ]).map(({ dots, side, color }) => (
-          <motion.g
-            key={side}
-            initial={false}
-            animate={{ x: lean * 6 }}
-            transition={{ type: "spring", stiffness: 40, damping: 16 }}
-          >
+          <g key={side}>
             {dots.map((d) => {
-              const isShooter = shooter !== undefined && scene?.side === side && d.slotId === shooter.slotId;
-              const isMate = scene?.side === side && mates.has(d.slotId);
-              const isHolder = !ballScene && holder !== undefined && possession === side && d.slotId === holder.slotId;
-              // 위치: 주인공은 전진 위치, 동료는 부분 전진, 나머지 전원은 공을 따라
-              // 라인별 강도만큼 이동(실제 팀 전형처럼 공 방향으로 흐른다).
+              const override = scene?.side === side ? choreo?.overrides[d.slotId] : undefined;
+              const isPulse = scene?.side === side && pulseSlot === d.slotId;
+              const isHolder = !choreo && holder !== undefined && possession === side && d.slotId === holder.slotId;
+              // 위치: 안무 오버라이드 > 공 따라가기(라인별 강도)
               const follow = followBall(d, ballPoint);
-              const tx = isShooter && advanced ? advanced.cx : isMate ? follow.tx + dir * 10 : follow.tx;
-              const ty = isShooter && advanced ? advanced.cy : isMate ? follow.ty + (CY - follow.ty) * 0.15 : follow.ty;
-              const emphasized = isShooter || isHolder;
+              const tx = override ? override.cx : follow.tx;
+              const ty = override ? override.cy : follow.ty;
               const jit = jitterOf(side, d.slotId);
               return (
                 <motion.g
                   key={`${side}-${d.slotId}`}
                   initial={false}
                   animate={{ x: tx, y: ty }}
-                  transition={{ type: "spring", stiffness: 120, damping: 18 }}
+                  transition={{ type: "spring", stiffness: override ? 70 : 120, damping: 18 }}
                 >
                   {/* 슬롯별 미세 흔들림 — 정지 순간에도 제자리에서 살아 움직인다 */}
                   <motion.g
@@ -211,69 +158,66 @@ export function LivePitch({ meSetup, oppSetup, scene = null, lean = 0 }: LivePit
                     }}
                     transition={{ duration: jit.dur, repeat: Infinity, ease: "easeInOut" }}
                   >
-                  {/* 확대는 r 애니메이션 대신 transform scale — SVG 속성 r은 framer가
-                      마운트 시점에 undefined로 읽어 콘솔 에러를 내는 문제가 있다. */}
-                  <motion.g
-                    initial={false}
-                    animate={isShooter ? { scale: [1, 1.3, 1] } : { scale: emphasized ? 1.15 : 1 }}
-                    transition={
-                      isShooter
-                        ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
-                        : { duration: 0.25 }
-                    }
-                  >
-                    <circle
-                      r={5.5}
-                      fill={color}
-                      stroke={isShooter ? "var(--color-accent)" : "rgba(6,20,12,0.55)"}
-                      strokeWidth={isShooter ? 1.4 : 1}
-                    />
-                  </motion.g>
-                  <text
-                    textAnchor="middle"
-                    dy={1.8}
-                    fontSize="5"
-                    fontWeight={700}
-                    fill="#f2fff6"
-                    stroke="rgba(0,0,0,0.45)"
-                    strokeWidth={0.5}
-                    paintOrder="stroke"
-                  >
-                    {jerseyOf(d.playerId)}
-                  </text>
-                  <text
-                    textAnchor="middle"
-                    dy={11.5}
-                    fontSize="3.6"
-                    fontWeight={isShooter ? 800 : 600}
-                    fill={isShooter ? "var(--color-accent)" : "rgba(230,255,240,0.82)"}
-                    stroke="rgba(0,0,0,0.55)"
-                    strokeWidth={0.45}
-                    paintOrder="stroke"
-                  >
-                    {NAME_BY_ID.get(d.playerId) ?? ""}
-                  </text>
+                    {/* 확대는 r 애니메이션 대신 transform scale — SVG 속성 r은 framer가
+                        마운트 시점에 undefined로 읽어 콘솔 에러를 내는 문제가 있다. */}
+                    <motion.g
+                      initial={false}
+                      animate={isPulse ? { scale: [1, 1.35, 1] } : { scale: isHolder ? 1.15 : 1 }}
+                      transition={
+                        isPulse
+                          ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+                          : { duration: 0.25 }
+                      }
+                    >
+                      <circle
+                        r={5.5}
+                        fill={color}
+                        stroke={isPulse ? "var(--color-accent)" : "rgba(6,20,12,0.55)"}
+                        strokeWidth={isPulse ? 1.4 : 1}
+                      />
+                    </motion.g>
+                    <text
+                      textAnchor="middle"
+                      dy={1.8}
+                      fontSize="5"
+                      fontWeight={700}
+                      fill="#f2fff6"
+                      stroke="rgba(0,0,0,0.45)"
+                      strokeWidth={0.5}
+                      paintOrder="stroke"
+                    >
+                      {jerseyOf(d.playerId)}
+                    </text>
+                    <text
+                      textAnchor="middle"
+                      dy={11.5}
+                      fontSize="3.6"
+                      fontWeight={isPulse ? 800 : 600}
+                      fill={isPulse ? "var(--color-accent)" : "rgba(230,255,240,0.82)"}
+                      stroke="rgba(0,0,0,0.55)"
+                      strokeWidth={0.45}
+                      paintOrder="stroke"
+                    >
+                      {NAME_BY_ID.get(d.playerId) ?? ""}
+                    </text>
                   </motion.g>
                 </motion.g>
               );
             })}
-          </motion.g>
+          </g>
         ))}
 
-        {/* 공: 평상시엔 점유 팀 선수 사이 패스 순환, 공격 장면엔 동료→주인공→결과 지점 */}
-        {ballScene && ballStart && advanced && outcome ? (
+        {/* 공: 평상시엔 점유 팀 패스 순환, 장면엔 안무 키프레임(월패스/코너 크로스) */}
+        {choreo ? (
           <motion.circle
             key={scene!.key}
             r={4}
             fill="#f6fff0"
             stroke="#0a1f13"
             strokeWidth={1}
-            initial={{ cx: ballStart.cx, cy: ballStart.cy }}
-            animate={{
-              cx: [ballStart.cx, advanced.cx + dir * 6, outcome.cx],
-              cy: [ballStart.cy, advanced.cy, outcome.cy],
-            }}
-            transition={{ duration: 1.3, times: [0, 0.45, 1], ease: "easeInOut" }}
+            initial={{ cx: choreo.ball.xs[0], cy: choreo.ball.ys[0] }}
+            animate={{ cx: choreo.ball.xs, cy: choreo.ball.ys }}
+            transition={{ duration: choreo.ball.dur, times: choreo.ball.times, ease: "easeInOut" }}
           />
         ) : (
           <motion.circle
