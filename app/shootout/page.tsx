@@ -11,6 +11,7 @@ import { useAppStore } from "@/lib/store";
 
 import { KickerOrder } from "@/components/shootout/KickerOrder";
 import { ShootoutStage } from "@/components/shootout/ShootoutStage";
+import { Disclaimer } from "@/components/ui/Disclaimer";
 
 export default function ShootoutPage() {
   const router = useRouter();
@@ -57,6 +58,13 @@ export default function ShootoutPage() {
     setPhase("stage");
   };
 
+  // 스토어에 이미 확정된 shootout이 있으면(예: /result에서 뒤로가기로 재진입)
+  // phase state(항상 "order"로 시작)를 무시하고 결과 재생 화면을 보여준다.
+  // 그래야 재수화 후 마운트마다 킥커 선택으로 되돌아가 runShootout이 결과를
+  // 덮어쓰는 것을 막을 수 있다. (hydrated 가드 이후에만 렌더되므로 shootout 값은
+  // 이미 재수화가 끝난 상태다.)
+  const effectivePhase = shootout ? "stage" : phase;
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6 sm:px-5">
       <div className="flex items-center justify-between">
@@ -68,16 +76,20 @@ export default function ShootoutPage() {
         </Link>
       </div>
 
-      {phase === "order" || !shootout ? (
-        <KickerOrder meSetup={match.me} stamina={match.stamina} onConfirm={confirmKickers} />
-      ) : (
+      {effectivePhase === "stage" && shootout ? (
         <ShootoutStage
           result={shootout}
           meSetup={match.me}
           oppSetup={match.opp}
           onFinish={() => router.push("/result")}
         />
+      ) : (
+        <KickerOrder meSetup={match.me} stamina={match.stamina} onConfirm={confirmKickers} />
       )}
+
+      <footer className="mx-auto mt-2 w-full">
+        <Disclaimer />
+      </footer>
     </main>
   );
 }

@@ -97,8 +97,14 @@ export function CfCompare({ cf, match }: CfCompareProps) {
         <ul className="mt-4 flex flex-col gap-1.5">
           <li className="eyebrow text-dim">개입별 승률 변화</li>
           {cf.deltas.map((d, i) => {
-            const positive = d.probDelta >= 0;
-            const color = positive ? "var(--color-gain)" : "var(--color-danger)";
+            const roundedPp = Math.round(d.probDelta * 100);
+            const color =
+              roundedPp > 0
+                ? "var(--color-gain)"
+                : roundedPp < 0
+                  ? "var(--color-danger)"
+                  : "var(--color-dim)";
+            const arrow = roundedPp > 0 ? "▲" : roundedPp < 0 ? "▼" : "";
             return (
               <li
                 key={`${d.intervention.minute}-${i}`}
@@ -111,7 +117,7 @@ export function CfCompare({ cf, match }: CfCompareProps) {
                   <span className="text-[13px] text-ink">{interventionTypeKo(d.intervention)}</span>
                 </div>
                 <span className="stat-num text-sm font-black" style={{ color }} aria-hidden>
-                  {positive ? "▲" : "▼"} {signedPp(d.probDelta)}
+                  {arrow} {signedPp(d.probDelta)}
                 </span>
               </li>
             );

@@ -15,6 +15,7 @@ import { CfCompare } from "@/components/result/CfCompare";
 import { FinalTimeline } from "@/components/result/FinalTimeline";
 import { ShareCard } from "@/components/result/ShareCard";
 import { heroLine } from "@/components/result/cf-labels";
+import { Disclaimer } from "@/components/ui/Disclaimer";
 
 function countBy(events: MatchEvent[], side: "me" | "opp", pred: (e: MatchEvent) => boolean): number {
   return events.filter((e) => e.side === side && pred(e)).length;
@@ -228,6 +229,10 @@ export default function ResultPage() {
           홈으로
         </Link>
       </div>
+
+      <footer className="mt-2 w-full">
+        <Disclaimer />
+      </footer>
     </main>
   );
 }
