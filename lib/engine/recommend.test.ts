@@ -65,7 +65,6 @@ describe("recommend", () => {
     const opp = autoPlacedSetup("bra");
     const result = recommend(me, opp, "metlife");
 
-    console.log(`recommend() evaluated=${result.evaluated} elapsedMs=${result.elapsedMs.toFixed(2)}`);
     expect(result.evaluated).toBeGreaterThanOrEqual(20000);
     expect(result.elapsedMs).toBeLessThan(500);
   });

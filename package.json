@@ -1,6 +1,7 @@
 {
   "name": "dugout",
   "version": "0.1.0",
+  "description": "더그아웃 — 월드컵 전술 시뮬레이터: 실시간 승률 분석, 3계층 전술, 카운터팩추얼 복기",
   "private": true,
   "scripts": {
     "dev": "next dev",
