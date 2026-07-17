@@ -11,10 +11,15 @@ import { useAppStore } from "@/lib/store";
 import { counterfactual } from "@/lib/engine/counterfactual";
 import { teamById } from "@/lib/data/teams";
 import type { MatchEvent } from "@/lib/engine/match";
+import { venueById } from "@/lib/data/venues";
+import { h2hOf } from "@/lib/data/h2h";
+import { applyModifiers } from "@/lib/engine/modifiers";
 import { CfCompare } from "@/components/result/CfCompare";
 import { FinalTimeline } from "@/components/result/FinalTimeline";
 import { ShareCard } from "@/components/result/ShareCard";
 import { heroLine } from "@/components/result/cf-labels";
+import { buildTacticsReview } from "@/components/result/tactics-review";
+import { TacticsReviewPanel } from "@/components/result/TacticsReviewPanel";
 import { Disclaimer } from "@/components/ui/Disclaimer";
 
 function countBy(events: MatchEvent[], side: "me" | "opp", pred: (e: MatchEvent) => boolean): number {
@@ -57,6 +62,18 @@ export default function ResultPage() {
 
   // 카운터팩추얼은 결정적·즉시이지만 재렌더마다 재계산할 이유가 없어 메모이즈한다.
   const cf = useMemo(() => (match ? counterfactual(match) : null), [match]);
+
+  // 전술 평가: 최종(개입 반영) 세팅 기준 발동 규칙 + 경기 이벤트로 코멘트 생성.
+  const review = useMemo(() => {
+    if (!match) return null;
+    const venue = venueById(match.venueId);
+    const meTeam = teamById(match.me.teamId);
+    const oppTeam = teamById(match.opp.teamId);
+    if (!venue || !meTeam || !oppTeam) return null;
+    const meMod = applyModifiers(match.me, match.opp, venue, meTeam, oppTeam, h2hOf(match.me.teamId, match.opp.teamId));
+    const oppMod = applyModifiers(match.opp, match.me, venue, oppTeam, meTeam, h2hOf(match.opp.teamId, match.me.teamId));
+    return buildTacticsReview(match, meMod, oppMod);
+  }, [match]);
 
   if (!hydrated || !match || !cf) {
     return (
@@ -156,6 +173,9 @@ export default function ResultPage() {
 
       {/* 승률 타임라인 */}
       <FinalTimeline match={match} />
+
+      {/* 전술 평가 & 보완 */}
+      {review && <TacticsReviewPanel review={review} />}
 
       {/* 상세 스탯 아코디언 */}
       <section className="panel overflow-hidden rounded-3xl">

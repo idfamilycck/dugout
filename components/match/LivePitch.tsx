@@ -1,96 +1,131 @@
 "use client";
 
-// 라이브 미니 피치: 가로형 SVG. 새 이벤트(chance/shot/goal/save/corner)가 들어오면
-// 해당 진영에서 공·점이 골문 쪽으로 이동하는 1.4초 시퀀스를 재생하고, 골이면 플래시 +
-// 셰이크. 이벤트가 없으면 중원 점유 루프. "me"는 오른쪽, "opp"는 왼쪽 골문을 공격한다.
+// 라이브 미니 피치: 가로형 SVG. 양 팀 22명을 포메이션 좌표대로 상시 표시한다.
+// 공은 항상 "선수와 함께" 움직인다 — 평상시엔 점유 팀(lean 부호) 선수들 사이를
+// 후방→전방 순서로 패스 순환하고, 공격 장면에선 동료 → 주인공(전진 위치) → 결과
+// 지점(골망/GK 앞/코너)으로 이동하며 주인공 선수 점이 실제로 전진한다. "me"는
+// 오른쪽 골문을 공격한다. 장면은 페이지(sceneSeenRef)가 단일 소스로 내려준다.
+// (스펙 §6: docs/superpowers/specs/2026-07-18-match-highlight-jump-design.md)
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { MatchEvent } from "@/lib/engine/match";
+import type { MatchEventType } from "@/lib/engine/match";
 import type { SideSetup } from "@/lib/types";
 import { teamById } from "@/lib/data/teams";
 import { PLAYERS } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
-import { playerDots, VB_W, VB_H } from "./livepitch-geometry";
+import { playerDots, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
 
 const NAME_BY_ID = new Map(PLAYERS.map((p) => [p.id, p.name]));
+
 const CX = VB_W / 2;
 const CY = VB_H / 2;
 const GOAL_R_X = 288; // me 공격(오른쪽) 목표
 const GOAL_L_X = 12; // opp 공격(왼쪽) 목표
 
-const HIGHLIGHT_TYPES = new Set(["chance", "shot", "goal", "save", "corner"]);
+const PASS_MS = 1100; // 평상시 패스 순환 간격
 
-// 마운트 시점의 "가장 최근 하이라이트" 키. 새로고침으로 이미 지나간 이벤트를 다시
-// 재생(골 플래시 등)하지 않도록, 마운트 이후 추가된 이벤트만 트리거하게 커서를 시드한다.
-function latestHighlightKey(events: MatchEvent[]): string {
-  for (let i = events.length - 1; i >= 0; i--) {
-    if (HIGHLIGHT_TYPES.has(events[i].type)) {
-      return `${i}-${events[i].minute}-${events[i].type}`;
-    }
-  }
-  return "";
-}
-
-interface Highlight {
-  id: string;
+/** 페이지가 내려주는 장면 요약 (주 이벤트 기준) */
+export interface ScenePlay {
+  key: string; // 장면 식별자 (분+타입) — 키프레임 재시작용
   side: "me" | "opp";
-  isGoal: boolean;
+  type: MatchEventType;
+  playerId?: string;
 }
+
+const BALL_SCENE_TYPES = new Set<MatchEventType>(["chance", "shot", "goal", "save", "corner"]);
 
 interface LivePitchProps {
-  events: MatchEvent[];
   meSetup: SideSetup;
   oppSetup: SideSetup;
-  /** 장면 모드 주인공 — 해당 선수 점을 확대·펄스로 강조 */
-  activePlayerId?: string;
+  scene?: ScenePlay | null;
   /** 진형 쏠림 -1(상대 공세)~+1(우리 공세): 양 팀이 공 방향으로 살짝 이동 */
   lean?: number;
 }
 
-export function LivePitch({ events, meSetup, oppSetup, activePlayerId, lean = 0 }: LivePitchProps) {
+function dist(a: PlayerDot, b: PlayerDot): number {
+  return (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2;
+}
+
+export function LivePitch({ meSetup, oppSetup, scene = null, lean = 0 }: LivePitchProps) {
   const meColor = teamById(meSetup.teamId)?.color2 ?? "var(--color-accent)";
   const oppColor = teamById(oppSetup.teamId)?.color1 ?? "var(--color-danger)";
 
-  const [highlight, setHighlight] = useState<Highlight | null>(null);
-  // 마운트 시점의 최신 하이라이트로 커서를 시드 → 이후 추가분만 재생.
-  const lastKeyRef = useRef<string>(latestHighlightKey(events));
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dotsMe = useMemo(() => playerDots(meSetup, "me"), [meSetup]);
+  const dotsOpp = useMemo(() => playerDots(oppSetup, "opp"), [oppSetup]);
 
+  // ── 평상시 패스 순환: 점유 팀 선수(GK 제외)를 후방→전방 순서로 도는 커서 ──
+  const [passStep, setPassStep] = useState(0);
+  const ballScene = scene !== null && BALL_SCENE_TYPES.has(scene.type);
   useEffect(() => {
-    // 가장 최근의 하이라이트 대상 이벤트를 찾는다.
-    let latest: MatchEvent | undefined;
-    let latestIdx = -1;
-    for (let i = events.length - 1; i >= 0; i--) {
-      if (HIGHLIGHT_TYPES.has(events[i].type)) {
-        latest = events[i];
-        latestIdx = i;
-        break;
+    if (ballScene) return; // 장면 중엔 패스 순환 정지 (crisis/card는 순환 유지)
+    const id = setInterval(() => setPassStep((s) => s + 1), PASS_MS);
+    return () => clearInterval(id);
+  }, [ballScene]);
+
+  const possession = lean >= 0 ? "me" : "opp";
+  const chain = (possession === "me" ? dotsMe : dotsOpp).filter((d) => d.slotId !== "gk");
+  const holder = chain.length > 0 ? chain[passStep % chain.length] : undefined;
+
+  // ── 장면 연출: 주인공·동료 전진 오버라이드 + 공 키프레임 ──
+  const attackRight = scene?.side === "me";
+  const sceneDots = scene ? (scene.side === "me" ? dotsMe : dotsOpp) : [];
+  const shooter =
+    ballScene && scene
+      ? (sceneDots.find((d) => d.playerId === scene.playerId) ?? sceneDots[sceneDots.length - 1])
+      : undefined;
+
+  // 주인공 전진 위치: 공격 서드 박스 부근, 폭은 중앙 쪽으로 40% 수렴
+  const advanced = shooter
+    ? {
+        cx: attackRight ? Math.max(shooter.cx, VB_W - 66) : Math.min(shooter.cx, 66),
+        cy: shooter.cy + (CY - shooter.cy) * 0.4,
       }
+    : undefined;
+
+  // 전진 동료 2명: 주인공과 가까운 같은 팀 필드플레이어
+  const mates = useMemo(() => {
+    if (!shooter) return new Set<string>();
+    return new Set(
+      sceneDots
+        .filter((d) => d.slotId !== "gk" && d.slotId !== shooter.slotId)
+        .sort((a, b) => dist(a, shooter) - dist(b, shooter))
+        .slice(0, 2)
+        .map((d) => d.slotId)
+    );
+    // sceneDots는 shooter에서 파생되므로 shooter만 의존해도 충분하다.
+  }, [shooter, sceneDots]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 공 목표: 골=골망 안, 선방=GK 앞, 코너=코너 깃발, 찬스/슛=골문 근처
+  const outcome = (() => {
+    if (!scene || !ballScene) return undefined;
+    const gx = attackRight ? GOAL_R_X : GOAL_L_X;
+    switch (scene.type) {
+      case "goal":
+        return { cx: attackRight ? gx + 2 : gx - 2, cy: CY };
+      case "save":
+        return { cx: attackRight ? gx - 10 : gx + 10, cy: CY };
+      case "corner":
+        return { cx: attackRight ? VB_W - 8 : 8, cy: 10 };
+      default:
+        return { cx: attackRight ? gx - 16 : gx + 16, cy: CY + 10 };
     }
-    if (!latest) return;
-    const key = `${latestIdx}-${latest.minute}-${latest.type}`;
-    if (key === lastKeyRef.current) return;
-    lastKeyRef.current = key;
+  })();
 
-    setHighlight({ id: key, side: latest.side, isGoal: latest.type === "goal" });
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setHighlight(null), 1500);
-  }, [events]);
+  // 공 출발점: 주인공과 가장 가까운 동료(후방 전개 느낌), 없으면 주인공 원위치
+  const ballStart = (() => {
+    if (!shooter) return undefined;
+    const mateId = [...mates][0];
+    const mate = sceneDots.find((d) => d.slotId === mateId);
+    return mate ?? shooter;
+  })();
 
-  useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }, []);
-
-  const attackRight = highlight?.side === "me";
-  const goalX = attackRight ? GOAL_R_X : GOAL_L_X;
-  const startX = attackRight ? CX - 40 : CX + 40;
-  const attColor = attackRight ? meColor : oppColor;
+  const dir = attackRight ? 1 : -1;
 
   return (
     <motion.div
       className="panel relative overflow-hidden rounded-3xl"
-      animate={highlight?.isGoal ? { x: [0, -5, 5, -4, 4, 0] } : { x: 0 }}
+      animate={scene?.type === "goal" ? { x: [0, -5, 5, -4, 4, 0] } : { x: 0 }}
       transition={{ duration: 0.5 }}
     >
       <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" role="img" aria-label="라이브 경기 피치">
@@ -110,10 +145,8 @@ export function LivePitch({ events, meSetup, oppSetup, activePlayerId, lean = 0 
           <rect x={6} y={6} width={VB_W - 12} height={VB_H - 12} />
           <line x1={CX} y1={6} x2={CX} y2={VB_H - 6} />
           <circle cx={CX} cy={CY} r={26} />
-          {/* 왼쪽(우리가 아닌 opp 목표) 박스 */}
           <rect x={6} y={CY - 34} width={30} height={68} />
           <rect x={6} y={CY - 16} width={12} height={32} />
-          {/* 오른쪽 박스 */}
           <rect x={VB_W - 36} y={CY - 34} width={30} height={68} />
           <rect x={VB_W - 18} y={CY - 16} width={12} height={32} />
         </g>
@@ -124,36 +157,50 @@ export function LivePitch({ events, meSetup, oppSetup, activePlayerId, lean = 0 
           → 우리 공격
         </text>
 
-        {/* 양 팀 선수 22명: 포메이션 위치 + 이름 상시 표시. 교체·포메이션 변경 시 부드럽게
-            이동하고, 진형 전체가 공 방향으로 살짝 쏠린다(lean). */}
+        {/* 양 팀 선수 22명 */}
         {([
-          { setup: meSetup, side: "me" as const, color: meColor },
-          { setup: oppSetup, side: "opp" as const, color: oppColor },
-        ]).map(({ setup, side, color }) => (
+          { dots: dotsMe, side: "me" as const, color: meColor },
+          { dots: dotsOpp, side: "opp" as const, color: oppColor },
+        ]).map(({ dots, side, color }) => (
           <motion.g
             key={side}
             initial={false}
             animate={{ x: lean * 6 }}
             transition={{ type: "spring", stiffness: 40, damping: 16 }}
           >
-            {playerDots(setup, side).map((d) => {
-              const isActive = activePlayerId !== undefined && d.playerId === activePlayerId;
+            {dots.map((d) => {
+              const isShooter = shooter !== undefined && scene?.side === side && d.slotId === shooter.slotId;
+              const isMate = scene?.side === side && mates.has(d.slotId);
+              const isHolder = !ballScene && holder !== undefined && possession === side && d.slotId === holder.slotId;
+              // 장면 중 전진 오버라이드: 주인공은 전진 위치로, 동료는 부분 전진
+              const tx = isShooter && advanced ? advanced.cx : isMate ? d.cx + dir * 14 : d.cx;
+              const ty = isShooter && advanced ? advanced.cy : isMate ? d.cy + (CY - d.cy) * 0.2 : d.cy;
+              const emphasized = isShooter || isHolder;
               return (
                 <motion.g
                   key={`${side}-${d.slotId}`}
                   initial={false}
-                  animate={{ x: d.cx, y: d.cy }}
+                  animate={{ x: tx, y: ty }}
                   transition={{ type: "spring", stiffness: 120, damping: 18 }}
                 >
-                  <motion.circle
-                    r={5.5}
+                  {/* 확대는 r 애니메이션 대신 transform scale — SVG 속성 r은 framer가
+                      마운트 시점에 undefined로 읽어 콘솔 에러를 내는 문제가 있다. */}
+                  <motion.g
                     initial={false}
-                    fill={color}
-                    stroke={isActive ? "var(--color-accent)" : "rgba(6,20,12,0.55)"}
-                    strokeWidth={isActive ? 1.4 : 1}
-                    animate={isActive ? { r: [5.5, 7.2, 5.5] } : { r: 5.5 }}
-                    transition={isActive ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
-                  />
+                    animate={isShooter ? { scale: [1, 1.3, 1] } : { scale: emphasized ? 1.15 : 1 }}
+                    transition={
+                      isShooter
+                        ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+                        : { duration: 0.25 }
+                    }
+                  >
+                    <circle
+                      r={5.5}
+                      fill={color}
+                      stroke={isShooter ? "var(--color-accent)" : "rgba(6,20,12,0.55)"}
+                      strokeWidth={isShooter ? 1.4 : 1}
+                    />
+                  </motion.g>
                   <text
                     textAnchor="middle"
                     dy={1.8}
@@ -170,8 +217,8 @@ export function LivePitch({ events, meSetup, oppSetup, activePlayerId, lean = 0 
                     textAnchor="middle"
                     dy={11.5}
                     fontSize="3.6"
-                    fontWeight={isActive ? 800 : 600}
-                    fill={isActive ? "var(--color-accent)" : "rgba(230,255,240,0.82)"}
+                    fontWeight={isShooter ? 800 : 600}
+                    fill={isShooter ? "var(--color-accent)" : "rgba(230,255,240,0.82)"}
                     stroke="rgba(0,0,0,0.55)"
                     strokeWidth={0.45}
                     paintOrder="stroke"
@@ -184,57 +231,43 @@ export function LivePitch({ events, meSetup, oppSetup, activePlayerId, lean = 0 
           </motion.g>
         ))}
 
-        <AnimatePresence mode="wait">
-          {highlight ? (
-            <motion.g key={highlight.id}>
-              {/* 공격 점 3개 */}
-              {[-14, 0, 16].map((off, i) => (
-                <motion.circle
-                  key={i}
-                  r={5}
-                  fill={attColor}
-                  stroke="rgba(0,0,0,0.3)"
-                  strokeWidth={0.8}
-                  initial={{ cx: startX - (attackRight ? 20 : -20), cy: CY + off }}
-                  animate={{ cx: goalX - (attackRight ? 24 : -24) + i * (attackRight ? 6 : -6), cy: CY + off * 0.5 }}
-                  transition={{ duration: 1.2, ease: "easeOut" }}
-                />
-              ))}
-              {/* 공 */}
-              <motion.circle
-                r={4}
-                fill="#f6fff0"
-                stroke="#0a1f13"
-                strokeWidth={1}
-                initial={{ cx: startX, cy: CY }}
-                animate={{ cx: goalX, cy: CY }}
-                transition={{ duration: 1.2, ease: "easeIn" }}
-              />
-            </motion.g>
-          ) : (
-            // 중원 점유 루프
-            <motion.circle
-              key="idle"
-              r={4}
-              fill="#f6fff0"
-              stroke="#0a1f13"
-              strokeWidth={1}
-              initial={{ cx: CX - 30, cy: CY - 12 }}
-              animate={{
-                cx: [CX - 30, CX + 10, CX + 30, CX - 10, CX - 30],
-                cy: [CY - 12, CY + 14, CY - 8, CY + 10, CY - 12],
-              }}
-              transition={{ duration: 6, ease: "easeInOut", repeat: Infinity }}
-            />
-          )}
-        </AnimatePresence>
+        {/* 공: 평상시엔 점유 팀 선수 사이 패스 순환, 공격 장면엔 동료→주인공→결과 지점 */}
+        {ballScene && ballStart && advanced && outcome ? (
+          <motion.circle
+            key={scene!.key}
+            r={4}
+            fill="#f6fff0"
+            stroke="#0a1f13"
+            strokeWidth={1}
+            initial={{ cx: ballStart.cx, cy: ballStart.cy }}
+            animate={{
+              cx: [ballStart.cx, advanced.cx + dir * 6, outcome.cx],
+              cy: [ballStart.cy, advanced.cy, outcome.cy],
+            }}
+            transition={{ duration: 1.3, times: [0, 0.45, 1], ease: "easeInOut" }}
+          />
+        ) : (
+          <motion.circle
+            key="ball-idle"
+            r={4}
+            fill="#f6fff0"
+            stroke="#0a1f13"
+            strokeWidth={1}
+            initial={false}
+            animate={{
+              cx: (holder?.cx ?? CX) + (possession === "me" ? 5 : -5),
+              cy: holder?.cy ?? CY,
+            }}
+            transition={{ duration: 0.75, ease: "easeInOut" }}
+          />
+        )}
       </svg>
 
       {/* 골 플래시 */}
       <AnimatePresence>
-        {highlight?.isGoal && (
+        {scene?.type === "goal" && (
           <motion.div
-            key="flash"
+            key={scene.key}
             className="pointer-events-none absolute inset-0 flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 0.9, 0] }}

@@ -227,10 +227,13 @@ export default function MatchPage() {
         {/* 라이브 피치 + 장면 자막 */}
         <div className="relative">
           <LivePitch
-            events={match.events}
             meSetup={match.me}
             oppSetup={match.opp}
-            activePlayerId={scene ? primaryEvent(scene)?.playerId : undefined}
+            scene={(() => {
+              const p = scene ? primaryEvent(scene) : undefined;
+              if (!p) return null;
+              return { key: `${p.minute}-${p.type}`, side: p.side, type: p.type, playerId: p.playerId };
+            })()}
             lean={attackLean(match.events)}
           />
           <SceneOverlay
