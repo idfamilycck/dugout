@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { runFullMatch } from "./match";
+import { computeLambdas } from "./winprob";
 import { autoPlace } from "./autoplace";
+import { ENGINE_CONSTANTS } from "./constants";
 import { TEAMS } from "@/lib/data/teams";
 import type { SideSetup, SpecialInstructions, TeamInstructions } from "@/lib/types";
 
@@ -52,6 +54,10 @@ interface MatchResult {
   eloDiff: number; // me.elo - opp.elo
   scoreMe: number;
   scoreOpp: number;
+  // 킥오프 시점 분석적 λ_me+λ_opp (computeLambdas). 시드와 무관 — 같은 매치업의
+  // 20개 시드 결과는 모두 동일한 값을 공유한다 (λ는 라인업/전술/venue에만
+  // 의존, RNG 시드에 의존하지 않음). REALIZED_GOAL_CALIBRATION 회귀 검증용.
+  analyticLambdaSum: number;
 }
 
 // 16×15=240개 순서쌍(ordered matchup) × 20시드 = 4800회 runFullMatch를 이 배열
@@ -66,6 +72,10 @@ beforeAll(() => {
       if (a.id === b.id) continue;
       const me = SETUPS.get(a.id)!;
       const opp = SETUPS.get(b.id)!;
+      // λ는 시드와 무관(라인업/전술/venue에만 의존)하므로 매치업당 한 번만 계산해
+      // 20개 시드 각각의 결과 행에 동일한 값을 붙인다 (재시뮬레이션 아님).
+      const { lambdaMe, lambdaOpp } = computeLambdas(me, opp, "metlife");
+      const analyticLambdaSum = lambdaMe + lambdaOpp;
       for (let seed = 1; seed <= SEEDS_PER_MATCHUP; seed++) {
         const state = runFullMatch(me, opp, "metlife", seed);
         collected.push({
@@ -74,6 +84,7 @@ beforeAll(() => {
           eloDiff: a.elo - b.elo,
           scoreMe: state.scoreMe,
           scoreOpp: state.scoreOpp,
+          analyticLambdaSum,
         });
       }
     }
@@ -109,6 +120,23 @@ describe(
       const draws = results.filter((r) => r.scoreMe === r.scoreOpp).length / results.length;
       expect(draws).toBeGreaterThanOrEqual(0.15);
       expect(draws).toBeLessThanOrEqual(0.35);
+    });
+
+    // REALIZED_GOAL_CALIBRATION(lib/engine/constants.ts) 회귀 검증: 실시간 승률
+    // 그래프(probTimeline)가 참조하는 이 상수는 "실현 총득점 평균 ÷ 킥오프 분석적
+    // λ_me+λ_opp 평균" 비율의 실측값(도출 당시 ≈1.1188)을 반올림한 것이다. 이후
+    // CHANCE_RATE_SCALE/SHOT_CONVERSION_PROB/GOAL_PROB_* 등을 재튜닝해 이 비율이
+    // 크게 벌어지면(±0.15 밖) 실시간 그래프가 실제 시뮬레이션 득점 페이스와
+    // 어긋나게 되므로, 그 시점에 이 상수도 함께 재도출해야 함을 여기서 잡아낸다.
+    it("실현 총득점/킥오프 분석적 λ합 비율이 REALIZED_GOAL_CALIBRATION ±0.15 이내", () => {
+      const avgGoals =
+        results.reduce((sum, r) => sum + r.scoreMe + r.scoreOpp, 0) / results.length;
+      const avgAnalyticLambdaSum =
+        results.reduce((sum, r) => sum + r.analyticLambdaSum, 0) / results.length;
+      const realizedOverAnalytic = avgGoals / avgAnalyticLambdaSum;
+      expect(Math.abs(realizedOverAnalytic - ENGINE_CONSTANTS.REALIZED_GOAL_CALIBRATION)).toBeLessThan(
+        0.15
+      );
     });
   },
   120_000

@@ -33,4 +33,22 @@ export const ENGINE_CONSTANTS = {
   CHANCE_RATE_SCALE: 10.0,
   // 찬스가 슈팅으로 이어질 확률 (lib/engine/match.ts의 processChance)
   SHOT_CONVERSION_PROB: 0.55,
+
+  // REALIZED_GOAL_CALIBRATION: 경기 중 실시간 승률 그래프(probTimeline, match.ts의
+  // initMatch/simulateMinute → winProbGivenScore)가 참조하는 보정 계수.
+  // winProbGivenScore는 poisson.ts 기반 분석적 모델이라 "남은 λ"를 그대로 잔여
+  // 기대 득점으로 취급하지만, 실제 분당 시뮬레이션(찬스→슈팅→골 체인, 바로 위
+  // CHANCE_RATE_SCALE 주석 참고)이 실현하는 골은 분석적 λ와 정확히 같은 비율로
+  // 나오지 않는다 — 위 두 경로가 원래 독립적으로 튜닝됐기 때문이다. 이 계수는 그
+  // 잔여 간극을 실측으로 보정해 "화면에 뜨는 실시간 승률 그래프"가 "실제로
+  // 시뮬레이션되는 득점 페이스"와 어긋나지 않게 한다.
+  // 도출: lib/engine/balance.test.ts의 4800회 시뮬레이션 세트(16×15 매치업 × 20시드,
+  // autoPlace 기본 라인업, metlife)에서 실측한
+  //   (실현 총득점 평균) ÷ (킥오프 시점 분석적 λ_me+λ_opp 평균)
+  //   = 3.11958... ÷ 2.78845... ≈ 1.1188
+  // 을 반올림한 값이다. balance.test.ts에 이 비율이 [CALIBRATION−0.15, CALIBRATION+0.15]
+  // 안에 머무는지 확인하는 회귀 테스트가 있다 — CHANCE_RATE_SCALE/SHOT_CONVERSION_PROB/
+  // GOAL_PROB_*를 재튜닝해 이 간극이 벌어지면 그 테스트가 실패해 이 상수도 함께
+  // 재도출해야 함을 알려준다.
+  REALIZED_GOAL_CALIBRATION: 1.12,
 } as const;

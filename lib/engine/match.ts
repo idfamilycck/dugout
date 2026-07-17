@@ -340,7 +340,12 @@ export function initMatch(me: SideSetup, opp: SideSetup, venueId: string, seed: 
   for (const p of playersOf(opp.teamId)) stamina[p.id] = 1;
 
   const base = computeLambdas(me, opp, venueId);
-  const win = winProbGivenScore(0, 0, base.lambdaMe, base.lambdaOpp);
+  const win = winProbGivenScore(
+    0,
+    0,
+    base.lambdaMe * ENGINE_CONSTANTS.REALIZED_GOAL_CALIBRATION,
+    base.lambdaOpp * ENGINE_CONSTANTS.REALIZED_GOAL_CALIBRATION
+  );
 
   return {
     minute: 0,
@@ -531,7 +536,12 @@ export function simulateMinute(state: MatchState): MatchState {
   }
 
   const remainingFraction = Math.max(0, (90 - newMinute) / 90);
-  const win = winProbGivenScore(scoreMe, scoreOpp, lambdaMe * remainingFraction, lambdaOpp * remainingFraction);
+  const win = winProbGivenScore(
+    scoreMe,
+    scoreOpp,
+    lambdaMe * remainingFraction * ENGINE_CONSTANTS.REALIZED_GOAL_CALIBRATION,
+    lambdaOpp * remainingFraction * ENGINE_CONSTANTS.REALIZED_GOAL_CALIBRATION
+  );
 
   return {
     ...state,
