@@ -323,6 +323,18 @@ export const PLAYERS: Player[] = [
   { id: "mex_20", teamId: "mex", name: "Henry Martín", age: 20, caps: 18, positions: ["ST"], attrs: { shooting: 84, passing: 61, dribbling: 63, defending: 44, pace: 79, physical: 66, goalkeeping: 5, stamina: 62 }, setPiece: 37, aerial: 59, penalty: 43, mental: 51 },
 ];
 
+// teamId → Player[] 캐시. playersOf는 strength.ts/modifiers.ts 등 엔진 코드에서 매우
+// 자주(예: recommend.ts의 23,328개 전술 조합 전수 탐색에서 조합당 여러 번) 호출되는데,
+// 매번 329명 전체 PLAYERS 배열을 filter()로 훑는 대신 팀별 결과를 한 번만 계산해
+// 재사용한다. PLAYERS는 모듈 로드 후 불변이고 반환 배열은 어디서도 변형(mutate)하지
+// 않으므로(전부 .find()/.filter()/스프레드로만 소비) 캐시 공유가 안전하다.
+const PLAYERS_BY_TEAM = new Map<string, Player[]>();
+
 export function playersOf(teamId: string): Player[] {
-  return PLAYERS.filter((p) => p.teamId === teamId);
+  let cached = PLAYERS_BY_TEAM.get(teamId);
+  if (!cached) {
+    cached = PLAYERS.filter((p) => p.teamId === teamId);
+    PLAYERS_BY_TEAM.set(teamId, cached);
+  }
+  return cached;
 }

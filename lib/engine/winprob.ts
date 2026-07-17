@@ -4,7 +4,7 @@ import { h2hOf } from "@/lib/data/h2h";
 import { lineStrengths, type LineStrengths } from "./strength";
 import { outcomeProbs } from "./poisson";
 import { applyModifiers, type AppliedRule, type ModifierResult } from "./modifiers";
-import type { SideSetup } from "@/lib/types";
+import type { SideSetup, Team } from "@/lib/types";
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
@@ -24,26 +24,20 @@ export interface LambdaResult {
   staminaFlags: { me: ModifierResult["staminaFlags"]; opp: ModifierResult["staminaFlags"] };
 }
 
-export function computeLambdas(me: SideSetup, opp: SideSetup, venueId: string): LambdaResult {
-  const venue = venueById(venueId);
-  if (!venue) throw new Error(`unknown venue: ${venueId}`);
-  const meTeam = teamById(me.teamId);
-  const oppTeam = teamById(opp.teamId);
-  if (!meTeam) throw new Error(`unknown team: ${me.teamId}`);
-  if (!oppTeam) throw new Error(`unknown team: ${opp.teamId}`);
-
-  // h2hOf는 호출자가 넘긴 (a, b) 순서에 맞춰 winA/winB를 정규화해 돌려준다.
-  // rulesMe에는 (me, opp) 순서, rulesOpp에는 (opp, me) 순서로 각각 넘겨야
-  // h2h_edge 규칙이 "나 기준" 승수 비교를 올바르게 할 수 있다.
-  const h2hMe = h2hOf(me.teamId, opp.teamId);
-  const h2hOpp = h2hOf(opp.teamId, me.teamId);
-
-  const meLines = lineStrengths(me, opp);
-  const oppLines = lineStrengths(opp, me);
-
-  const modMe = applyModifiers(me, opp, venue, meTeam, oppTeam, h2hMe);
-  const modOpp = applyModifiers(opp, me, venue, oppTeam, meTeam, h2hOpp);
-
+// λ_me/λ_opp 계산식만 분리한 순수 함수: LineStrengths·ModifierResult·Team(elo)만 있으면
+// 되고 SideSetup 전체나 venue/h2h 조회가 필요 없다. recommend.ts(23,328개 전술 조합
+// 전수 탐색)처럼 lineStrengths와 ModifierResult를 이미 다른 경로로 확보한 호출자가
+// 팀/venue/h2h를 다시 조회하지 않고 곧장 λ만 뽑아내도록 computeLambdas에서 분리했다.
+// computeLambdas도 내부적으로 이 함수를 사용하므로(순수 리팩터, 동작 동일) 두 경로가
+// 어긋날 일이 없다.
+export function lambdasFromParts(
+  meLines: LineStrengths,
+  oppLines: LineStrengths,
+  modMe: ModifierResult,
+  modOpp: ModifierResult,
+  meTeam: Team,
+  oppTeam: Team
+): { lambdaMe: number; lambdaOpp: number } {
   // myAtt: 나의 공격 종합력 (att 55% + mid 35% + def 10%)
   const myAtt = 0.55 * meLines.att + 0.35 * meLines.mid + 0.1 * meLines.def;
   // oppDef: 상대 수비 종합력 (def 50% + mid 30% + gk 20%)
@@ -73,6 +67,41 @@ export function computeLambdas(me: SideSetup, opp: SideSetup, venueId: string): 
     0.2,
     4.0
   );
+
+  return { lambdaMe, lambdaOpp };
+}
+
+export function computeLambdas(
+  me: SideSetup,
+  opp: SideSetup,
+  venueId: string,
+  precomputedLines?: { me: LineStrengths; opp: LineStrengths }
+): LambdaResult {
+  const venue = venueById(venueId);
+  if (!venue) throw new Error(`unknown venue: ${venueId}`);
+  const meTeam = teamById(me.teamId);
+  const oppTeam = teamById(opp.teamId);
+  if (!meTeam) throw new Error(`unknown team: ${me.teamId}`);
+  if (!oppTeam) throw new Error(`unknown team: ${opp.teamId}`);
+
+  // h2hOf는 호출자가 넘긴 (a, b) 순서에 맞춰 winA/winB를 정규화해 돌려준다.
+  // rulesMe에는 (me, opp) 순서, rulesOpp에는 (opp, me) 순서로 각각 넘겨야
+  // h2h_edge 규칙이 "나 기준" 승수 비교를 올바르게 할 수 있다.
+  const h2hMe = h2hOf(me.teamId, opp.teamId);
+  const h2hOpp = h2hOf(opp.teamId, me.teamId);
+
+  // precomputedLines: lineStrengths는 lineup/roles/manMark에만 의존하고 instructions
+  // (전술 파라미터)와는 무관하므로, 동일 라인업을 놓고 전술 조합만 바꿔가며 대량으로
+  // 재평가하는 호출자(lib/engine/recommend.ts의 23,328개 조합 전수 탐색)는 라인업이
+  // 고정된 동안 계산한 LineStrengths를 넘겨 이 함수 내부의 재계산을 건너뛸 수 있다.
+  // 생략 시(기존 호출부는 전부 생략) 이전과 동일하게 항상 재계산한다.
+  const meLines = precomputedLines?.me ?? lineStrengths(me, opp);
+  const oppLines = precomputedLines?.opp ?? lineStrengths(opp, me);
+
+  const modMe = applyModifiers(me, opp, venue, meTeam, oppTeam, h2hMe);
+  const modOpp = applyModifiers(opp, me, venue, oppTeam, meTeam, h2hOpp);
+
+  const { lambdaMe, lambdaOpp } = lambdasFromParts(meLines, oppLines, modMe, modOpp, meTeam, oppTeam);
 
   return {
     lambdaMe,

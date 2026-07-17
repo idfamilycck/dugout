@@ -106,7 +106,11 @@ function fbContribBySuffix(
   return weakest;
 }
 
-function buildCtx(
+// export: recommend.ts(23,328개 전술 조합 전수 탐색)가 포메이션당 1회만 이 함수를 호출해
+// lineup/스쿼드에서 파생되는 값들(meAttPaceAvg 등, TeamInstructions와 무관)을 캐시해 두고,
+// 콤보마다는 evaluateModifiers()만 반복 호출하도록 buildCtx/evaluateModifiers를 분리했다
+// (원래는 applyModifiers 내부에 인라인되어 있었다). applyModifiers의 동작은 동일하다.
+export function buildCtx(
   me: SideSetup,
   opp: SideSetup,
   venue: Venue,
@@ -283,15 +287,9 @@ export const RULE_DEFS: RuleDef[] = [
   },
 ];
 
-export function applyModifiers(
-  me: SideSetup,
-  opp: SideSetup,
-  venue: Venue,
-  meTeam: Team,
-  oppTeam: Team,
-  h2h?: HeadToHead
-): ModifierResult {
-  const ctx = buildCtx(me, opp, venue, meTeam, oppTeam, h2h);
+// export: buildCtx와 짝을 이루는 규칙 평가 단계만 분리한 함수. RuleCtx를 이미 갖고 있는
+// 호출자(recommend.ts)는 이 함수만 반복 호출해 buildCtx의 파생값 재계산을 피할 수 있다.
+export function evaluateModifiers(ctx: RuleCtx): ModifierResult {
   const rules: AppliedRule[] = [];
   for (const def of RULE_DEFS) {
     if (!def.when(ctx)) continue;
@@ -311,10 +309,21 @@ export function applyModifiers(
     attackMult,
     defenseMult,
     staminaFlags: {
-      altitude: venue.altitude > 1500,
-      heat: venue.avgTempC >= 30 && !venue.dome,
-      highTempo: me.instructions.tempo === 3,
-      highPress: me.instructions.pressing === 3,
+      altitude: ctx.venue.altitude > 1500,
+      heat: ctx.venue.avgTempC >= 30 && !ctx.venue.dome,
+      highTempo: ctx.me.instructions.tempo === 3,
+      highPress: ctx.me.instructions.pressing === 3,
     },
   };
+}
+
+export function applyModifiers(
+  me: SideSetup,
+  opp: SideSetup,
+  venue: Venue,
+  meTeam: Team,
+  oppTeam: Team,
+  h2h?: HeadToHead
+): ModifierResult {
+  return evaluateModifiers(buildCtx(me, opp, venue, meTeam, oppTeam, h2h));
 }
