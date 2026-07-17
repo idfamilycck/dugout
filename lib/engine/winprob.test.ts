@@ -208,16 +208,17 @@ describe("RULE_DEFS 개별 규칙", () => {
     expect(rule.when(balanced)).toBe(false);
   });
 
-  it("captain_mental: 주장 mental>=85 → deltaDefense +0.02", () => {
+  it("captain_mental: 주장 mental>=85 → deltaDefense +0.02 (실제 데이터, 손흥민 mental=91)", () => {
     const rule = findRule("captain_mental");
-    const synthetic: Player = { ...playersOf("kor")[0], id: "test_captain_hi", mental: 90 };
-    const ctxHi = withMe({ ...baseCtx(), meSquad: [...playersOf("kor"), synthetic] }, {}, {
-      captainId: "test_captain_hi",
-    });
+    // kor_16 (손흥민)은 실제 데이터셋에서 mental=91로 상향되어 이 규칙을 자연스럽게
+    // 발동시키는 리더 선수다 (Task 6: captain_mental이 사장된 규칙이었던 문제 수정).
+    const captain = playersOf("kor").find((p) => p.id === "kor_16")!;
+    expect(captain.mental).toBeGreaterThanOrEqual(85);
+    const ctxHi = withMe(baseCtx(), {}, { captainId: "kor_16" });
     expect(rule.when(ctxHi)).toBe(true);
     expect(rule.effect(ctxHi)).toEqual({ da: 0, dd: 0.02 });
 
-    const lowSynthetic: Player = { ...synthetic, id: "test_captain_lo", mental: 70 };
+    const lowSynthetic: Player = { ...captain, id: "test_captain_lo", mental: 70 };
     const ctxLo = withMe({ ...baseCtx(), meSquad: [...playersOf("kor"), lowSynthetic] }, {}, {
       captainId: "test_captain_lo",
     });
@@ -240,7 +241,26 @@ describe("winProbability", () => {
     expect(result.win + result.draw + result.loss).toBeCloseTo(1, 5);
   });
 
-  it("ELO 최상위 bra vs 최하위 팀 승률 ≥ 60%", () => {
+  it("captain_mental 통합: 실제 mental>=85 주장 지정 시 winProbability.rules에 captain_mental 포함, 미지정 시 미포함", () => {
+    const withCaptain = makeSetup("kor", "4-3-3", {}, { captainId: "kor_16" }); // 손흥민 mental=91
+    const withoutCaptain = makeSetup("kor", "4-3-3");
+    const opp = makeSetup("jpn", "4-3-3");
+
+    const resultWith = winProbability(withCaptain, opp, "metlife");
+    expect(resultWith.rules.some((r) => r.id === "captain_mental")).toBe(true);
+
+    const resultWithout = winProbability(withoutCaptain, opp, "metlife");
+    expect(resultWithout.rules.some((r) => r.id === "captain_mental")).toBe(false);
+  });
+
+  // 주의: 이 테스트는 "규칙 엔진이 개입한 상태에서의 우위"를 검증하는 것이지,
+  // 브라질 스쿼드의 순수 능력치 우위(raw-quality invariant)를 검증하는 것이 아니다.
+  // 아래처럼 브라질에 유리한 전술(넓은 폭, 역습, 오프사이드 트랩, 높은 템포)과
+  // 미국에 불리한 전술(좁은 폭, 높은 라인)을 의도적으로 조합해 여러 보정 규칙을
+  // 쌓아야 60%를 넘는다. 동일 매치업을 양 팀 모두 기본 전술(default tactics)로
+  // 두면 승률은 약 55% 수준(대략 53~57% 범위)에 그친다. 팀 간 밸런스 자체를
+  // 튜닝하는 작업은 별도의 몬테카를로 밸런스 태스크에서 다룬다.
+  it("ELO 최상위 bra vs 최하위 팀 승률 ≥ 60% (규칙 엔진 보정 누적 시나리오)", () => {
     // 정석적인 우세 팀의 전술(넓은 폭 공격, 역습, 오프사이드 트랩, 높은 템포)을
     // 조합하면 브라질의 스쿼드/ELO 우위가 여러 보정 규칙과 함께 누적된다.
     const bra = makeSetup("bra", "4-3-3", {

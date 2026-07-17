@@ -1,55 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { positionFitness, ageMultiplier, playerContribution, lineStrengths } from "./strength";
+import { makeSetup } from "./__testutils__";
 import { playersOf } from "@/lib/data/players";
-import { FORMATIONS } from "@/lib/data/formations";
-import { DEFAULT_ROLE } from "@/lib/data/roles";
-import type { FormationId, Player, RoleId, SideSetup } from "@/lib/types";
-
-// 헬퍼: DEFAULT_ROLE·능력치순 그리디로 SideSetup 구성 (Task 7의 autoPlace 이전 버전을 테스트 내 구현)
-function makeSetup(teamId: string, formationId: FormationId): SideSetup {
-  const squad = playersOf(teamId);
-  const formation = FORMATIONS[formationId];
-  const used = new Set<string>();
-  const lineup: Record<string, string> = {};
-  const roles: Record<string, RoleId> = {};
-
-  for (const slot of formation.slots) {
-    let best: Player | undefined;
-    let bestScore = -Infinity;
-    for (const p of squad) {
-      if (used.has(p.id)) continue;
-      const role = DEFAULT_ROLE[slot.position];
-      const score = playerContribution(p, slot.position, role, 1);
-      if (score > bestScore) {
-        bestScore = score;
-        best = p;
-      }
-    }
-    if (!best) continue;
-    used.add(best.id);
-    lineup[slot.id] = best.id;
-    roles[slot.id] = DEFAULT_ROLE[slot.position];
-  }
-
-  return {
-    teamId,
-    lineup,
-    roles,
-    instructions: {
-      formation: formationId,
-      pressing: 2,
-      line: 2,
-      attacking: 2,
-      tempo: 2,
-      buildup: "short",
-      focus: "center",
-      width: "wide",
-      marking: "zonal",
-      offsideTrap: false,
-    },
-    special: { ckBigMenForward: false },
-  };
-}
 
 describe("positionFitness", () => {
   it("주포지션 1.0, 등록 부포지션 0.9, GK 불일치 0.25", () => {

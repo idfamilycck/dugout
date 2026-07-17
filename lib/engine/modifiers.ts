@@ -210,6 +210,9 @@ export const RULE_DEFS: RuleDef[] = [
   },
   {
     id: "offside_trap",
+    // 기획 문서상 "상대 deltaAttack −4%"로 명시되어 있으나, 본 엔진은 규칙을 항상
+    // me 시점(자신의 deltaAttack/deltaDefense)으로 평가하므로 상대 공격력을
+    // 직접 낮추는 대신 동등한 효과인 "자신의 deltaDefense +0.04"로 구현했다.
     when: (ctx) => ctx.me.instructions.offsideTrap === true,
     effect: (ctx) => (offsideTrapIsRisk(ctx) ? { da: 0, dd: -0.05 } : { da: 0, dd: 0.04 }),
     textKo: (ctx) =>
@@ -252,6 +255,8 @@ export const RULE_DEFS: RuleDef[] = [
   },
   {
     id: "h2h_edge",
+    // winA >= 3 최소 표본 가드는 의도적인 안티노이즈 장치다: 표본이 1~2건뿐인
+    // 전적으로 "우위"를 판정하면 우연에 의한 노이즈를 규칙으로 오인할 수 있다.
     when: (ctx) => !!ctx.h2h && ctx.h2h.winA >= 3 && ctx.h2h.winA >= ctx.h2h.winB * 2,
     effect: () => ({ da: 0.02, dd: 0 }),
     textKo: () => "📊 상대 전적 우위, 심리적으로 앞서갑니다 +2%",
