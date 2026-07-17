@@ -7,6 +7,8 @@
 // 문제가 없다) — "./store"만 동적 import로 지연시켜 스텁 설치 이후에 평가되게 한다.
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { playersOf } from "@/lib/data/players";
+import { recommend } from "@/lib/engine/recommend";
+import { winProbability } from "@/lib/engine/winprob";
 
 // runShootout이 실제로 어떤 me/opp 레퍼런스를 simulateShootout에 넘기는지 직접 검증하기
 // 위해 spy로 감싼다(vi.fn(actual)는 실구현을 그대로 호출하면서 호출 인자를 기록한다).
@@ -166,6 +168,29 @@ describe("store", () => {
     s = useAppStore.getState();
     expect(s.me!.special.captainId).toBe(s.me!.lineup["gk"]);
     expect(s.me!.special.ckBigMenForward).toBe(false); // 기존 필드 보존(부분 병합 확인)
+  });
+
+  it("applyRecommendation이 추천 instructions/lineup/roles를 일괄 반영하고 승률이 나빠지지 않는다", () => {
+    useAppStore.getState().startQuick();
+    const { me, opp, setup } = useAppStore.getState();
+    const before = winProbability(me!, opp!, setup.venueId!).win;
+
+    const rec = recommend(me!, opp!, setup.venueId!);
+    useAppStore.getState().applyRecommendation(rec);
+
+    const after = useAppStore.getState().me!;
+    // 추천 결과가 그대로 me에 반영됨
+    expect(after.instructions).toEqual(rec.instructions);
+    expect(after.lineup).toEqual(rec.lineup);
+    expect(after.roles).toEqual(rec.roles);
+    // special/teamId는 보존
+    expect(after.teamId).toBe(me!.teamId);
+    expect(after.special).toEqual(me!.special);
+
+    // 반영 후 승률은 최소한 이전과 같거나 더 높다(recommend는 현재 설정보다 나쁘게 추천하지 않음)
+    const applied = winProbability(after, opp!, setup.venueId!).win;
+    expect(applied).toBeGreaterThanOrEqual(before - 1e-9);
+    expect(applied).toBeCloseTo(rec.winProb, 6);
   });
 
   it("전체 흐름: GK 교체 후 승부차기가 라이브(post-sub) 로스터를 사용한다", () => {

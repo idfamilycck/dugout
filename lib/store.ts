@@ -7,6 +7,7 @@ import { applyIntervention, initMatch, simulateMinute } from "./engine/match";
 import type { Intervention, MatchState } from "./engine/match";
 import { simulateShootout } from "./engine/shootout";
 import type { ShootoutResult } from "./engine/shootout";
+import type { Recommendation } from "./engine/recommend";
 import type {
   FormationId,
   RoleId,
@@ -65,6 +66,7 @@ export interface AppState {
   setInstructions: (i: Partial<TeamInstructions>) => void;
   setRole: (slotId: string, role: RoleId) => void;
   setSpecial: (s: Partial<SpecialInstructions>) => void;
+  applyRecommendation: (rec: Pick<Recommendation, "instructions" | "lineup" | "roles">) => void;
   beginMatch: () => void;
   tickMinute: () => void;
   intervene: (iv: Omit<Intervention, "minute">) => void;
@@ -165,6 +167,21 @@ export const useAppStore = create<AppState>()(
         const me = get().me;
         if (!me) return;
         set({ me: { ...me, special: { ...me.special, ...s } } });
+      },
+
+      // 추천 전술 일괄 반영: recommend()가 돌려준 instructions/lineup/roles를 한 번에
+      // 현재 me에 덮어쓴다. special/teamId는 사용자 설정을 그대로 보존한다.
+      applyRecommendation: (rec) => {
+        const me = get().me;
+        if (!me) return;
+        set({
+          me: {
+            ...me,
+            instructions: rec.instructions,
+            lineup: rec.lineup,
+            roles: rec.roles,
+          },
+        });
       },
 
       beginMatch: () => {

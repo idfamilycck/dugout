@@ -4,8 +4,9 @@
 // 데스크톱: 3열(스쿼드 | 피치 보드 | 분석 패널). 모바일: 탭 전환(스쿼드/피치/분석).
 // dnd-kit DndContext로 스쿼드→슬롯, 슬롯↔슬롯 드래그. 병행 수단으로 탭-투-배치 지원.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
@@ -18,73 +19,140 @@ import {
 import { useAppStore, useWinProb } from "@/lib/store";
 import { playersOf } from "@/lib/data/players";
 import { teamById } from "@/lib/data/teams";
+import { FORMATIONS } from "@/lib/data/formations";
+import { lineStrengths } from "@/lib/engine/strength";
 import { Disclaimer } from "@/components/ui/Disclaimer";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { SquadList } from "@/components/tactics/SquadList";
 import { PitchBoard } from "@/components/tactics/PitchBoard";
+import { WinGauge } from "@/components/tactics/WinGauge";
+import { FactorCards } from "@/components/tactics/FactorCards";
+import { InstructionsPanel } from "@/components/tactics/InstructionsPanel";
+import { RolePicker } from "@/components/tactics/RolePicker";
+import { SpecialPanel } from "@/components/tactics/SpecialPanel";
+import { RecommendPanel } from "@/components/tactics/RecommendPanel";
+import { Coachmarks } from "@/components/tactics/Coachmarks";
 import { jerseyOf, type Selection } from "@/components/tactics/tactics-labels";
 
 type Tab = "squad" | "pitch" | "analysis";
+type TacticTab = "team" | "role" | "special";
 
-// 우측 분석 패널(Task 14에서 확장) — 지금은 라이브 승률만 크게 노출.
+const TACTIC_TABS: { id: TacticTab; label: string }[] = [
+  { id: "team", label: "팀 지시" },
+  { id: "role", label: "선수 역할" },
+  { id: "special", label: "특수 지시" },
+];
+
+// 우측 분석 열: 1층 WinGauge · 전술 탭 · 2층 FactorCards · 추천 · 3층 상세보기.
 function AnalysisPanel() {
+  const me = useAppStore((s) => s.me);
+  const opp = useAppStore((s) => s.opp);
   const wp = useWinProb();
-  const win = wp ? Math.round(wp.win * 100) : undefined;
-  const draw = wp ? Math.round(wp.draw * 100) : undefined;
-  const loss = wp ? Math.round(wp.loss * 100) : undefined;
-  const favored = win !== undefined && win >= (loss ?? 0);
+  const [tab, setTab] = useState<TacticTab>("team");
+
+  const lines = useMemo(() => {
+    if (!me || !opp) return undefined;
+    return { me: lineStrengths(me, opp), opp: lineStrengths(opp, me) };
+  }, [me, opp]);
 
   return (
-    <div className="panel flex flex-col gap-5 rounded-3xl p-5">
-      <div>
-        <p className="eyebrow text-dim">라이브 승률 예측</p>
-        <div className="mt-3 flex items-end gap-2">
-          <span
-            className="display stat-num text-7xl"
-            style={{ color: favored ? "var(--color-gain)" : "var(--color-danger)" }}
-          >
-            {win ?? "--"}
-          </span>
-          <span className="mb-2 text-2xl font-black text-dim">%</span>
-          <span className="mb-2 ml-1 text-sm font-bold text-ink">승리</span>
+    <div className="flex flex-col gap-4">
+      {/* 1층 */}
+      <WinGauge wp={wp} lines={lines} />
+
+      {/* 전술 패널 탭 */}
+      <div className="panel rounded-3xl p-4">
+        <div role="tablist" aria-label="전술 지시 종류" className="mb-4 flex gap-1.5">
+          {TACTIC_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              data-keep-selection
+              onClick={() => setTab(t.id)}
+              className={`flex-1 rounded-full py-2 text-[13px] font-bold transition-colors ${
+                tab === t.id ? "bg-accent text-accent-ink" : "bg-surface-2 text-dim"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
-        <p className="mt-1 text-xs text-dim">
-          라인업을 바꾸면 실시간으로 다시 계산돼요.
-        </p>
+        {tab === "team" && <InstructionsPanel />}
+        {tab === "role" && <RolePicker />}
+        {tab === "special" && <SpecialPanel />}
       </div>
 
-      {/* 승/무/패 분포 바 */}
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
-        <div className="h-full bg-gain" style={{ width: `${win ?? 0}%` }} />
-        <div className="h-full bg-dim/50" style={{ width: `${draw ?? 0}%` }} />
-        <div className="h-full bg-danger" style={{ width: `${loss ?? 0}%` }} />
-      </div>
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div>
-          <div className="stat-num text-lg text-gain">{win ?? "--"}%</div>
-          <div className="text-[11px] text-dim">승리</div>
-        </div>
-        <div>
-          <div className="stat-num text-lg text-ink">{draw ?? "--"}%</div>
-          <div className="text-[11px] text-dim">무승부</div>
-        </div>
-        <div>
-          <div className="stat-num text-lg text-danger">{loss ?? "--"}%</div>
-          <div className="text-[11px] text-dim">패배</div>
-        </div>
-      </div>
+      {/* 2층 */}
+      <FactorCards rules={wp?.rules ?? []} />
 
-      <p className="rounded-xl border border-line bg-surface/50 p-3 text-[11px] leading-relaxed text-dim">
-        상세 전술 지시와 추천은 다음 단계에서 열립니다. 지금은 라인업을 자유롭게
-        바꿔가며 승률 변화를 확인해 보세요.
-      </p>
+      {/* 추천 */}
+      <RecommendPanel currentWin={wp?.win} />
+
+      {/* 3층 상세 보기 */}
+      {wp && lines && (
+        <details className="panel rounded-3xl p-5">
+          <summary className="cursor-pointer list-none">
+            <span className="flex items-center justify-between">
+              <span className="eyebrow text-dim">상세 보기 (계산 근거)</span>
+              <span className="text-[11px] text-dim">펼치기 ▾</span>
+            </span>
+          </summary>
+          <div className="mt-4 flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-line bg-surface/40 p-3">
+                <p className="text-[10px] text-dim">우리 기대 득점 (λ)</p>
+                <p className="stat-num text-2xl text-gain">{wp.lambdaMe.toFixed(2)}</p>
+              </div>
+              <div className="rounded-xl border border-line bg-surface/40 p-3">
+                <p className="text-[10px] text-dim">상대 기대 득점 (λ)</p>
+                <p className="stat-num text-2xl text-danger">{wp.lambdaOpp.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="text-dim">
+                  <th className="py-1 text-left font-bold">라인</th>
+                  <th className="py-1 text-right font-bold text-accent">우리</th>
+                  <th className="py-1 text-right font-bold text-danger">상대</th>
+                </tr>
+              </thead>
+              <tbody className="stat-num">
+                {(
+                  [
+                    ["골키퍼", lines.me.gk, lines.opp.gk],
+                    ["수비", lines.me.def, lines.opp.def],
+                    ["중원", lines.me.mid, lines.opp.mid],
+                    ["공격", lines.me.att, lines.opp.att],
+                  ] as const
+                ).map(([label, m, o]) => (
+                  <tr key={label} className="border-t border-line">
+                    <td className="py-1.5 text-left font-sans text-ink">{label}</td>
+                    <td className="py-1.5 text-right text-ink">{Math.round(m)}</td>
+                    <td className="py-1.5 text-right text-dim">{Math.round(o)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <p className="rounded-xl border border-line bg-surface/50 p-3 text-[11px] leading-relaxed text-dim">
+              라인별 전력으로 양 팀의 기대 득점(λ)을 구하고, 전술 근거가 이를 보정합니다.
+              두 팀의 λ를 포아송 분포에 넣어 승·무·패 확률을 계산해요.
+            </p>
+          </div>
+        </details>
+      )}
     </div>
   );
 }
 
 export default function TacticsPage() {
+  const router = useRouter();
   const me = useAppStore((s) => s.me);
   const movePlayer = useAppStore((s) => s.movePlayer);
+  const beginMatch = useAppStore((s) => s.beginMatch);
 
   const [tab, setTab] = useState<Tab>("pitch");
   const [selected, setSelected] = useState<Selection | null>(null);
@@ -173,6 +241,17 @@ export default function TacticsPage() {
   const squad = playersOf(me.teamId);
   const activePlayer = activeId ? squad.find((p) => p.id === activeId) : undefined;
 
+  // "경기 시작" 게이팅: 현재 포메이션의 11슬롯이 모두 채워졌는지.
+  const slots = FORMATIONS[me.instructions.formation].slots;
+  const placedCount = slots.filter((s) => Boolean(me.lineup[s.id])).length;
+  const allPlaced = placedCount === 11;
+
+  const onBeginMatch = () => {
+    if (!allPlaced) return;
+    beginMatch();
+    router.push("/match");
+  };
+
   const tabs: { id: Tab; label: string }[] = [
     { id: "squad", label: "스쿼드" },
     { id: "pitch", label: "피치" },
@@ -180,7 +259,7 @@ export default function TacticsPage() {
   ];
 
   return (
-    <main className="flex flex-1 flex-col pb-10">
+    <main className="flex flex-1 flex-col pb-28">
       {/* ── 헤더 ─────────────────────────────────────────── */}
       <header className="border-b border-line px-5 py-4">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
@@ -290,6 +369,30 @@ export default function TacticsPage() {
       <footer className="mx-auto mt-10 w-full max-w-6xl px-5">
         <Disclaimer />
       </footer>
+
+      {/* 하단 고정 CTA */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-pitch/90 px-5 py-3 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="stat-num text-[13px] text-ink">
+              선발 {placedCount}/11 배치
+            </p>
+            {!allPlaced && (
+              <p className="text-[11px] text-danger">11명을 모두 배치해야 경기를 시작할 수 있어요.</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onBeginMatch}
+            disabled={!allPlaced}
+            className="shrink-0 rounded-full bg-accent px-7 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+          >
+            경기 시작 →
+          </button>
+        </div>
+      </div>
+
+      <Coachmarks />
     </main>
   );
 }
