@@ -75,6 +75,10 @@ export function simulateShootout(
     const squad = side === "me" ? meSquad : oppSquad;
     const facingGk = side === "me" ? oppGk : meGk;
     const player = squad.find((p) => p.id === playerId);
+    // playerId가 squad에서 찾아지지 않으면(스쿼드에 없는/오프피치 id 등) RNG 뽑기를
+    // 그냥 건너뛰고 scored=false로 조용히 처리한다 — 예외를 던지지 않는다. 따라서
+    // 호출부는 반드시 온피치 선수 id만 넘겨야 하며, 그렇지 않으면 시드 재현성은
+    // 유지되지만(같은 시드→같은 결과) RNG 소비 스트림이 "정상" 실행과 달라진다.
     let scored = false;
     if (player) {
       const p = successProb(player, facingGk);

@@ -41,6 +41,10 @@ export function counterfactual(original: MatchState): CfResult {
 
   const deltas: CfDelta[] = original.interventions.map((iv) => {
     const diffs: number[] = [];
+    // minute === iv.minute도 창에 포함된다 — 개입 시점 그 자체의 샘플은 baseWin과
+    // 항상 동일한 win 값을 참조하므로(구조상) diff가 정확히 0이 되어 평균을 소폭
+    // 희석시킨다(개입 직후부터만 세는 strictly-after 방식보다 delta 크기가 작아짐).
+    // 의도된 동작이며 버그가 아니다.
     for (const { minute, win } of original.probTimeline) {
       if (minute < iv.minute) continue;
       const baseWin = baseWinByMinute.get(minute);

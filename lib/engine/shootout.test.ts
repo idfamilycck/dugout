@@ -1,10 +1,23 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { simulateShootout } from "./shootout";
 import { makeSetup } from "./__testutils__";
-import { PLAYERS } from "@/lib/data/players";
 import { FORMATIONS } from "@/lib/data/formations";
 import { DEFAULT_ROLE } from "@/lib/data/roles";
 import type { Player, RoleId, SideSetup, TeamInstructions } from "@/lib/types";
+
+// PLAYERS는 "모듈 로드 후 불변"이 문서화된 계약이고 playersOf()의 캐시 공유 안전성이
+// 여기에 기대고 있다(lib/data/players.ts 참고). 합성 테스트 스쿼드를 실제로 PLAYERS에
+// push하면 그 불변식을 깨뜨리므로, 대신 playersOf만 모킹해 "test_pk_hi"/"test_pk_lo"
+// 두 teamId에 한해 로컬 스쿼드를 반환하고 나머지는 원본 구현에 위임한다.
+const testSquads = vi.hoisted(() => new Map<string, Player[]>());
+
+vi.mock("@/lib/data/players", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/data/players")>();
+  return {
+    ...actual,
+    playersOf: (teamId: string) => testSquads.get(teamId) ?? actual.playersOf(teamId),
+  };
+});
 
 const DEFAULT_INSTRUCTIONS: TeamInstructions = {
   formation: "4-3-3",
@@ -68,7 +81,7 @@ function buildTestTeam(teamId: string, penalty: number, mental: number): SideSet
   const outfield = Array.from({ length: 10 }, (_, i) =>
     makePlayer(`${teamId}_p${i}`, teamId, { penalty, mental })
   );
-  PLAYERS.push(gk, ...outfield);
+  testSquads.set(teamId, [gk, ...outfield]);
 
   const slots = FORMATIONS["4-3-3"].slots;
   const lineup: Record<string, string> = {};
