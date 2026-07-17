@@ -92,4 +92,11 @@ describe("lineStrengths + 맨마킹", () => {
     const braMarked = lineStrengths(bra, korMarking);
     expect(braMarked.att).toBeLessThan(braNoMark.att);
   });
+  it("자기 팀 마커가 공격 라인 배정이면 우리 공격 기여 감소", () => {
+    const kor = makeSetup("kor", "4-3-3"), bra = makeSetup("bra", "4-3-3");
+    const markerId = kor.lineup["wg_l"];
+    const targetId = Object.values(bra.lineup)[0];
+    const korMarking = { ...kor, special: { ...kor.special, manMark: { markerId, targetId } } };
+    expect(lineStrengths(korMarking).att).toBeLessThan(lineStrengths(kor).att);
+  });
 });
