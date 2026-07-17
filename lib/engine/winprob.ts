@@ -4,6 +4,7 @@ import { h2hOf } from "@/lib/data/h2h";
 import { lineStrengths, type LineStrengths } from "./strength";
 import { outcomeProbs } from "./poisson";
 import { applyModifiers, type AppliedRule, type ModifierResult } from "./modifiers";
+import { ENGINE_CONSTANTS } from "./constants";
 import type { SideSetup, Team } from "@/lib/types";
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -11,8 +12,8 @@ function clamp(v: number, lo: number, hi: number): number {
 }
 
 function eloMult(myElo: number, oppElo: number): number {
-  const diff = clamp(myElo - oppElo, -400, 400);
-  return 1 + (diff / 400) * 0.1;
+  const diff = clamp(myElo - oppElo, -ENGINE_CONSTANTS.ELO_DIFF_CAP, ENGINE_CONSTANTS.ELO_DIFF_CAP);
+  return 1 + (diff / ENGINE_CONSTANTS.ELO_DIFF_CAP) * ENGINE_CONSTANTS.ELO_MULT_COEF;
 }
 
 export interface LambdaResult {
@@ -52,20 +53,20 @@ export function lambdasFromParts(
   //   (defenseMult_opp < 1, 예: 상대의 high_line_vs_pace 리스크) 내 λ가 늘어난다.
   // 대칭적으로 λ_opp는 "나"의 defenseMult를 분모로 사용한다.
   const lambdaMe = clamp(
-    1.35 *
-      Math.pow(myAtt / oppDef, 1.6) *
+    ENGINE_CONSTANTS.LAMBDA_BASE *
+      Math.pow(myAtt / oppDef, ENGINE_CONSTANTS.LAMBDA_ELASTICITY) *
       (modMe.attackMult / modOpp.defenseMult) *
       eloMult(meTeam.elo, oppTeam.elo),
-    0.2,
-    4.0
+    ENGINE_CONSTANTS.LAMBDA_MIN,
+    ENGINE_CONSTANTS.LAMBDA_MAX
   );
   const lambdaOpp = clamp(
-    1.35 *
-      Math.pow(oppAtt / meDef, 1.6) *
+    ENGINE_CONSTANTS.LAMBDA_BASE *
+      Math.pow(oppAtt / meDef, ENGINE_CONSTANTS.LAMBDA_ELASTICITY) *
       (modOpp.attackMult / modMe.defenseMult) *
       eloMult(oppTeam.elo, meTeam.elo),
-    0.2,
-    4.0
+    ENGINE_CONSTANTS.LAMBDA_MIN,
+    ENGINE_CONSTANTS.LAMBDA_MAX
   );
 
   return { lambdaMe, lambdaOpp };

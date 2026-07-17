@@ -1,5 +1,6 @@
 import { createRngFrom, type Rng } from "./random";
 import { computeLambdas } from "./winprob";
+import { ENGINE_CONSTANTS } from "./constants";
 import { playerContribution, type LineStrengths } from "./strength";
 import { poissonPmf } from "./poisson";
 import { playersOf } from "@/lib/data/players";
@@ -433,7 +434,11 @@ export function simulateMinute(state: MatchState): MatchState {
       // 항상 ATT 라인 평균을 사용한다 — mid 풀 슈터는 구조적으로 더 낮은 골 확률을
       // 갖게 되는 의도적인 설계 선택이다. 밸런스 튜닝(Task 10)에서 재검토 대상.
       const attAvg = side === "me" ? lines.me.att : lines.opp.att;
-      const goalProb = clamp(0.3 + (contribution - attAvg) / 300, 0.03, 0.95);
+      const goalProb = clamp(
+        ENGINE_CONSTANTS.GOAL_PROB_BASE + (contribution - attAvg) / ENGINE_CONSTANTS.GOAL_PROB_DIVISOR,
+        ENGINE_CONSTANTS.GOAL_PROB_MIN,
+        ENGINE_CONSTANTS.GOAL_PROB_MAX
+      );
 
       if (rng.next() < goalProb) {
         if (side === "me") scoreMe++;
