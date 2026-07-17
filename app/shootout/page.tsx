@@ -1,41 +1,83 @@
 "use client";
 
-// 승부차기 자리표시자 — Task 16에서 실제 승부차기 UI로 대체된다.
-// 지금은 경기 화면의 무승부 → 승부차기 경로가 404가 나지 않도록 최소 화면만 제공한다.
+// 승부차기 화면 — 무승부로 끝난 경기에서만 진입한다.
+// 1) KickerOrder: 온피치 11명 중 5명 + 순서 지정 → 2) ShootoutStage: 킥 1개씩 재생.
+// 결과(shootout)는 store.runShootout으로 확정되고, "결과 보기"로 /result 이동.
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppStore } from "@/lib/store";
-import { teamById } from "@/lib/data/teams";
+
+import { KickerOrder } from "@/components/shootout/KickerOrder";
+import { ShootoutStage } from "@/components/shootout/ShootoutStage";
 
 export default function ShootoutPage() {
+  const router = useRouter();
   const match = useAppStore((s) => s.match);
-  const me = teamById(match?.me.teamId ?? "");
-  const opp = teamById(match?.opp.teamId ?? "");
+  const shootout = useAppStore((s) => s.shootout);
+  const runShootout = useAppStore((s) => s.runShootout);
+
+  const [phase, setPhase] = useState<"order" | "stage">("order");
+
+  // persist(sessionStorage) 재수화 대기 — match 페이지와 동일한 가드 패턴.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const p = useAppStore.persist;
+    if (!p || p.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    return p.onFinishHydration(() => setHydrated(true));
+  }, []);
+
+  // 무승부로 종료된 경기가 아니면 홈으로. (직접 URL 진입/비정상 상태 방지)
+  const validDraw = Boolean(match?.finished && match.scoreMe === match.scoreOpp);
+  useEffect(() => {
+    if (hydrated && !validDraw) router.replace("/");
+  }, [hydrated, validDraw, router]);
+
+  if (!hydrated || !match) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-5 py-24 text-center">
+        <p className="text-sm text-dim">승부차기를 준비하는 중…</p>
+      </main>
+    );
+  }
+  if (!validDraw) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-5 py-24 text-center">
+        <p className="text-sm text-dim">홈으로 이동합니다…</p>
+      </main>
+    );
+  }
+
+  const confirmKickers = (kickers: string[]) => {
+    runShootout(kickers);
+    setPhase("stage");
+  };
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-5 py-24 text-center">
-      <p className="eyebrow text-accent">승부차기</p>
-      <h1 className="display mt-4 text-4xl text-ink">승부차기 준비 중</h1>
-      {me && opp && (
-        <p className="stat-num mt-4 text-lg text-dim">
-          {me.nameKo} {match?.scoreMe} : {match?.scoreOpp} {opp.nameKo}
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6 sm:px-5">
+      <div className="flex items-center justify-between">
+        <p className="stat-num text-sm text-dim">
+          정규시간 {match.scoreMe} : {match.scoreOpp} 무승부
         </p>
-      )}
-      <p className="mt-4 max-w-sm text-sm text-dim">승부차기 화면은 곧 열립니다.</p>
-      <div className="mt-8 flex gap-2">
-        <Link
-          href="/result"
-          className="rounded-full bg-accent px-6 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5"
-        >
-          결과 보기 →
-        </Link>
-        <Link
-          href="/"
-          className="rounded-full border border-line px-6 py-3 text-sm font-bold text-dim transition-colors hover:border-white/25 hover:text-ink"
-        >
-          홈으로
+        <Link href="/" className="text-[11px] text-dim hover:text-ink">
+          홈으로 나가기
         </Link>
       </div>
+
+      {phase === "order" || !shootout ? (
+        <KickerOrder meSetup={match.me} stamina={match.stamina} onConfirm={confirmKickers} />
+      ) : (
+        <ShootoutStage
+          result={shootout}
+          meSetup={match.me}
+          oppSetup={match.opp}
+          onFinish={() => router.push("/result")}
+        />
+      )}
     </main>
   );
 }

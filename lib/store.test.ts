@@ -193,6 +193,25 @@ describe("store", () => {
     expect(applied).toBeCloseTo(rec.winProb, 6);
   });
 
+  it("rematch가 같은 매치업을 유지하고 시드를 +1 하며 match/shootout을 비운다", () => {
+    useAppStore.getState().selectMatchup("kor", "jpn", "sofi");
+    const before = useAppStore.getState();
+    const beforeSeed = before.setup.seed;
+    useAppStore.getState().beginMatch();
+    expect(useAppStore.getState().match).toBeDefined();
+
+    useAppStore.getState().rematch();
+    const after = useAppStore.getState();
+    expect(after.setup.myTeamId).toBe("kor");
+    expect(after.setup.oppTeamId).toBe("jpn");
+    expect(after.setup.venueId).toBe("sofi");
+    expect(after.setup.seed).toBe(beforeSeed + 1);
+    expect(after.match).toBeUndefined();
+    expect(after.shootout).toBeUndefined();
+    expect(Object.keys(after.me!.lineup)).toHaveLength(11);
+    expect(Object.keys(after.opp!.lineup)).toHaveLength(11);
+  });
+
   it("전체 흐름: GK 교체 후 승부차기가 라이브(post-sub) 로스터를 사용한다", () => {
     useAppStore.getState().startQuick();
     useAppStore.getState().beginMatch();

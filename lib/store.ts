@@ -73,6 +73,7 @@ export interface AppState {
   reset: () => void;
 
   runShootout: (kickers: string[]) => void;
+  rematch: () => void;
   completeOnboarding: () => void;
 }
 
@@ -214,6 +215,21 @@ export const useAppStore = create<AppState>()(
         const shootoutOpp = match?.opp ?? opp;
         if (!shootoutMe || !shootoutOpp) return;
         set({ shootout: simulateShootout(kickers, shootoutMe, shootoutOpp, setup.seed) });
+      },
+
+      // 다시 도전: 같은 매치업(팀/경기장)을 유지한 채 시드만 +1 해 새 경기를 준비한다.
+      // me/opp는 selectMatchup과 동일하게 autoPlace 기본 셋업으로 리셋하고(작전실에서
+      // 다시 짜도록), match/shootout은 비운다. 팀 미선택 상태면 아무 것도 하지 않는다.
+      rematch: () => {
+        const { setup } = get();
+        if (!setup.myTeamId || !setup.oppTeamId || !setup.venueId) return;
+        set({
+          setup: { ...setup, seed: setup.seed + 1 },
+          me: buildSideSetup(setup.myTeamId, "4-3-3"),
+          opp: buildSideSetup(setup.oppTeamId, "4-3-3"),
+          match: undefined,
+          shootout: undefined,
+        });
       },
 
       completeOnboarding: () => set({ onboardingDone: true }),
