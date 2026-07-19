@@ -111,9 +111,9 @@ describe("store", () => {
     expect(after.instructions.tempo).toBe(before.instructions.tempo);
   });
 
-  it("persist: 스토어 조작 후 sessionStorage 'dugout-v1'에 상태 존재", () => {
+  it("persist: 스토어 조작 후 sessionStorage 'touchline-v1'에 상태 존재", () => {
     useAppStore.getState().startQuick();
-    const raw = sessionStorageStub.getItem("dugout-v1");
+    const raw = sessionStorageStub.getItem("touchline-v1");
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw!);
     expect(parsed.state.setup.myTeamId).toBe("kor");

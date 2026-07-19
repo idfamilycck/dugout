@@ -84,7 +84,7 @@ export function FactorCards({ rules }: FactorCardsProps) {
             <li
               key={isPulsed ? `${r.id}-${nonce}` : r.id}
               className={`flex items-start gap-3 rounded-2xl border border-line bg-surface/50 p-3 ${
-                isPulsed ? "dugout-pulse" : ""
+                isPulsed ? "touchline-pulse" : ""
               }`}
             >
               <span className="mt-0.5 text-lg leading-none" aria-hidden>

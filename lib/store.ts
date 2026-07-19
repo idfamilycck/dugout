@@ -248,7 +248,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: "dugout-v1",
+      name: "touchline-v1",
       storage: createJSONStorage(getSessionStorage),
     }
   )

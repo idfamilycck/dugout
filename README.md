@@ -1,8 +1,8 @@
-# 더그아웃 (DUGOUT) — 당신이 감독이라면
+# 터치라인 (TOUCHLINE) — 당신이 감독이라면
 
 > 상대팀·경기장을 고르고 선수를 드래그로 배치하면, **통계 엔진이 조작할 때마다 실시간으로 승률을 갱신**하고 근거와 함께 최적 전술을 추천합니다. 그 전술로 90분을 직접 지휘해 시뮬레이션하고, **감독의 개입이 결과를 어떻게 바꿨는지 같은 시드로 재현해 수치로 복기**하는 월드컵 전술 시뮬레이터입니다.
 
-- **배포 URL**: https://dugout-one.vercel.app
+- **배포 URL**: https://touchline-fc.vercel.app
 - **대상**: 데이콘 월간 해커톤 "내가 축구 감독이라면 — 월드컵 전술 웹서비스 챌린지"
 - **특징**: 100% 클라이언트 통계 엔진 (외부 API·키·서버 **없음**), 시드 기반 재현 가능 시뮬레이션, 한국어 UI
 
@@ -69,7 +69,7 @@
 | 엔진 단위 테스트 + 밸런싱 검증 | vitest 93개(12파일) + 몬테카를로 밸런스 게이트 | `lib/engine/*.test.ts`, `lib/engine/balance.test.ts` |
 | 기획서 인터랙션 = 실제 화면 1:1, README 매핑표 | 4+1 화면(홈/작전실/경기/승부차기/복기) 라우트 구현 | `app/page.tsx`, `app/tactics`, `app/match`, `app/shootout`, `app/result` |
 
-> 스펙 원문: `docs/superpowers/specs/2026-07-17-dugout-tactics-simulator-design.md` (§2 우승 전략 매핑, §5 엔진 명세)
+> 스펙 원문: `docs/superpowers/specs/2026-07-17-touchline-tactics-simulator-design.md` (§2 우승 전략 매핑, §5 엔진 명세)
 
 ---
 

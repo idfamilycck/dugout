@@ -221,7 +221,7 @@ export default function TacticsPage() {
   if (!me) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-5 py-24 text-center">
-        <p className="eyebrow text-accent">DUGOUT</p>
+        <p className="eyebrow text-accent">TOUCHLINE</p>
         <h1 className="display mt-4 text-4xl text-ink">먼저 매치업을 골라주세요</h1>
         <p className="mt-4 max-w-sm text-sm text-dim">
           작전실은 내 팀과 상대를 정한 뒤에 열립니다.

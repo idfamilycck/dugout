@@ -89,7 +89,7 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
     ctx.textAlign = "center";
     ctx.fillStyle = "#c8ff3c";
     ctx.font = `800 30px ${font}`;
-    ctx.fillText("D U G O U T", W / 2, 108);
+    ctx.fillText("T O U C H L I N E", W / 2, 108);
     ctx.fillStyle = "#83998d";
     ctx.font = `600 18px ${font}`;
     ctx.fillText("당신이 감독이라면", W / 2, 140);
@@ -161,7 +161,7 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const link = document.createElement("a");
-    link.download = `dugout-${meCode}-${oppCode}.png`;
+    link.download = `touchline-${meCode}-${oppCode}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   };

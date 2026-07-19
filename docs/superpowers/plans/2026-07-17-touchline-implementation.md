@@ -1,4 +1,4 @@
-# DUGOUT (더그아웃) Implementation Plan
+# TOUCHLINE (터치라인) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 15, TypeScript(strict), Tailwind CSS, Zustand, @dnd-kit/core, Framer Motion, vitest, Playwright.
 
-**Spec:** `docs/superpowers/specs/2026-07-17-dugout-tactics-simulator-design.md` (모든 태스크의 상위 문서)
+**Spec:** `docs/superpowers/specs/2026-07-17-touchline-tactics-simulator-design.md` (모든 태스크의 상위 문서)
 
 ## Global Constraints
 
@@ -38,9 +38,9 @@
 - [ ] **Step 1: create-next-app 스캐폴드** — 현재 디렉토리가 비어있지 않으므로(docs, .git) 임시 폴더에 생성 후 이동
 
 ```powershell
-npx --yes create-next-app@latest dugout-tmp --ts --tailwind --eslint --app --no-src-dir --import-alias "@/*" --use-npm --yes
-Get-ChildItem dugout-tmp -Force | Where-Object { $_.Name -notin '.git','node_modules' } | Move-Item -Destination .
-Remove-Item -Recurse -Force dugout-tmp
+npx --yes create-next-app@latest touchline-tmp --ts --tailwind --eslint --app --no-src-dir --import-alias "@/*" --use-npm --yes
+Get-ChildItem touchline-tmp -Force | Where-Object { $_.Name -notin '.git','node_modules' } | Move-Item -Destination .
+Remove-Item -Recurse -Force touchline-tmp
 npm install
 ```
 
@@ -657,7 +657,7 @@ interface AppState {
 }
 ```
 
-- persist: `zustand/middleware`의 `persist` + `createJSONStorage(() => sessionStorage)`, name `dugout-v1`. SSR 안전(스토리지 접근은 클라이언트에서만)
+- persist: `zustand/middleware`의 `persist` + `createJSONStorage(() => sessionStorage)`, name `touchline-v1`. SSR 안전(스토리지 접근은 클라이언트에서만)
 - 파생 셀렉터: `useWinProb()` — me/opp/venue에서 `winProbability` 메모이즈 계산
 
 - [ ] **Step 1: 실패 테스트 작성** (vitest 환경에서 sessionStorage 모킹)
@@ -667,7 +667,7 @@ describe("store", () => {
   it("startQuick 후 me/opp 라인업 11개 채워짐", () => {});
   it("movePlayer로 배치된 슬롯 선수 교환", () => {});
   it("setInstructions(formation 변경) 시 라인업 재배치", () => {});
-  it("persist: 스토어 조작 후 sessionStorage 'dugout-v1'에 상태 존재", () => {});
+  it("persist: 스토어 조작 후 sessionStorage 'touchline-v1'에 상태 존재", () => {});
 });
 ```
 
@@ -726,7 +726,7 @@ describe("store", () => {
 - 3층: "상세 보기" 아코디언 — λ값, 라인 수치 표, 산식 한 줄 설명
 - 전술 패널 탭 3개: 팀 지시(포메이션 선택 + 슬라이더 4종 + 빌드업/방향/폭/수비방식/트랩 토글) / 선수 역할(슬롯 선택 → RolePicker) / 특수 지시(주장·FK·CK 셀렉트, 맨마킹: 우리 선수+상대 선수 선택, 코너 장신 전진 토글)
 - `RecommendPanel`: "추천 전술 보기" 버튼 → `recommend()` 온디맨드 실행(로딩 스피너) → 추천 승률·현재 대비 델타·topFactors 3개 → "적용" 버튼으로 일괄 반영
-- `Coachmarks`: 첫 진입 시 3단계(① 선수를 끌어 배치 ② 승률 변동 확인 ③ 경기 시작) — localStorage `dugout-onboarding` 1회, 건너뛰기 버튼
+- `Coachmarks`: 첫 진입 시 3단계(① 선수를 끌어 배치 ② 승률 변동 확인 ③ 경기 시작) — localStorage `touchline-onboarding` 1회, 건너뛰기 버튼
 - 하단 고정 "경기 시작" CTA (11명 미배치 시 비활성 + 사유 문구)
 
 - [ ] **Step 1: WinGauge + FactorCards 구현** (조작→즉시 갱신 확인)
@@ -780,7 +780,7 @@ describe("store", () => {
 - [ ] 작전실 모바일: 스쿼드/피치/분석 3탭 전환 레이아웃, 터치 배치 동작
 - [ ] 경기·복기·홈 모바일 세로 스택 정상, 가로 스크롤 없음
 - [ ] 전 화면 heading 구조(h1 1개), 모든 인터랙티브 요소 aria-label/키보드 포커스 링
-- [ ] `app/layout.tsx` 메타: title "더그아웃 — 당신이 감독이라면", description, 정적 OG 이미지(`public/og.png` — 서비스 대표 카드 1장 제작), lang="ko"
+- [ ] `app/layout.tsx` 메타: title "터치라인 — 당신이 감독이라면", description, 정적 OG 이미지(`public/og.png` — 서비스 대표 카드 1장 제작), lang="ko"
 - [ ] 전 화면 콘솔 에러·경고 0 확인
 - [ ] Commit — `polish: responsive tabs, a11y, static OG metadata`
 

@@ -336,7 +336,7 @@ export function InterventionSheet({
                     onChange={(e) =>
                       setInstr((s) => ({ ...s, [key]: Number(e.target.value) as 1 | 2 | 3 }))
                     }
-                    className="dugout-range w-full"
+                    className="touchline-range w-full"
                     aria-valuetext={ticks[value - 1]}
                   />
                 </div>

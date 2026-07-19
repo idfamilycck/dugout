@@ -63,7 +63,7 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
       >
         {loading ? (
           <>
-            <span className="dugout-spin h-4 w-4 rounded-full border-2 border-accent-ink/30 border-t-accent-ink" />
+            <span className="touchline-spin h-4 w-4 rounded-full border-2 border-accent-ink/30 border-t-accent-ink" />
             분석 중…
           </>
         ) : (

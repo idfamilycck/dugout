@@ -1,11 +1,11 @@
 "use client";
 
-// 첫 진입 온보딩 3단계. localStorage "dugout-onboarding"로 1회만 표시.
+// 첫 진입 온보딩 3단계. localStorage "touchline-onboarding"로 1회만 표시.
 // 건너뛰기/다음/시작 버튼. 딤 배경 + 스포트라이트 톤의 카드.
 
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "dugout-onboarding";
+const STORAGE_KEY = "touchline-onboarding";
 
 const STEPS = [
   {

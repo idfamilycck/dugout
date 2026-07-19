@@ -130,7 +130,7 @@ export function InstructionsPanel() {
                 step={1}
                 value={value}
                 onChange={(e) => setInstructions({ [key]: Number(e.target.value) as 1 | 2 | 3 })}
-                className="dugout-range w-full"
+                className="touchline-range w-full"
                 aria-valuetext={ticks[value - 1]}
               />
               <div className="mt-1 flex justify-between text-[10px] text-dim">
