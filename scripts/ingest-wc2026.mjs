@@ -38,7 +38,7 @@
 // Usage: node scripts/ingest-wc2026.mjs
 // Re-run safe: existing files under data/wc2026/raw/ are skipped.
 
-import { mkdir, writeFile, access } from "node:fs/promises";
+import { mkdir, writeFile, access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -104,9 +104,7 @@ async function main() {
     let scoreboard;
 
     if (await fileExists(scoreboardPath)) {
-      const raw = await import("node:fs/promises").then((fs) =>
-        fs.readFile(scoreboardPath, "utf-8")
-      );
+      const raw = await readFile(scoreboardPath, "utf-8");
       scoreboard = JSON.parse(raw);
     } else {
       try {
