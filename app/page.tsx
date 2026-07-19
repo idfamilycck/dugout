@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { teamById } from "@/lib/data/teams";
@@ -74,6 +75,21 @@ export default function Home() {
           </p>
           <div className="mt-9">
             <QuickStart />
+          </div>
+          <div className="mt-4">
+            <Link
+              href="/rewrite"
+              className="group inline-flex items-center gap-2.5 rounded-full border border-line bg-surface px-6 py-3.5 text-sm font-bold text-ink transition-colors duration-150 hover:border-white/30"
+            >
+              <span aria-hidden>⏪</span>
+              <span>2026 월드컵 다시 쓰기</span>
+              <span aria-hidden className="text-accent transition-transform duration-150 group-hover:translate-x-1">
+                →
+              </span>
+            </Link>
+            <p className="mt-2 pl-1 text-xs text-dim">
+              실제 경기의 결정적 순간을 골라 그 시점부터 직접 지휘해 보세요.
+            </p>
           </div>
         </div>
       </section>
