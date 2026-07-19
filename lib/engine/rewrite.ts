@@ -12,13 +12,13 @@
 import type { Wc2026Match } from "@/lib/wc2026/types";
 import type { DecisiveMoment } from "@/lib/wc2026/moments";
 import { wc2026TeamId } from "@/lib/wc2026/data";
+import { normalizePosition } from "@/lib/wc2026/players";
 import { FORMATIONS } from "@/lib/data/formations";
 import { DEFAULT_ROLE } from "@/lib/data/roles";
 import { initMatch, winProbGivenScore } from "@/lib/engine/match";
 import type { MatchState } from "@/lib/engine/match";
 import { ENGINE_CONSTANTS } from "@/lib/engine/constants";
 import type {
-  Position,
   RoleId,
   SideSetup,
   SpecialInstructions,
@@ -40,22 +40,6 @@ const DEFAULT_INSTRUCTIONS: TeamInstructions = {
   offsideTrap: false,
 };
 const DEFAULT_SPECIAL: SpecialInstructions = { ckBigMenForward: false };
-
-// lib/wc2026/players.ts의 makeVirtualPlayer가 쓰는 normalizePosition과 동일한 매핑을
-// 복제한다(그 함수는 export되지 않으므로 여기서 다시 구현한다. 목록/우선순위를 바꿀
-// 경우 두 파일을 함께 갱신해야 한다).
-function normalizePosition(raw: string): Position {
-  const p = (raw ?? "").trim().toUpperCase();
-  if (p === "GK" || p === "G") return "GK";
-  if (p === "CB" || p === "SW" || p.startsWith("CD")) return "CB";
-  if (p === "FB" || p === "LB" || p === "RB") return "FB";
-  if (p === "DM") return "DM";
-  if (p === "AM" || p.startsWith("AM")) return "AM";
-  if (p === "CM" || p === "M" || p.startsWith("CM")) return "CM";
-  if (p === "WG" || p === "LM" || p === "RM" || p === "LF" || p === "RF") return "WG";
-  if (p === "ST" || p === "F" || p === "RCF" || p.startsWith("CF")) return "ST";
-  return "CM"; // SUB, "", 또는 미인식 값 -> 유틸리티 폴백
-}
 
 interface RealStarter {
   playerId: string;

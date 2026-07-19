@@ -14,7 +14,7 @@
 
 import type { Player, PlayerAttrs, Position } from "@/lib/types";
 
-function normalizePosition(raw: string): Position {
+export function normalizePosition(raw: string): Position {
   const p = (raw ?? "").trim().toUpperCase();
   if (p === "GK" || p === "G") return "GK";
   if (p === "CB" || p === "SW" || p.startsWith("CD")) return "CB";
