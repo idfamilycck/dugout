@@ -102,8 +102,21 @@ function buildEvents(keyEvents, teamCodeMap) {
     if (Number.isNaN(minute)) continue;
 
     const teamId = e.team?.id != null ? String(e.team.id) : undefined;
-    const teamCode = teamId ? teamCodeMap.get(teamId) : undefined;
+    let teamCode = teamId ? teamCodeMap.get(teamId) : undefined;
     if (!teamCode) continue;
+
+    // ESPN's `team` field on an own-goal event names the BENEFICIARY team
+    // (the team credited with the goal in the running score), not the team
+    // whose player put it into their own net. E.g. "Own Goal by Aymen
+    // Hussein, Iraq. Iraq 1, Norway 4." has team.id === Norway even though
+    // Hussein plays for Iraq. Our schema stores own_goal.teamCode as the
+    // OFFENDING team (the team that conceded into their own net) so it can
+    // be credited to the opponent uniformly elsewhere (see integrity gate).
+    // Flip it here — always exactly two teams per match.
+    if (mappedType === "own_goal") {
+      const other = [...teamCodeMap.values()].find((c) => c !== teamCode);
+      if (other) teamCode = other;
+    }
 
     const participants = e.participants ?? [];
     const primary = participants[0]?.athlete;
@@ -223,21 +236,49 @@ function buildMatch(raw, fileName) {
     }
   }
 
-  // Integrity cross-check: sum of goal-type events per team should equal the
-  // final regulation+ET score (own goals/penalties are already attributed to
-  // the beneficiary team in ESPN's `team` field). Flag mismatches rather than
-  // dropping the match, so downstream consumers can decide how to handle it.
-  const tally = new Map([[home, 0], [away, 0]]);
-  for (const e of events) {
-    if (e.type === "goal" || e.type === "own_goal" || e.type === "pen_goal") {
-      tally.set(e.teamCode, (tally.get(e.teamCode) ?? 0) + 1);
-    }
-  }
-  if (tally.get(home) !== scoreHome || tally.get(away) !== scoreAway) {
-    match.excluded = true;
-  }
-
   return { match };
+}
+
+// --- Integrity gate (Task A3) --------------------------------------------
+// Same checks as lib/wc2026/integrity.test.ts, run here so bad matches can
+// be marked `excluded: true` at build time rather than merely reported by
+// the test suite. Each check is a pure predicate over a built Wc2026Match.
+
+function checkGoalTally(m) {
+  const goalsHome = m.events.filter(
+    (e) => (e.type === "goal" || e.type === "pen_goal") && e.teamCode === m.home
+  ).length;
+  const ownForHome = m.events.filter(
+    (e) => e.type === "own_goal" && e.teamCode === m.away
+  ).length;
+  return goalsHome + ownForHome === m.scoreHome;
+}
+
+function checkSubCounts(m) {
+  return [m.home, m.away].every((code) => {
+    const subs = m.events.filter((e) => e.type === "sub" && e.teamCode === code).length;
+    return subs <= 6;
+  });
+}
+
+function checkStarterCounts(m) {
+  return m.lineups.every((lu) => lu.starters.length === 11);
+}
+
+function checkRedCardFollowup(m) {
+  const reds = m.events.filter((e) => e.type === "red");
+  return reds.every((r) => {
+    const later = m.events.filter(
+      (e) => e.minute > r.minute && e.playerId === r.playerId && e.type !== "red"
+    );
+    return later.length === 0;
+  });
+}
+
+const INTEGRITY_CHECKS = [checkGoalTally, checkSubCounts, checkStarterCounts, checkRedCardFollowup];
+
+function isIntegrityValid(match) {
+  return INTEGRITY_CHECKS.every((check) => check(match));
 }
 
 async function main() {
@@ -258,6 +299,14 @@ async function main() {
 
   matches.sort((a, b) => a.kickoffISO.localeCompare(b.kickoffISO));
 
+  const excludedIds = [];
+  for (const m of matches) {
+    if (!isIntegrityValid(m)) {
+      m.excluded = true;
+      excludedIds.push(m.id);
+    }
+  }
+
   await writeFile(OUT_PATH, JSON.stringify(matches, null, 2) + "\n", "utf-8");
 
   console.log(`wrote ${matches.length} matches`);
@@ -265,11 +314,7 @@ async function main() {
     console.log(`skipped ${skipped.length} file(s):`);
     for (const s of skipped) console.log(`  - ${s}`);
   }
-  const excludedCount = matches.filter((m) => m.excluded).length;
-  if (excludedCount > 0) {
-    console.log(`flagged ${excludedCount} match(es) as excluded (score/event tally mismatch):`);
-    for (const m of matches.filter((mm) => mm.excluded)) console.log(`  - ${m.id} ${m.home}-${m.away}`);
-  }
+  console.log(`excluded ${excludedIds.length} matches: [${excludedIds.join(", ")}]`);
 }
 
 main().catch((err) => {

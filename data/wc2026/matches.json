@@ -1236,7 +1236,7 @@
       {
         "minute": 7,
         "type": "own_goal",
-        "teamCode": "USA",
+        "teamCode": "PAR",
         "playerId": "301516",
         "playerName": "Damián Bobadilla"
       },
@@ -1789,7 +1789,7 @@
       {
         "minute": 90,
         "type": "own_goal",
-        "teamCode": "QAT",
+        "teamCode": "SUI",
         "playerId": "243626",
         "playerName": "Miro Muheim"
       }
@@ -5323,7 +5323,7 @@
       {
         "minute": 66,
         "type": "own_goal",
-        "teamCode": "BEL",
+        "teamCode": "EGY",
         "playerId": "119993",
         "playerName": "Mohamed Hany"
       },
@@ -6936,7 +6936,7 @@
       {
         "minute": 90,
         "type": "own_goal",
-        "teamCode": "NOR",
+        "teamCode": "IRQ",
         "playerId": "244677",
         "playerName": "Aymen Hussein"
       }
@@ -7676,7 +7676,7 @@
       {
         "minute": 76,
         "type": "own_goal",
-        "teamCode": "AUT",
+        "teamCode": "JOR",
         "playerId": "274269",
         "playerName": "Yazan Al-Arab"
       },
@@ -10550,7 +10550,7 @@
       {
         "minute": 75,
         "type": "own_goal",
-        "teamCode": "CAN",
+        "teamCode": "QAT",
         "playerId": "309315",
         "playerName": "Mohamed Manai"
       },
@@ -11249,7 +11249,7 @@
       {
         "minute": 11,
         "type": "own_goal",
-        "teamCode": "USA",
+        "teamCode": "AUS",
         "playerId": "207350",
         "playerName": "Cameron Burgess"
       },
@@ -14535,7 +14535,7 @@
       {
         "minute": 49,
         "type": "own_goal",
-        "teamCode": "ESP",
+        "teamCode": "KSA",
         "playerId": "256666",
         "playerName": "Hassan Al-Tambakti"
       },
@@ -17762,7 +17762,7 @@
       {
         "minute": 60,
         "type": "own_goal",
-        "teamCode": "POR",
+        "teamCode": "UZB",
         "playerId": "308612",
         "playerName": "Abduvohid Nematov"
       },
@@ -19265,7 +19265,7 @@
       {
         "minute": 34,
         "type": "own_goal",
-        "teamCode": "BIH",
+        "teamCode": "QAT",
         "playerId": "310372",
         "playerName": "Mahmoud Abunada"
       },
@@ -20050,7 +20050,7 @@
       {
         "minute": 10,
         "type": "own_goal",
-        "teamCode": "HAI",
+        "teamCode": "MAR",
         "playerId": "175149",
         "playerName": "Yassine Bounou"
       },
@@ -22855,7 +22855,7 @@
       {
         "minute": 3,
         "type": "own_goal",
-        "teamCode": "NED",
+        "teamCode": "TUN",
         "playerId": "209595",
         "playerName": "Ellyes Skhiri"
       },
@@ -34036,7 +34036,7 @@
       {
         "minute": 55,
         "type": "own_goal",
-        "teamCode": "AUS",
+        "teamCode": "EGY",
         "playerId": "119993",
         "playerName": "Mohamed Hany"
       },
@@ -34525,7 +34525,7 @@
       {
         "minute": 111,
         "type": "own_goal",
-        "teamCode": "ARG",
+        "teamCode": "CPV",
         "playerId": "214683",
         "playerName": "Diney Borges"
       },
