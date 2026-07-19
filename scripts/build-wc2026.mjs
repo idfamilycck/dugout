@@ -35,6 +35,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RAW_DIR = path.join(__dirname, "..", "data", "wc2026", "raw");
 const OUT_PATH = path.join(__dirname, "..", "data", "wc2026", "matches.json");
+const TEAMS_OUT_PATH = path.join(__dirname, "..", "data", "wc2026", "teams.json");
 
 const ROUND_MAP = [
   [/group stage/i, "group"],
@@ -62,6 +63,83 @@ const EVENT_TYPE_MAP = {
   "red-card": "red",
   "var---red-card-upgrade": "red",
 };
+
+// --- Team ELO derivation (Task A4) ----------------------------------------
+// A team's "finish round" is the deepest round it is seen playing in across
+// matches.json. Rounds ladder from group stage (weakest) to final
+// (strongest); ELO is linearly interpolated across that ladder so a deeper
+// run always yields a higher rating. The Final itself is never present in
+// the raw data (it hasn't been played yet at data-collection time), so the
+// two semifinal WINNERS are promoted to the "final" tier by hand — both
+// finalists sit at the top since the champion isn't known yet.
+const ROUND_ORDER = ["group", "r32", "r16", "qf", "sf", "third", "final"];
+const ELO_TOP = 2060; // champion / runner-up tier (both finalists)
+const ELO_BOTTOM = 1500; // group-stage exit
+
+function eloForRoundIndex(idx) {
+  const step = (ELO_TOP - ELO_BOTTOM) / (ROUND_ORDER.length - 1);
+  return Math.round(ELO_BOTTOM + step * idx);
+}
+
+// Nice-to-have Korean names for the 48 nations seen in this dataset; falls
+// back to the raw 3-letter code for anything not listed here.
+const TEAM_NAME_KO = {
+  ALG: "알제리", ARG: "아르헨티나", AUS: "호주", AUT: "오스트리아", BEL: "벨기에",
+  BIH: "보스니아 헤르체고비나", BRA: "브라질", CAN: "캐나다", CIV: "코트디부아르",
+  COD: "콩고민주공화국", COL: "콜롬비아", CPV: "카보베르데", CRO: "크로아티아",
+  CUW: "퀴라소", CZE: "체코", ECU: "에콰도르", EGY: "이집트", ENG: "잉글랜드",
+  ESP: "스페인", FRA: "프랑스", GER: "독일", GHA: "가나", HAI: "아이티",
+  IRN: "이란", IRQ: "이라크", JOR: "요르단", JPN: "일본", KOR: "대한민국",
+  KSA: "사우디아라비아", MAR: "모로코", MEX: "멕시코", NED: "네덜란드",
+  NOR: "노르웨이", NZL: "뉴질랜드", PAN: "파나마", PAR: "파라과이",
+  POR: "포르투갈", QAT: "카타르", RSA: "남아프리카공화국", SCO: "스코틀랜드",
+  SEN: "세네갈", SUI: "스위스", SWE: "스웨덴", TUN: "튀니지", TUR: "튀르키예",
+  URU: "우루과이", USA: "미국", UZB: "우즈베키스탄",
+};
+
+function matchWinner(m) {
+  if (m.scoreHome !== m.scoreAway) return m.scoreHome > m.scoreAway ? m.home : m.away;
+  if (typeof m.penHome === "number" && typeof m.penAway === "number") {
+    return m.penHome > m.penAway ? m.home : m.away;
+  }
+  return null; // draw with no shootout recorded (shouldn't happen in knockouts)
+}
+
+function buildTeams(matches) {
+  const bestRoundIdx = new Map(); // teamCode -> deepest ROUND_ORDER index reached
+
+  for (const m of matches) {
+    const idx = ROUND_ORDER.indexOf(m.round);
+    if (idx < 0) continue;
+    for (const code of [m.home, m.away]) {
+      const prev = bestRoundIdx.get(code) ?? -1;
+      if (idx > prev) bestRoundIdx.set(code, idx);
+    }
+  }
+
+  // Promote the two semifinal winners to the "final" tier: the Final hasn't
+  // been played, but both finalists have already reached it.
+  const finalIdx = ROUND_ORDER.indexOf("final");
+  for (const m of matches) {
+    if (m.round !== "sf") continue;
+    const winner = matchWinner(m);
+    if (!winner) continue;
+    const prev = bestRoundIdx.get(winner) ?? -1;
+    if (finalIdx > prev) bestRoundIdx.set(winner, finalIdx);
+  }
+
+  const teams = [...bestRoundIdx.entries()]
+    .map(([code, idx]) => ({
+      code,
+      id: `wc_${code.toLowerCase()}`,
+      nameKo: TEAM_NAME_KO[code] ?? code,
+      elo: eloForRoundIndex(idx),
+      finishRound: ROUND_ORDER[idx],
+    }))
+    .sort((a, b) => a.code.localeCompare(b.code));
+
+  return teams;
+}
 
 function resolveRound(seasonName) {
   const name = seasonName ?? "";
@@ -315,6 +393,14 @@ async function main() {
     for (const s of skipped) console.log(`  - ${s}`);
   }
   console.log(`excluded ${excludedIds.length} matches: [${excludedIds.join(", ")}]`);
+
+  // Team ELO is fully derived from how deep each team got (Task A4). Player
+  // attributes are NOT stored here — lineups keep only id/name/position, and
+  // lib/wc2026/players.ts#makeVirtualPlayer generates deterministic stats at
+  // runtime from (id, teamId, name, position, teamElo).
+  const teams = buildTeams(matches);
+  await writeFile(TEAMS_OUT_PATH, JSON.stringify(teams, null, 2) + "\n", "utf-8");
+  console.log(`wrote ${teams.length} teams`);
 }
 
 main().catch((err) => {
