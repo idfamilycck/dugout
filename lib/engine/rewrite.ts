@@ -10,7 +10,6 @@
 // randomness downstream comes from the engine's own seeded RNG.
 
 import type { Wc2026Match } from "@/lib/wc2026/types";
-import type { DecisiveMoment } from "@/lib/wc2026/moments";
 import { wc2026TeamId } from "@/lib/wc2026/data";
 import { normalizePosition } from "@/lib/wc2026/players";
 import { FORMATIONS } from "@/lib/data/formations";
@@ -99,10 +98,13 @@ function baseSideSetup(teamCode: string, lineup: Record<string, string>): SideSe
 }
 
 // side를 "me"로, 상대를 "opp"로 두고 moment.takeoverMinute 시점 상태를 만든다.
+// 3번째 인자는 구조적 타입 { takeoverMinute } — lib/wc2026/moments.ts의 DecisiveMoment도,
+// lib/wc2026/entry-points.ts의 EntryPoint(프리셋/모든 이벤트 진입점)도 이 형태를
+// 만족하므로 그대로 넘길 수 있다.
 export function fromRealState(
   match: Wc2026Match,
   side: string,
-  moment: DecisiveMoment,
+  moment: { takeoverMinute: number },
   seed: number
 ): MatchState {
   const opponent = side === match.home ? match.away : match.home;

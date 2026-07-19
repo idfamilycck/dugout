@@ -61,6 +61,25 @@ describe("buildCompare", () => {
     expect(cmp.realScoreKo).toBe("실제: 1 - 0 승리");
   });
 
+  it("throughMinute=45 지정 시 전반전 골만 집계된다(전반전 프리셋 세션 비교용)", () => {
+    // 30'(전반) KOR 득점, 60'(후반) BRA 득점 — throughMinute=45면 60' 골은 제외.
+    const m = mk([
+      { minute: 30, type: "goal", teamCode: "KOR", playerId: "k1", playerName: "Y" },
+      { minute: 60, type: "goal", teamCode: "BRA", playerId: "b1", playerName: "X" },
+    ]);
+    const cmp = buildCompare(m, "KOR", { scoreMe: 1, scoreOpp: 0 }, 45);
+    expect(cmp.realScoreKo).toBe("실제: 1 - 0 승리");
+  });
+
+  it("throughMinute 생략 시 기본값 90 그대로 동작한다(기존 동작 유지)", () => {
+    const m = mk([
+      { minute: 30, type: "goal", teamCode: "KOR", playerId: "k1", playerName: "Y" },
+      { minute: 60, type: "goal", teamCode: "BRA", playerId: "b1", playerName: "X" },
+    ]);
+    const cmp = buildCompare(m, "KOR", { scoreMe: 1, scoreOpp: 1 });
+    expect(cmp.realScoreKo).toBe("실제: 1 - 1 무승부");
+  });
+
   it("side=away 관점에서도 정확히 집계된다", () => {
     // home=KOR, away=BRA. side="BRA" 관점: BRA 득점 1(45') → BRA 1 - 0 KOR(승리)
     const m = mk([{ minute: 45, type: "goal", teamCode: "BRA", playerId: "b1", playerName: "X" }]);

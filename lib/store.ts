@@ -17,7 +17,6 @@ import type {
 } from "./types";
 import { registerWc2026 } from "@/lib/wc2026/register";
 import { wc2026MatchById } from "@/lib/wc2026/data";
-import { extractMoments } from "@/lib/wc2026/moments";
 import { fromRealState } from "@/lib/engine/rewrite";
 
 // 콜드 리로드(F5) 대응: rewrite 상태(mode:"rewrite", rewriteContext, wc_kor/wc_default를
@@ -74,6 +73,7 @@ export interface RewriteContext {
   side: string;
   momentId: string;
   takeoverMinute: number;
+  endMinute?: number; // 지정 시 그 분에서 세션이 강제 종료된다(전반전/후반전 프리셋).
 }
 
 export interface AppState {
@@ -88,7 +88,11 @@ export interface AppState {
 
   startQuick: () => void;
   selectMatchup: (my: string, opp: string, venue: string) => void;
-  startRewrite: (matchId: string, side: string, momentId: string) => void;
+  startRewrite: (
+    matchId: string,
+    side: string,
+    entry: { id: string; takeoverMinute: number; endMinute?: number }
+  ) => void;
   movePlayer: (slotId: string, playerId: string) => void;
   setInstructions: (i: Partial<TeamInstructions>) => void;
   setRole: (slotId: string, role: RoleId) => void;
@@ -164,34 +168,35 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      // 실제 WC2026 경기의 "결정적 순간" 하나를 골라 그 시점(takeoverMinute)부터
-      // 유저가 개입할 수 있는 rewrite 모드로 진입한다. registerWc2026()은 idempotent라
-      // 매번 호출해도 안전하다 — /tactics, /match 등 어느 진입점에서 startRewrite를
-      // 불러도 wc2026 팀/선수/경기장이 엔진 데이터에 등록돼 있음을 보장한다.
-      startRewrite: (matchId, side, momentId) => {
+      // 실제 WC2026 경기의 진입점(프리셋 또는 이벤트 5분 전, lib/wc2026/entry-points.ts)
+      // 하나를 골라 그 시점(entry.takeoverMinute)부터 유저가 개입할 수 있는 rewrite
+      // 모드로 진입한다. entry가 이미 takeoverMinute(및 필요 시 endMinute)을 들고
+      // 있으므로 여기서 다시 moments를 조회해 해석할 필요가 없다. registerWc2026()은
+      // idempotent라 매번 호출해도 안전하다 — /tactics, /match 등 어느 진입점에서
+      // startRewrite를 불러도 wc2026 팀/선수/경기장이 엔진 데이터에 등록돼 있음을 보장한다.
+      startRewrite: (matchId, side, entry) => {
         registerWc2026();
         const match = wc2026MatchById(matchId);
         if (!match) return;
-        const moment = extractMoments(match, side).find((m) => m.id === momentId);
-        if (!moment) return;
         const seed = Date.now() % 1e9;
-        const matchState = fromRealState(match, side, moment, seed);
+        const st = fromRealState(match, side, { takeoverMinute: entry.takeoverMinute }, seed);
         set({
           mode: "rewrite",
           rewriteContext: {
             matchId,
             side,
-            momentId,
-            takeoverMinute: moment.takeoverMinute,
+            momentId: entry.id,
+            takeoverMinute: entry.takeoverMinute,
+            endMinute: entry.endMinute,
           },
-          me: matchState.me,
-          opp: matchState.opp,
-          match: matchState,
+          me: st.me,
+          opp: st.opp,
+          match: st,
           shootout: undefined,
           setup: {
-            myTeamId: matchState.me.teamId,
-            oppTeamId: matchState.opp.teamId,
-            venueId: matchState.venueId,
+            myTeamId: st.me.teamId,
+            oppTeamId: st.opp.teamId,
+            venueId: st.venueId,
             seed,
           },
         });
@@ -270,10 +275,29 @@ export const useAppStore = create<AppState>()(
         set({ match: initMatch(me, opp, setup.venueId, setup.seed), shootout: undefined });
       },
 
+      // rewrite 모드의 endMinute(전반전/후반전 프리셋)에 도달하면 정규 종료(90분)를
+      // 기다리지 않고 세션을 강제 종료한다. simulateMinute 자체(순수 엔진)는 이 개념을
+      // 모르므로, 매 분 진행 뒤 스토어 레벨에서 이 wrapper가 종료 여부를 판단하고
+      // synthetic fulltime 이벤트를 붙인다 — 엔진 파일은 수정하지 않는다.
       tickMinute: () => {
-        const match = get().match;
-        if (!match) return;
-        set({ match: simulateMinute(match) });
+        const { match, mode, rewriteContext } = get();
+        if (!match || match.finished) return;
+        const next = simulateMinute(match);
+        const end = mode === "rewrite" ? rewriteContext?.endMinute : undefined;
+        if (end != null && next.minute >= end && !next.finished) {
+          set({
+            match: {
+              ...next,
+              finished: true,
+              events: [
+                ...next.events,
+                { minute: next.minute, type: "fulltime", side: "me", textKo: "🏁 세션 종료" },
+              ],
+            },
+          });
+          return;
+        }
+        set({ match: next });
       },
 
       intervene: (iv) => {

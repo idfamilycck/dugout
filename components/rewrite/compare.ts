@@ -56,17 +56,20 @@ function withRoParticle(word: string): string {
   return `${word}${hasBatchim(word) ? "으로" : "로"}`;
 }
 
-// 실제 경기의 정규시간(90분 이하) 스코어를 side 관점으로 집계한다.
+// 실제 경기의 정규시간(throughMinute분 이하, 기본 90) 스코어를 side 관점으로 집계한다.
 // own_goal.teamCode는 "자책골을 넣은(자기 골문에 넣은) 팀"이므로 득점은 상대에 가산한다.
+// throughMinute을 낮추면(예: 45) "그 시점까지의 실제 스코어"를 얻을 수 있다 —
+// 전반전 프리셋 세션을 실제 하프타임 스코어와 비교하는 데 쓰인다.
 function realRegulationScore(
   match: Wc2026Match,
-  side: string
+  side: string,
+  throughMinute: number
 ): { realFor: number; realAgainst: number } {
   const opponent = side === match.home ? match.away : match.home;
   let realFor = 0;
   let realAgainst = 0;
   for (const ev of match.events) {
-    if (ev.minute > 90) continue;
+    if (ev.minute > throughMinute) continue;
     if (ev.type === "goal" || ev.type === "pen_goal") {
       if (ev.teamCode === side) realFor += 1;
       else if (ev.teamCode === opponent) realAgainst += 1;
@@ -81,9 +84,10 @@ function realRegulationScore(
 export function buildCompare(
   match: Wc2026Match,
   side: string,
-  mine: { scoreMe: number; scoreOpp: number }
+  mine: { scoreMe: number; scoreOpp: number },
+  throughMinute = 90
 ): RewriteCompare {
-  const { realFor, realAgainst } = realRegulationScore(match, side);
+  const { realFor, realAgainst } = realRegulationScore(match, side, throughMinute);
   const realWord = resultWord(realFor, realAgainst);
   const myWord = resultWord(mine.scoreMe, mine.scoreOpp);
   const changedOutcome = realWord !== myWord;

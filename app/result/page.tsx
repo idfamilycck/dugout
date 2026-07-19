@@ -79,10 +79,12 @@ export default function ResultPage() {
     if (mode !== "rewrite" || !rewriteContext || !match) return null;
     const realMatch = wc2026MatchById(rewriteContext.matchId);
     if (!realMatch) return null;
-    return buildCompare(realMatch, rewriteContext.side, {
-      scoreMe: match.scoreMe,
-      scoreOpp: match.scoreOpp,
-    });
+    return buildCompare(
+      realMatch,
+      rewriteContext.side,
+      { scoreMe: match.scoreMe, scoreOpp: match.scoreOpp },
+      rewriteContext.endMinute ?? 90
+    );
   }, [mode, rewriteContext, match]);
 
   // 전술 평가: 최종(개입 반영) 세팅 기준 발동 규칙 + 경기 이벤트로 코멘트 생성.

@@ -160,7 +160,7 @@ describe("store", () => {
     const { startRewrite } = useAppStore.getState();
     const side = wc2026MatchById(id)!.away;
     const moment = extractMoments(wc2026MatchById(id)!, side)[0];
-    startRewrite(id, side, moment.id);
+    startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
     const s = useAppStore.getState();
     expect(s.mode).toBe("rewrite");
     expect(s.match?.minute).toBe(moment.takeoverMinute);
@@ -170,6 +170,7 @@ describe("store", () => {
       side,
       momentId: moment.id,
       takeoverMinute: moment.takeoverMinute,
+      endMinute: undefined,
     });
   });
 
@@ -178,7 +179,7 @@ describe("store", () => {
     const id = firstConcedeMatchId();
     const side = wc2026MatchById(id)!.away;
     const moment = extractMoments(wc2026MatchById(id)!, side)[0];
-    useAppStore.getState().startRewrite(id, side, moment.id);
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
 
     const raw = sessionStorageStub.getItem("touchline-v2");
     expect(raw).not.toBeNull();
@@ -194,20 +195,20 @@ describe("store", () => {
     const id = firstConcedeMatchId();
     const side = wc2026MatchById(id)!.away;
     const moment = extractMoments(wc2026MatchById(id)!, side)[0];
-    useAppStore.getState().startRewrite(id, side, moment.id);
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
     expect(useAppStore.getState().mode).toBe("rewrite");
 
     useAppStore.getState().startQuick();
     expect(useAppStore.getState().mode).toBe("free");
     expect(useAppStore.getState().rewriteContext).toBeUndefined();
 
-    useAppStore.getState().startRewrite(id, side, moment.id);
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
     expect(useAppStore.getState().mode).toBe("rewrite");
     useAppStore.getState().selectMatchup("kor", "jpn", "sofi");
     expect(useAppStore.getState().mode).toBe("free");
     expect(useAppStore.getState().rewriteContext).toBeUndefined();
 
-    useAppStore.getState().startRewrite(id, side, moment.id);
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
     expect(useAppStore.getState().mode).toBe("rewrite");
     useAppStore.getState().reset();
     expect(useAppStore.getState().mode).toBe("free");
@@ -219,7 +220,7 @@ describe("store", () => {
     const id = firstConcedeMatchId();
     const side = wc2026MatchById(id)!.away;
     const moment = extractMoments(wc2026MatchById(id)!, side)[0];
-    useAppStore.getState().startRewrite(id, side, moment.id);
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
 
     const takeoverMinute = useAppStore.getState().rewriteContext!.takeoverMinute;
     const takeoverScoreMe = useAppStore.getState().match!.scoreMe;
@@ -256,6 +257,41 @@ describe("store", () => {
     expect(s.match!.minute).toBe(1);
     expect(s.match!.probTimeline).toHaveLength(2);
     expect(s.match!.probTimeline[1].minute).toBe(1);
+  });
+
+  it("rewrite 모드 + endMinute=45(전반전 프리셋): tickMinute이 45분에서 강제 종료하고 90분까지 가지 않는다", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    useAppStore.getState().startRewrite(id, side, { id: "preset-first", takeoverMinute: 0, endMinute: 45 });
+    expect(useAppStore.getState().rewriteContext?.endMinute).toBe(45);
+    expect(useAppStore.getState().match!.minute).toBe(0);
+
+    // 90분을 채울 수 있는 횟수만큼 틱해도 45분에서 멈춰야 한다.
+    for (let i = 0; i < 90 && !useAppStore.getState().match!.finished; i++) {
+      useAppStore.getState().tickMinute();
+    }
+
+    const s = useAppStore.getState();
+    expect(s.match!.finished).toBe(true);
+    expect(s.match!.minute).toBe(45);
+    expect(s.match!.events.at(-1)).toMatchObject({ minute: 45, type: "fulltime" });
+  });
+
+  it("rewrite 모드 + endMinute=undefined(풀경기 프리셋): 자연 종료(halftime 지나 90분 근처)까지 진행된다", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    useAppStore.getState().startRewrite(id, side, { id: "preset-full", takeoverMinute: 0 });
+    expect(useAppStore.getState().rewriteContext?.endMinute).toBeUndefined();
+
+    for (let i = 0; i < 200 && !useAppStore.getState().match!.finished; i++) {
+      useAppStore.getState().tickMinute();
+    }
+
+    const s = useAppStore.getState();
+    expect(s.match!.finished).toBe(true);
+    expect(s.match!.minute).toBeGreaterThan(45); // 45분에서 멈추지 않고 정규종료까지 감
   });
 
   it("intervene로 교체 시 match.me.lineup/subsUsedMe/개입 이력이 현재 분으로 반영된다", () => {
