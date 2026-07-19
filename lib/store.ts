@@ -15,6 +15,10 @@ import type {
   SpecialInstructions,
   TeamInstructions,
 } from "./types";
+import { registerWc2026 } from "@/lib/wc2026/register";
+import { wc2026MatchById } from "@/lib/wc2026/data";
+import { extractMoments } from "@/lib/wc2026/moments";
+import { fromRealState } from "@/lib/engine/rewrite";
 
 const DEFAULT_INSTRUCTIONS: TeamInstructions = {
   formation: "4-3-3",
@@ -52,6 +56,13 @@ export interface AppSetup {
   seed: number;
 }
 
+export interface RewriteContext {
+  matchId: string;
+  side: string;
+  momentId: string;
+  takeoverMinute: number;
+}
+
 export interface AppState {
   setup: AppSetup;
   me?: SideSetup;
@@ -59,9 +70,12 @@ export interface AppState {
   match?: MatchState;
   shootout?: ShootoutResult;
   onboardingDone: boolean;
+  mode: "free" | "rewrite";
+  rewriteContext?: RewriteContext;
 
   startQuick: () => void;
   selectMatchup: (my: string, opp: string, venue: string) => void;
+  startRewrite: (matchId: string, side: string, momentId: string) => void;
   movePlayer: (slotId: string, playerId: string) => void;
   setInstructions: (i: Partial<TeamInstructions>) => void;
   setRole: (slotId: string, role: RoleId) => void;
@@ -103,6 +117,8 @@ export const useAppStore = create<AppState>()(
       match: undefined,
       shootout: undefined,
       onboardingDone: false,
+      mode: "free",
+      rewriteContext: undefined,
 
       startQuick: () => {
         const seed = Date.now() % 1e9;
@@ -112,6 +128,8 @@ export const useAppStore = create<AppState>()(
           opp: buildSideSetup("bra", "4-3-3"),
           match: undefined,
           shootout: undefined,
+          mode: "free",
+          rewriteContext: undefined,
         });
       },
 
@@ -125,6 +143,41 @@ export const useAppStore = create<AppState>()(
           opp: buildSideSetup(opp, "4-3-3"),
           match: undefined,
           shootout: undefined,
+          mode: "free",
+          rewriteContext: undefined,
+        });
+      },
+
+      // 실제 WC2026 경기의 "결정적 순간" 하나를 골라 그 시점(takeoverMinute)부터
+      // 유저가 개입할 수 있는 rewrite 모드로 진입한다. registerWc2026()은 idempotent라
+      // 매번 호출해도 안전하다 — /tactics, /match 등 어느 진입점에서 startRewrite를
+      // 불러도 wc2026 팀/선수/경기장이 엔진 데이터에 등록돼 있음을 보장한다.
+      startRewrite: (matchId, side, momentId) => {
+        registerWc2026();
+        const match = wc2026MatchById(matchId);
+        if (!match) return;
+        const moment = extractMoments(match, side).find((m) => m.id === momentId);
+        if (!moment) return;
+        const seed = Date.now() % 1e9;
+        const matchState = fromRealState(match, side, moment, seed);
+        set({
+          mode: "rewrite",
+          rewriteContext: {
+            matchId,
+            side,
+            momentId,
+            takeoverMinute: moment.takeoverMinute,
+          },
+          me: matchState.me,
+          opp: matchState.opp,
+          match: matchState,
+          shootout: undefined,
+          setup: {
+            myTeamId: matchState.me.teamId,
+            oppTeamId: matchState.opp.teamId,
+            venueId: matchState.venueId,
+            seed,
+          },
         });
       },
 
@@ -241,6 +294,8 @@ export const useAppStore = create<AppState>()(
           opp: undefined,
           match: undefined,
           shootout: undefined,
+          mode: "free",
+          rewriteContext: undefined,
           // onboardingDone은 의도적으로 유지한다: reset()은 매치업/경기 세션을
           // 새로 시작하기 위한 것이지, "온보딩을 다시 봐야 하는가"라는 앱 차원의
           // 영속적 설정과는 별개다.
@@ -248,7 +303,10 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: "touchline-v1",
+      // v1 -> v2: mode/rewriteContext 필드 추가로 스키마가 바뀌어 persist 버전을
+      // 올린다. 마이그레이션 없이 키 이름만 바꿔 v1 세션 스토리지는 자연히
+      // 버려진다(세션 스토리지라 탭 종료 시 어차피 사라지는 값이라 손실 영향 적음).
+      name: "touchline-v2",
       storage: createJSONStorage(getSessionStorage),
     }
   )

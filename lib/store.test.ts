@@ -9,6 +9,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { playersOf } from "@/lib/data/players";
 import { recommend } from "@/lib/engine/recommend";
 import { winProbability } from "@/lib/engine/winprob";
+import { registerWc2026 } from "@/lib/wc2026/register";
+import { wc2026Matches, wc2026MatchById } from "@/lib/wc2026/data";
+import { extractMoments } from "@/lib/wc2026/moments";
 
 // runShootout이 실제로 어떤 me/opp 레퍼런스를 simulateShootout에 넘기는지 직접 검증하기
 // 위해 spy로 감싼다(vi.fn(actual)는 실구현을 그대로 호출하면서 호출 인자를 기록한다).
@@ -53,6 +56,17 @@ const { useAppStore } = await import("./store");
 // 타입만 Mock<...>로 캐스팅한다(동적 import의 정적 타입은 실제 함수 시그니처라
 // .mock/.mockClear가 안 보이므로 필요).
 const simulateShootoutMock = vi.mocked((await import("./engine/shootout")).simulateShootout);
+
+// 헬퍼: wc2026Matches()를 순회해 원정팀(away) 관점으로 concede 순간이 존재하는 첫
+// 경기의 id를 반환한다 (lib/engine/rewrite.test.ts의 pickMatchWithConcede()와 동일한
+// 패턴 — startRewrite는 임의의 side/moment로 호출 가능하므로 실점 경기 하나면 충분).
+function firstConcedeMatchId(): string {
+  for (const m of wc2026Matches()) {
+    const moments = extractMoments(m, m.away);
+    if (moments.some((d) => d.kind === "concede")) return m.id;
+  }
+  throw new Error("no match with a concede moment found");
+}
 
 describe("store", () => {
   beforeEach(() => {
@@ -111,13 +125,73 @@ describe("store", () => {
     expect(after.instructions.tempo).toBe(before.instructions.tempo);
   });
 
-  it("persist: 스토어 조작 후 sessionStorage 'touchline-v1'에 상태 존재", () => {
+  it("persist: 스토어 조작 후 sessionStorage 'touchline-v2'에 상태 존재", () => {
     useAppStore.getState().startQuick();
-    const raw = sessionStorageStub.getItem("touchline-v1");
+    const raw = sessionStorageStub.getItem("touchline-v2");
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw!);
     expect(parsed.state.setup.myTeamId).toBe("kor");
     expect(parsed.state.me).toBeDefined();
+  });
+
+  it("startRewrite: rewrite 모드 진입 + match 초기화", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const { startRewrite } = useAppStore.getState();
+    const side = wc2026MatchById(id)!.away;
+    const moment = extractMoments(wc2026MatchById(id)!, side)[0];
+    startRewrite(id, side, moment.id);
+    const s = useAppStore.getState();
+    expect(s.mode).toBe("rewrite");
+    expect(s.match?.minute).toBe(moment.takeoverMinute);
+    expect(s.me?.teamId).toBe(`wc_${side.toLowerCase()}`);
+    expect(s.rewriteContext).toEqual({
+      matchId: id,
+      side,
+      momentId: moment.id,
+      takeoverMinute: moment.takeoverMinute,
+    });
+  });
+
+  it("persist name이 touchline-v2 (startRewrite 후에도 v2 키에 저장)", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    const moment = extractMoments(wc2026MatchById(id)!, side)[0];
+    useAppStore.getState().startRewrite(id, side, moment.id);
+
+    const raw = sessionStorageStub.getItem("touchline-v2");
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw!);
+    expect(parsed.state.mode).toBe("rewrite");
+    expect(parsed.state.rewriteContext.matchId).toBe(id);
+    // v1 키는 더 이상 쓰이지 않는다
+    expect(sessionStorageStub.getItem("touchline-v1")).toBeNull();
+  });
+
+  it("startQuick/selectMatchup/reset은 mode를 free로 되돌리고 rewriteContext를 비운다", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    const moment = extractMoments(wc2026MatchById(id)!, side)[0];
+    useAppStore.getState().startRewrite(id, side, moment.id);
+    expect(useAppStore.getState().mode).toBe("rewrite");
+
+    useAppStore.getState().startQuick();
+    expect(useAppStore.getState().mode).toBe("free");
+    expect(useAppStore.getState().rewriteContext).toBeUndefined();
+
+    useAppStore.getState().startRewrite(id, side, moment.id);
+    expect(useAppStore.getState().mode).toBe("rewrite");
+    useAppStore.getState().selectMatchup("kor", "jpn", "sofi");
+    expect(useAppStore.getState().mode).toBe("free");
+    expect(useAppStore.getState().rewriteContext).toBeUndefined();
+
+    useAppStore.getState().startRewrite(id, side, moment.id);
+    expect(useAppStore.getState().mode).toBe("rewrite");
+    useAppStore.getState().reset();
+    expect(useAppStore.getState().mode).toBe("free");
+    expect(useAppStore.getState().rewriteContext).toBeUndefined();
   });
 
   it("beginMatch가 경기를 초기화하고 tickMinute이 분/probTimeline을 진행시킨다", () => {
