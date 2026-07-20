@@ -39,6 +39,18 @@ describe("buildTacticsReview", () => {
     expect(review.hurt.map((r) => r.id)).toEqual(["minus"]);
   });
 
+  // 회귀: 스쿼드 적합도가 중립에 가까우면 효과가 ±0.3%p로 떨어지는데, 그걸 감점으로
+  // 분류하면 "이 스쿼드에는 무난합니다"가 빨간 "발목 잡은 부분" 카드에 실렸다.
+  it("±0.5%p 미만의 미미한 효과는 통함/발목 어느 쪽으로도 분류하지 않는다", () => {
+    const review = buildTacticsReview(
+      matchOf({}),
+      mod([rule("tiny_plus", 0.003), rule("tiny_minus", -0.003), rule("real_plus", 0.04)]),
+      mod([])
+    );
+    expect(review.worked.map((r) => r.id)).toEqual(["real_plus"]);
+    expect(review.hurt).toEqual([]);
+  });
+
   // 회귀: 졌는데 "전술 감점 요인은 없었어요"만 뜨던 문제.
   // 내 감점이 없어도 상대 우위를 꺼내 왜 졌는지 설명해야 한다.
   describe("oppEdge — 내 감점이 없는데 이기지 못한 경우", () => {

@@ -19,6 +19,7 @@ function FormMeter({ form }: { form: number }) {
   const color = attrColor(scaled);
   return (
     <div className="flex shrink-0 items-center gap-1.5">
+      <span className="data-label hidden sm:inline">폼</span>
       {/* 375px 2열에서는 카드 폭이 ~155px라 게이지+수치가 넘쳐 "/10"이 잘렸다.
           좁은 화면에서는 막대를 줄이고 sm 이상에서만 원래 폭으로 돌린다. */}
       <div className="h-1.5 w-8 overflow-hidden rounded-full bg-surface-2 sm:w-14">
@@ -62,6 +63,14 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
         </span>
         <span className="ml-auto text-sm font-semibold text-ink">{stepLabel}</span>
       </div>
+
+      {/* 카드에 찍히는 두 수치의 뜻을 한 줄로 밝힌다. "전력 2060", "8/10"만 보고는
+          무슨 단위인지 알 수 없다는 지적이 있었다. */}
+      <p className="-mt-2 text-[11px] leading-relaxed text-dim">
+        <b className="font-bold text-ink">전력</b>은 국제 축구 Elo 레이팅입니다(높을수록 강팀,
+        대략 1600~2100). <b className="font-bold text-ink">폼</b>은 최근 경기력을 10점 만점으로
+        환산한 값이고, 색이 진할수록 좋습니다.
+      </p>
 
       <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
         {teams.map((t) => {
@@ -112,7 +121,8 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
 
                 <div className="flex items-baseline justify-between gap-2">
                   <div className="flex min-w-0 items-baseline gap-1.5">
-                    <span className="data-label">ELO</span>
+                    {/* "ELO"는 축구 팬이 아니면 읽히지 않는 약어라 화면에는 "전력"으로 쓴다. */}
+                    <span className="data-label">전력</span>
                     <span className="stat-num text-xl leading-none text-ink sm:text-2xl">{t.elo}</span>
                   </div>
                   <FormMeter form={t.form} />

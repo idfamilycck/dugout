@@ -21,20 +21,30 @@ export interface TacticsReview {
 
 const impact = (r: AppliedRule) => r.deltaAttack + r.deltaDefense;
 
+// 이 값 미만의 효과는 "통한 전술"로도 "발목 잡은 부분"으로도 부르지 않는다.
+// 세부 지시의 스쿼드 적합도 규칙은 적합도가 중립에 가까우면 ±0.3%p 수준으로 떨어지는데,
+// 그걸 감점으로 분류하면 "이 스쿼드에는 무난합니다"라는 문구가 빨간 카드에 실리는
+// 모순이 생긴다. 리포트는 판단이 서는 것만 말해야 한다.
+const MEANINGFUL = 0.005;
+
 export function buildTacticsReview(
   match: MatchState,
   meMod: ModifierResult,
   oppMod: ModifierResult
 ): TacticsReview {
-  const worked = meMod.rules.filter((r) => impact(r) > 0).sort((a, b) => impact(b) - impact(a));
-  const hurt = meMod.rules.filter((r) => impact(r) < 0).sort((a, b) => impact(a) - impact(b));
+  const worked = meMod.rules
+    .filter((r) => impact(r) >= MEANINGFUL)
+    .sort((a, b) => impact(b) - impact(a));
+  const hurt = meMod.rules
+    .filter((r) => impact(r) <= -MEANINGFUL)
+    .sort((a, b) => impact(a) - impact(b));
 
   // 이기지 못했고 내 감점도 없을 때만 상대 우위를 꺼낸다(이겼으면 굳이 변명하지 않는다).
   const won = match.scoreMe > match.scoreOpp;
   const oppEdge =
     !won && hurt.length === 0
       ? oppMod.rules
-          .filter((r) => impact(r) > 0)
+          .filter((r) => impact(r) >= MEANINGFUL)
           .sort((a, b) => impact(b) - impact(a))
           .slice(0, 3)
       : [];
