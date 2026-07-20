@@ -8,6 +8,7 @@ import { EDGE_COLOR, edgeToneFromWinPct, type EdgeTone } from "@/lib/edge-tone";
 import { teamById } from "@/lib/data/teams";
 import { venueById } from "@/lib/data/venues";
 import { HeroBoard } from "@/components/home/HeroBoard";
+import { HeroIntro, HeroBoardIntro } from "@/components/home/HeroIntro";
 import { TeamGrid } from "@/components/home/TeamGrid";
 import { VenuePicker } from "@/components/home/VenuePicker";
 import { FlagBadge } from "@/components/ui/FlagBadge";
@@ -78,16 +79,23 @@ export default function Home() {
             모바일에서는 카피와 CTA가 한 화면에 들어가는 것이 우선이다. */}
         <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-center gap-8 px-5 pb-7 pt-8 sm:pt-11 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
           <div>
-            <p className="eyebrow text-accent">국가대표 전술 시뮬레이터</p>
-            <h1 className="display mt-3 text-balance text-5xl text-ink sm:text-7xl">
-              당신이<br />감독이라면.
-            </h1>
-            <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-dim">
-              포메이션과 지시 하나로 승부가 뒤집힙니다. 대표팀을 골라 벤치에 앉고,
-              90분을 직접 지휘해 보세요.
-            </p>
+            <HeroIntro index={0}>
+              <p className="eyebrow text-accent">국가대표 전술 시뮬레이터</p>
+            </HeroIntro>
+            <HeroIntro index={1}>
+              <h1 className="display mt-3 text-balance text-5xl text-ink sm:text-7xl">
+                당신이<br />감독이라면.
+              </h1>
+            </HeroIntro>
+            <HeroIntro index={2}>
+              <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-dim">
+                포메이션과 지시 하나로 승부가 뒤집힙니다. 대표팀을 골라 벤치에 앉고,
+                90분을 직접 지휘해 보세요.
+              </p>
+            </HeroIntro>
             {/* 두 가지 진입 모드를 동등하게 노출한다. "자유 매치업"은 같은 페이지 아래
                 매치업 구성 섹션으로 스크롤한다(별도 라우트가 아니라 앵커). */}
+            <HeroIntro index={3}>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link
                 href="/rewrite"
@@ -108,10 +116,13 @@ export default function Home() {
                 </span>
               </a>
             </div>
+            </HeroIntro>
           </div>
 
           <div className="hidden h-[360px] justify-self-end lg:block">
-            <HeroBoard />
+            <HeroBoardIntro>
+              <HeroBoard />
+            </HeroBoardIntro>
           </div>
         </div>
       </section>

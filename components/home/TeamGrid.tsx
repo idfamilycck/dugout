@@ -4,6 +4,8 @@ import { wc2026TeamList } from "@/lib/wc2026/data";
 import { h2hOf } from "@/lib/data/h2h";
 import { FlagBadge } from "@/components/ui/FlagBadge";
 import { attrColor, attrTierKo } from "@/components/tactics/attr-color";
+import { STAGE_CHIP, toneOfLabel } from "@/lib/wc2026/stage";
+import { Reveal } from "@/components/ui/Reveal";
 
 interface TeamGridProps {
   myTeamId?: string;
@@ -28,7 +30,7 @@ function FormMeter({ form }: { form: number }) {
           style={{ width: `${(form / 10) * 100}%`, background: color }}
         />
       </div>
-      <span className="stat-num whitespace-nowrap text-[11px]" style={{ color }}>
+      <span className="stat-num whitespace-nowrap text-[13px]" style={{ color }}>
         {form}/10
       </span>
       <span className="sr-only">폼 {attrTierKo(scaled)}</span>
@@ -66,14 +68,14 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
 
       {/* 카드에 찍히는 두 수치의 뜻을 한 줄로 밝힌다. "전력 2060", "8/10"만 보고는
           무슨 단위인지 알 수 없다는 지적이 있었다. */}
-      <p className="-mt-2 text-[11px] leading-relaxed text-dim">
+      <p className="-mt-2 text-[13px] leading-relaxed text-dim">
         <b className="font-bold text-ink">전력</b>은 국제 축구 Elo 레이팅입니다(높을수록 강팀,
         대략 1600~2100). <b className="font-bold text-ink">폼</b>은 최근 경기력을 10점 만점으로
         환산한 값이고, 색이 진할수록 좋습니다.
       </p>
 
       <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-        {teams.map((t) => {
+        {teams.map((t, i) => {
           const isMine = t.id === myTeamId;
           const isOpp = t.id === oppTeamId;
           const selected = isMine || isOpp;
@@ -89,7 +91,13 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
             // content-visibility: auto — 화면 밖 카드는 레이아웃/페인트를 건너뛴다.
             // 48장 전체를 그대로 렌더하되(가상화는 새 의존성이 필요해 도입하지 않음)
             // 렌더 비용만 낮춘다. contain-intrinsic-size는 스크롤바 튐 방지용 추정 높이.
-            <li key={t.id} className="[content-visibility:auto] [contain-intrinsic-size:220px]">
+            // 48장이 한꺼번에 떠 있으면 어디부터 볼지 알기 어렵다. 스크롤에 맞춰 한 번씩
+            // 들어오게 해 읽는 순서를 만든다. 계단은 4열 기준(i % 4)이라 한 행씩 들어온다.
+            <li
+              key={t.id}
+              className="[content-visibility:auto] [contain-intrinsic-size:220px]"
+            >
+              <Reveal index={i % 4} step={0.05}>
               <button
                 type="button"
                 onClick={() => onSelect(t.id)}
@@ -101,7 +109,7 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                 {selected && <span className="sr-only">{isMine ? "내 팀으로 선택됨" : "상대 팀으로 선택됨"}</span>}
                 {selected && (
                   <span
-                    className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-black"
+                    className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[13px] font-black"
                     style={{
                       background: ring,
                       color: isMine ? "var(--color-accent-ink)" : "#2a0710",
@@ -115,7 +123,7 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                   <FlagBadge code={t.code} color1={t.color1} color2={t.color2} size={40} />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-ink">{t.nameKo}</div>
-                    <div className="text-[11px] text-dim">FIFA {t.fifaRank}위</div>
+                    <div className="text-[13px] text-dim">FIFA {t.fifaRank}위</div>
                   </div>
                 </div>
 
@@ -128,8 +136,11 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                   <FormMeter form={t.form} />
                 </div>
 
+                {/* 상대전적이 없는 WC 팀은 2026 최종 성적 태그를 단다. 성적을 골드 세기로
+                    인코딩해, 48장을 훑는 것만으로 어디까지 간 팀인지가 먼저 보이게 한다
+                    (전부 같은 회색이면 그냥 국가 목록으로 읽힌다). */}
                 {h2h ? (
-                  <div className="flex items-center gap-2 border-t border-line pt-2 text-[11px]">
+                  <div className="flex items-center gap-2 border-t border-line pt-2 text-[13px]">
                     <span className="text-dim">상대전적</span>
                     <span className="stat-num text-gain">{h2h.winA}승</span>
                     <span className="stat-num text-dim">{h2h.draw}무</span>
@@ -140,7 +151,7 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                     {t.styleTags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-dim"
+                        className={`rounded px-2 py-0.5 text-[13px] ${STAGE_CHIP[toneOfLabel(tag)]}`}
                       >
                         {tag}
                       </span>
@@ -148,6 +159,7 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                   </div>
                 )}
               </button>
+              </Reveal>
             </li>
           );
         })}
