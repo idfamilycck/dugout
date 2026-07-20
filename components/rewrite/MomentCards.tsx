@@ -57,12 +57,13 @@ export function MomentCards({ match, side }: MomentCardsProps) {
   };
 
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-6">
       {/* 진행 방식: 항상 존재하는 3개 프리셋 — 클린 승리 등 이벤트가 적은 경기에서도
           여기서 막다른 길 없이 진입할 수 있다. */}
       <div>
-        <p className="mb-3 text-[13px] font-black uppercase tracking-wide text-dim">진행 방식</p>
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <p className="mb-2.5 text-[13px] font-black uppercase tracking-wide text-dim">진행 방식</p>
+        {/* lg 이상에서는 좁은 우측 상세 패널 안에 들어가므로 다시 1열로 돌린다. */}
+        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-cols-1">
           {presets.map((entry) => (
             <li key={entry.id}>
               <button
@@ -87,7 +88,7 @@ export function MomentCards({ match, side }: MomentCardsProps) {
           <p className="mb-3 text-[13px] font-black uppercase tracking-wide text-dim">
             모든 순간 · 5분 전부터
           </p>
-          <ul className="grid max-h-[420px] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+          <ul className="grid max-h-[420px] grid-cols-1 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-1">
             {events.map((entry) => {
               const team = entry.teamCode ? teamDisplay(entry.teamCode) : undefined;
               return (

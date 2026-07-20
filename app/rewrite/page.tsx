@@ -12,7 +12,7 @@ import { registerWc2026 } from "@/lib/wc2026/register";
 import { wc2026Matches } from "@/lib/wc2026/data";
 import type { Wc2026Match } from "@/lib/wc2026/types";
 import { MatchBrowser } from "@/components/rewrite/MatchBrowser";
-import { MomentCards } from "@/components/rewrite/MomentCards";
+import { MatchDetail } from "@/components/rewrite/MatchDetail";
 import { Disclaimer } from "@/components/ui/Disclaimer";
 
 // 모듈 로드 시 1회 등록(idempotent) — MatchBrowser의 최초 렌더부터 wc 팀 이름을
@@ -61,7 +61,7 @@ function RewriteContent() {
       >
         {/* PC에서는 제목과 설명을 가로로 나눠 히어로 높이를 줄인다. 세로로 쌓으면
             경기 브라우저가 화면 밖으로 밀려 "본론이 안 보이는" 첫인상이 된다. */}
-        <div className="mx-auto w-full max-w-5xl px-5 pb-6 pt-6 sm:pt-8">
+        <div className="mx-auto w-full max-w-6xl px-5 pb-6 pt-6 sm:pt-8">
           <Link href="/" className="text-xs text-dim transition-colors hover:text-ink">
             ← 처음으로
           </Link>
@@ -80,43 +80,46 @@ function RewriteContent() {
         </div>
       </section>
 
-      {/* ── 경기 브라우저 ────────────────────────────────── */}
-      <section aria-label="경기 선택" className="mx-auto w-full max-w-5xl px-5 pt-9">
-        <header className="accent-tab mb-5 pl-4">
-          <h2 className="display text-balance text-2xl text-ink sm:text-3xl">어느 경기를 다시 쓸까</h2>
-        </header>
-        <MatchBrowser
-          matches={matches}
-          selectedMatchId={selectedMatch?.id}
-          selectedSide={selectedSide}
-          onSelectMatch={handleSelectMatch}
-          onSelectSide={(side) => updateQuery({ side })}
-        />
-      </section>
-
-      {/* ── 결정적 순간 카드 ─────────────────────────────── */}
-      {selectedMatch && selectedSide && (
-        <section aria-label="결정적 순간 선택" className="mx-auto w-full max-w-5xl px-5 pt-9">
-          <header className="accent-tab mb-5 flex flex-wrap items-center justify-between gap-3 pl-4">
-            <div>
-              <h2 className="display text-balance text-2xl text-ink sm:text-3xl">
-                어디서부터 다시 쓸까
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={resetSelection}
-              className="shrink-0 text-xs text-dim underline transition-colors hover:text-ink"
-            >
-              다른 경기 고르기
-            </button>
+      {/* ── 마스터-디테일 ─────────────────────────────────
+          좌: 경기 행 리스트(넓게) / 우: 선택한 경기 상세(좁게, lg 이상 sticky).
+          lg 미만에서는 우측 컬럼을 숨기고 상세를 선택된 행 아래에 인라인으로 편다
+          (같은 MatchDetail을 쓰되 둘 중 하나는 항상 display:none). */}
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-5 pt-9 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+        <section aria-label="경기 선택" className="min-w-0">
+          <header className="accent-tab mb-5 pl-4">
+            <h2 className="display text-balance text-2xl text-ink sm:text-3xl">
+              어느 경기를 다시 쓸까
+            </h2>
           </header>
-          <MomentCards match={selectedMatch} side={selectedSide} />
+          <MatchBrowser
+            matches={matches}
+            selectedMatchId={selectedMatch?.id}
+            onSelectMatch={handleSelectMatch}
+            renderInlineDetail={(m) => (
+              <MatchDetail
+                match={m}
+                side={selectedSide}
+                onSelectSide={(side) => updateQuery({ side })}
+                onReset={resetSelection}
+              />
+            )}
+          />
         </section>
-      )}
+
+        {/* 우측 상세 컬럼(lg 이상에서만). 라벨은 MatchDetail이 직접 들고 있다. */}
+        <div className="hidden min-w-0 lg:sticky lg:top-[4.5rem] lg:block lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
+          <MatchDetail
+            match={selectedMatch}
+            side={selectedSide}
+            onSelectSide={(side) => updateQuery({ side })}
+            onReset={resetSelection}
+            aside
+          />
+        </div>
+      </div>
 
       {/* ── 하단 고지 ────────────────────────────────────── */}
-      <footer className="mx-auto mt-16 w-full max-w-5xl px-5 pb-4">
+      <footer className="mx-auto mt-16 w-full max-w-6xl px-5 pb-4">
         <Disclaimer />
       </footer>
     </main>

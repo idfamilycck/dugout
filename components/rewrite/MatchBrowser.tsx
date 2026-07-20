@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Wc2026Match, Wc2026Round } from "@/lib/wc2026/types";
 import { wc2026TeamId } from "@/lib/wc2026/data";
@@ -16,16 +16,17 @@ function parseRound(v: string | null): Wc2026Round | undefined {
   return v && ROUND_SET.has(v) ? (v as Wc2026Round) : undefined;
 }
 
-// 렌더 예산: 초기 24장만 그리고 "더 보기"로 이어붙인다(전체 가상화는 새 의존성이
-// 필요해 도입하지 않음). 필터가 바뀌면 다시 24장부터 시작한다.
-const PAGE_SIZE = 24;
+// 렌더 예산: 카드 그리드에서 조밀한 행 리스트로 바뀌며 한 항목의 DOM 비용이 크게
+// 줄었으므로 초기 노출을 40행으로 올린다(103경기 전부를 한 번에 그리지는 않는다).
+// 나머지는 "더 보기"로 이어붙이고, 필터가 바뀌면 다시 40행부터 시작한다.
+const PAGE_SIZE = 40;
 
 interface MatchBrowserProps {
   matches: Wc2026Match[];
   selectedMatchId?: string;
-  selectedSide?: string;
   onSelectMatch: (match: Wc2026Match) => void;
-  onSelectSide: (side: string) => void;
+  /** lg 미만에서 선택된 행 바로 아래에 펼칠 상세(2열이 불가능한 폭의 대안 경로). */
+  renderInlineDetail?: (match: Wc2026Match) => ReactNode;
 }
 
 // wc 팀 코드 → 표시용 한국어 이름/배지 색상. 아직 registerWc2026()이 끝나지
@@ -42,9 +43,8 @@ function teamDisplay(code: string) {
 export function MatchBrowser({
   matches,
   selectedMatchId,
-  selectedSide,
   onSelectMatch,
-  onSelectSide,
+  renderInlineDetail,
 }: MatchBrowserProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -158,85 +158,83 @@ export function MatchBrowser({
         </div>
       )}
 
-      {/* 경기 카드 그리드 — 렌더 예산(초기 24장)을 넘는 카드는 "더 보기"로 이어붙인다 */}
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {shown.map((m) => {
-          const home = teamDisplay(m.home);
-          const away = teamDisplay(m.away);
-          const isKor = m.home === "KOR" || m.away === "KOR";
-          const isSelected = m.id === selectedMatchId;
-          const totalGoals = m.scoreHome + m.scoreAway;
+      {/* 경기 행 리스트 — 카드 그리드가 아니라 헤어라인으로만 나뉘는 조밀한 행.
+          한 줄에 라운드 · 홈 국기/팀명 · 스코어 · 원정 팀명/국기 · 이벤트 수가 들어간다.
+          구분선은 .data-row(border-bottom 하나)만 쓴다 — 행마다 위아래 선을 겹치지 않게. */}
+      <div className="overflow-hidden rounded-panel border border-line bg-surface/60">
+        {/* 열 이름 — FM식 데이터 표의 머리. 좁은 폭에서는 스코어 열만 남긴다. */}
+        <div className="data-head flex items-center gap-2 px-3 py-1.5 sm:gap-3">
+          <span className="w-14 shrink-0 sm:w-20">라운드</span>
+          <span className="min-w-0 flex-1 text-center">경기</span>
+          <span className="hidden w-16 shrink-0 text-right sm:block">이벤트</span>
+        </div>
 
-          return (
-            <li key={m.id} className="min-w-0">
-              <button
-                type="button"
-                onClick={() => onSelectMatch(m)}
-                aria-pressed={isSelected}
-                className="panel flex w-full flex-col gap-2.5 rounded-panel p-4 text-left transition-colors duration-150 hover:border-white/25"
-                style={{ borderColor: isSelected ? "var(--color-accent)" : undefined }}
-              >
-                <div className="flex items-center justify-between text-[13px] text-dim">
-                  <span className={`font-bold uppercase tracking-wider ${ROUND_LABEL_CLASS[roundTone(m.round)]}`}>
-                    {roundLabelKo(m.round)}
-                  </span>
-                  {isKor && (
-                    <span className="rounded-full bg-accent/15 px-2 py-0.5 font-black text-accent">
-                      KOR
+        <ul>
+          {shown.map((m) => {
+            const home = teamDisplay(m.home);
+            const away = teamDisplay(m.away);
+            const isKor = m.home === "KOR" || m.away === "KOR";
+            const isSelected = m.id === selectedMatchId;
+
+            return (
+              <li key={m.id} className="data-row relative min-w-0">
+                {/* 선택 표시는 레이아웃을 밀지 않도록 절대 배치한 시안 바로. */}
+                {isSelected && (
+                  <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-accent" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => onSelectMatch(m)}
+                  aria-pressed={isSelected}
+                  className={`flex min-h-[44px] w-full items-center gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-raised/60 sm:gap-3 ${
+                    isSelected ? "bg-raised/70" : ""
+                  }`}
+                >
+                  <span className="flex w-14 shrink-0 flex-col gap-0.5 sm:w-20">
+                    <span
+                      className={`truncate text-[13px] font-bold uppercase tracking-wider ${ROUND_LABEL_CLASS[roundTone(m.round)]}`}
+                    >
+                      {roundLabelKo(m.round)}
                     </span>
-                  )}
-                </div>
+                    {isKor && (
+                      <span className="text-[13px] font-black leading-none text-accent">KOR</span>
+                    )}
+                  </span>
 
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <FlagBadge code={m.home} color1={home.color1} color2={home.color2} size={28} />
-                    <span className="truncate text-sm font-bold text-ink">{home.nameKo}</span>
-                  </div>
-                  <span className="stat-num shrink-0 px-1 text-base text-ink">
+                  <span className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                    <span className="truncate text-right text-sm font-bold text-ink">
+                      {home.nameKo}
+                    </span>
+                    <FlagBadge code={m.home} color1={home.color1} color2={home.color2} size={22} />
+                  </span>
+
+                  <span className="stat-num shrink-0 text-base text-ink">
                     {m.scoreHome} : {m.scoreAway}
                   </span>
-                  <div className="flex min-w-0 flex-1 flex-row-reverse items-center gap-2">
-                    <FlagBadge code={m.away} color1={away.color1} color2={away.color2} size={28} />
-                    <span className="truncate text-right text-sm font-bold text-ink">{away.nameKo}</span>
+
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <FlagBadge code={m.away} color1={away.color1} color2={away.color2} size={22} />
+                    <span className="truncate text-sm font-bold text-ink">{away.nameKo}</span>
+                  </span>
+
+                  <span className="hidden w-16 shrink-0 text-right text-[13px] text-dim sm:block">
+                    <span className="tnum">{m.events.length}</span>건
+                  </span>
+                </button>
+
+                {/* lg 미만: 2열을 쓸 수 없으므로 상세를 이 행 아래에서 그대로 펼친다.
+                    lg 이상에서는 display:none이라 접근성 트리에도 오르지 않는다
+                    (우측 sticky 컬럼 하나만 남는다). */}
+                {isSelected && renderInlineDetail && (
+                  <div className="border-t border-line bg-pitch-2/60 px-3 py-4 lg:hidden">
+                    {renderInlineDetail(m)}
                   </div>
-                </div>
-
-                <div className="border-t border-line pt-2 text-[13px] text-dim">
-                  총 {totalGoals}골 · 이벤트 {m.events.length}건
-                </div>
-              </button>
-
-              {/* 팀 선택(관리할 팀 고르기) — 카드 선택 시에만 노출 */}
-              {isSelected && (
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onSelectSide(m.home)}
-                    className={`flex-1 rounded-control px-3 py-2.5 text-xs font-bold transition-colors ${
-                      selectedSide === m.home
-                        ? "bg-accent text-accent-ink"
-                        : "bg-surface-2 text-ink hover:bg-surface"
-                    }`}
-                  >
-                    {home.nameKo} 지휘하기
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSelectSide(m.away)}
-                    className={`flex-1 rounded-control px-3 py-2.5 text-xs font-bold transition-colors ${
-                      selectedSide === m.away
-                        ? "bg-accent text-accent-ink"
-                        : "bg-surface-2 text-ink hover:bg-surface"
-                    }`}
-                  >
-                    {away.nameKo} 지휘하기
-                  </button>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       {visible.length > visibleCount && (
         <button
