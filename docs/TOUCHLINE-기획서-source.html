@@ -196,7 +196,7 @@
     <div class="kpi"><div class="n">23,328</div><div class="l">AI 추천이 전수 평가하는<br>팀 지시 조합 수</div></div>
     <div class="kpi"><div class="n">4,800회</div><div class="l">몬테카를로 밸런싱 검증<br>(전 매치업 16×15 × 20시드)</div></div>
     <div class="kpi"><div class="n">100%</div><div class="l">클라이언트 엔진<br>(외부 API·키·서버 없음)</div></div>
-    <div class="kpi"><div class="n">4+1</div><div class="l">화면 구성<br>홈·작전실·경기·복기 (+승부차기)</div></div>
+    <div class="kpi"><div class="n">6+1</div><div class="l">화면 구성<br>본편 6화면 + 승부차기</div></div>
   </div>
 
   <div class="callout">
@@ -239,8 +239,8 @@
     <thead><tr><th style="width:22%;">원칙</th><th>내용</th></tr></thead>
     <tbody>
     <tr><td class="k">정보 3계층</td>
-      <td>1층(항상): 승률 게이지 큰 숫자 + 라인별 전력 막대 대결 → 2층: 근거 카드(아이콘+자연어 한 문장+델타,
-      예: "🏔 고지대라 강한 압박은 후반에 지칩니다 −4%p") → 3층(펼치기): 상세 수치·산식</td></tr>
+      <td>1층(항상): 승률 게이지 큰 숫자 + 라인별 전력 막대 대결 → 2층: 근거 카드(Phosphor 아이콘+자연어 한 문장+델타,
+      예: "고지대라 강한 압박은 후반에 지칩니다 −4%p") → 3층(펼치기): 상세 수치·산식</td></tr>
     <tr><td class="k">3중 인코딩</td>
       <td>유리=초록·↑, 불리=빨강·↓ - 항상 색+방향+수치를 함께 표기(색약 대응). 승률 변동은 카운트업 애니메이션</td></tr>
     <tr><td class="k">조작→반응 1:1</td>
@@ -260,32 +260,32 @@
 
   <h3>⑤ 진입 장벽 제거</h3>
   <ul>
-    <li><b>퀵스타트</b>: 홈의 "한국 vs 브라질 바로 지휘하기" 원클릭 → 프리셋 라인업으로 즉시 작전실 진입.
-    첫 방문자가 <b>10초 안에</b> "승률이 반응하는" 핵심 경험에 도달합니다.</li>
+    <li><b>단일 CTA 진입</b>: 홈 히어로의 "2026 월드컵 다시 쓰기" 하나만 눌러 실제 경기 카드 → 결정적 순간 카드 → 곧바로 작전실.
+    첫 방문자가 <b>세 번의 선택 안에</b> "승률이 반응하는" 핵심 경험에 도달합니다.</li>
     <li><b>온보딩·접근성·모바일</b>: "감독 브리핑" 3단계 코치마크(1회만), 탭-투-배치 대체 수단, 375px 모바일 검수</li>
   </ul>
 
   <h3 style="page-break-after:auto; page-break-before:auto;">⑥ 디자인 시그니처 - 제4심판 LED 보드</h3>
-  <p style="page-break-before:auto;">이 앱의 모든 결정이 수렴하는 <b>"몇 분부터 지휘할 것인가"</b>를 실제 제4심판의 LED 보드로 컴포넌트화해 <span class="led">63′</span> 형태로 앱 전체에서 동일하게 씁니다.</p>
+  <p style="page-break-before:auto;">이 앱의 모든 결정이 수렴하는 <b>"몇 분부터 지휘할 것인가"</b>를 실제 제4심판의 LED 보드로 컴포넌트화해 <span class="led">63′</span> 형태로 앱 전체에서 동일하게 씁니다. 서체는 한글 Gothic A1과 라틴·숫자 Barlow Semi Condensed 2종으로 묶고, 패널은 평평하게 눌러 중계 그래픽 톤의 데이터 밀도를 냅니다.</p>
 </div>
 
 <!-- ================= 3. 페이지 구성 (1/2) ================= -->
 <div class="sec">
-  <h2><span class="no">3</span>페이지 구성 - 4+1 화면 + 대회</h2>
+  <h2><span class="no">3</span>페이지 구성 - 본편 6화면 + 승부차기</h2>
 
   <h3 style="margin-top:3mm;"><span class="tag">화면 1</span>홈 - 매치업 설정</h3>
   <div class="cols">
     <div>
       <ul>
-        <li><b>퀵스타트</b> 추천 매치업 원클릭 버튼(최우선 배치)</li>
-        <li>48개국(2026 월드컵 실제 출전국) 카드 그리드에서 내 팀 → 상대 팀 순서 선택, 실제 국기 색상·ELO·최근 폼·최종 성적 태그(조별리그~결승)와 상대전적 요약</li>
+        <li><b>히어로 단일 CTA</b> "2026 월드컵 다시 쓰기" 버튼 하나로 다시 쓰기 모드 진입(최우선 배치)</li>
+        <li><b>매치업 구성</b>: 48개국(2026 월드컵 실제 출전국) 카드 그리드에서 내 팀 → 상대 팀 순서 선택, 실제 국기 색상·ELO·최근 폼·최종 성적 태그(조별리그~결승)와 상대전적 요약</li>
         <li><b>경기장 선택</b>: 2026 실제 개최지 기반, 고도·기온·돔 아이콘으로 전술 영향 안내</li>
-        <li>푸터에 가상 데이터 고지</li>
+        <li>하단 고정 스코어보드에 예상 우세 바와 "작전실 입장" 버튼, 푸터에 가상 데이터 고지</li>
       </ul>
     </div>
     <div class="shot" style="flex: 1.5;">
       <img src="file:///C:/Users/ROG/Desktop/claudetest/worldcup/docs/screenshots/01-home.png" alt="홈 화면">
-      <div class="cap">홈 - 매치업·경기장 설정과 퀵스타트</div>
+      <div class="cap">홈 - 히어로 단일 CTA와 매치업·경기장 구성</div>
     </div>
   </div>
 
@@ -382,8 +382,8 @@
   <table class="split">
     <thead><tr><th style="width:25%;">사용자 조작</th><th>시스템 반응</th><th style="width:11%;">화면</th></tr></thead>
     <tbody>
-    <tr><td class="k">퀵스타트 버튼 클릭</td><td>프리셋 라인업·기본 전술로 즉시 작전실 진입 (10초 내 핵심 경험 도달)</td><td>홈</td></tr>
-    <tr><td class="k">팀·경기장 선택</td><td>ELO·폼·상대전적 요약 표시, 경기장 환경(고도·기온·돔)이 이후 모든 계산에 반영</td><td>홈</td></tr>
+    <tr><td class="k">히어로 "2026 월드컵 다시 쓰기" 클릭</td><td>실제 103경기 브라우저로 이동 → 경기·관리 팀·결정적 순간을 고르면 곧바로 작전실</td><td>홈</td></tr>
+    <tr><td class="k">팀·경기장 선택 후 "작전실 입장"</td><td>ELO·폼·상대전적 요약 표시, 경기장 환경(고도·기온·돔)이 이후 모든 계산에 반영</td><td>홈</td></tr>
     <tr><td class="k">선수 드래그 / 탭-투-배치</td><td>배치 즉시 승률 재계산·변동량 애니메이션, 부적합 포지션 시각 경고</td><td>작전실</td></tr>
     <tr><td class="k">포메이션·슬라이더·세부 지시 변경</td><td>승률·근거 카드 즉시 갱신, 변경 원인 카드만 하이라이트</td><td>작전실</td></tr>
     <tr><td class="k">선수 역할 변경</td><td>역할별 능력치 가중 재계산(타겟맨=공중볼·피지컬, 폴스나인=패스·드리블 등) → 승률 반영</td><td>작전실</td></tr>
@@ -458,7 +458,7 @@
 
   <h3>대표 시나리오 - "0-1로 뒤지던 경기를 교체로 뒤집다"</h3>
   <div class="flow">
-    <span class="step">홈<small>퀵스타트: 한국 vs 브라질</small></span><span class="arr">→</span>
+    <span class="step">홈<small>매치업 구성: 한국 vs 브라질</small></span><span class="arr">→</span>
     <span class="step">작전실<small>드래그 배치마다 승률이 출렁</small></span><span class="arr">→</span>
     <span class="step">AI 추천<small>근거 카드로 세팅 보완</small></span><span class="arr">→</span>
     <span class="step">경기 전반<small>0-1 실점, 위기 알림</small></span><span class="arr">→</span>
@@ -469,8 +469,8 @@
   </div>
 
   <ol>
-    <li style="margin-bottom:2mm;"><b>진입 (0~10초)</b> - 홈에서 퀵스타트 원클릭. 프리셋 라인업으로 작전실에 도착하면
-    이미 승률 게이지가 살아 있습니다. 첫 조작(선수 하나 이동)에서 바로 숫자가 반응합니다.</li>
+    <li style="margin-bottom:2mm;"><b>진입</b> - 홈에서 두 팀과 경기장을 고르고 "작전실 입장". 하단 스코어보드가 예상 우세를
+    미리 보여주고, 작전실에 도착하면 이미 승률 게이지가 살아 있습니다. 첫 조작에서 바로 숫자가 반응합니다.</li>
     <li style="margin-bottom:2mm;"><b>전술 설계</b> - 라인별 전력 비교로 약점을 파악하고, 3계층 지시를 조정합니다.
     막히면 "추천 전술 보기"가 최고 승률 세팅과 이유를 알려줍니다. 온보딩 코치마크가 첫 방문자를 3단계로 안내합니다.</li>
     <li style="margin-bottom:2mm;"><b>경기 지휘</b> - 하이라이트 점프로 긴장감 있게 진행되는 90분.
