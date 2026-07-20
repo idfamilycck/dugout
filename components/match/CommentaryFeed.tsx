@@ -3,22 +3,38 @@
 // 실시간 중계 피드: 최신 이벤트가 위로 쌓인다. 타입별 아이콘 + 골/위기 강조.
 // aria-live="polite"로 스크린리더가 새 중계를 읽어준다. 성능을 위해 최근 ~40개만 렌더한다.
 
+import {
+  Buildings,
+  ChatCircle,
+  Target,
+  SoccerBall,
+  HandPalm,
+  Flag,
+  Square,
+  Siren,
+  ArrowsClockwise,
+  ClipboardText,
+  Timer,
+  FlagCheckered,
+  type Icon,
+} from "@phosphor-icons/react";
 import { minuteLabel } from "./Scoreboard";
 import type { MatchEvent, MatchEventType } from "@/lib/engine/match";
 
-const ICON: Record<MatchEventType, string> = {
-  kickoff: "🏟",
-  chance: "💬",
-  shot: "🥅",
-  goal: "⚽",
-  save: "🧤",
-  corner: "🚩",
-  card: "🟨",
-  crisis: "🚨",
-  sub: "🔄",
-  tactic_change: "📋",
-  halftime: "⏱",
-  fulltime: "🏁",
+// 이벤트 타입 -> 실시간 중계 아이콘(순수 UI 장식, e.textKo 본문과는 별개).
+const ICON: Record<MatchEventType, Icon> = {
+  kickoff: Buildings,
+  chance: ChatCircle,
+  shot: Target,
+  goal: SoccerBall,
+  save: HandPalm,
+  corner: Flag,
+  card: Square,
+  crisis: Siren,
+  sub: ArrowsClockwise,
+  tactic_change: ClipboardText,
+  halftime: Timer,
+  fulltime: FlagCheckered,
 };
 
 const MAX_ROWS = 40;
@@ -48,6 +64,7 @@ export function CommentaryFeed({ events, meTeamId }: CommentaryFeedProps) {
           const isGoal = e.type === "goal";
           const isCrisis = e.type === "crisis";
           const isOurs = e.side === "me";
+          const EventIcon = ICON[e.type];
           return (
             <li
               key={`${e.minute}-${events.length - i}-${e.type}`}
@@ -65,8 +82,8 @@ export function CommentaryFeed({ events, meTeamId }: CommentaryFeedProps) {
               >
                 {minuteLabel(e.minute)}
               </span>
-              <span className="shrink-0 text-base leading-tight" aria-hidden>
-                {ICON[e.type]}
+              <span className="mt-0.5 shrink-0 leading-none" aria-hidden>
+                <EventIcon size={15} weight="bold" />
               </span>
               <span
                 className={`text-[13px] leading-snug ${

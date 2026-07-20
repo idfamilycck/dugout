@@ -22,9 +22,13 @@ export interface EntryPoint {
   teamCode?: string; // event's team (event category only) — for badge + team name
   isOurs?: boolean; // teamCode === side (event category only)
   kindKo?: string; // "득점" | "실점" | "자책골" | "교체" | "경고" | "퇴장"
-  icon?: string; // "⚽" | "🔄" | "🟨" | "🟥"
+  iconKey?: EntryPointIconKey; // UI가 실제 아이콘(Phosphor)으로 매핑하는 시맨틱 키
   detailKo?: string; // WHO: "손흥민" / "김영권 → 조규성" / "이강인"
 }
+
+// 이 모듈은 순수 로직이라 아이콘 컴포넌트를 직접 참조하지 않는다 — 시맨틱 키만 들고
+// 있고, 실제 Phosphor 아이콘 매핑은 components/rewrite/MomentCards.tsx가 한다.
+export type EntryPointIconKey = "goal" | "sub" | "yellow" | "red";
 
 // 고정 진행 방식 프리셋 — 이벤트 유무와 무관하게 항상 3개를 반환한다. 이것이
 // "완승/무카드 경기라 결정적 순간이 없다"는 막다른 화면을 없애는 핵심이다.
@@ -58,7 +62,7 @@ export function buildPresets(): EntryPoint[] {
 interface EventDetail {
   emphasis: boolean;
   kindKo: string;
-  icon: string;
+  iconKey: EntryPointIconKey;
   detailKo: string;
 }
 
@@ -76,27 +80,27 @@ function detailForEvent(ev: Wc2026Event, side: string, nameById: Map<string, str
   const scorerName = kr(ev.playerName);
   switch (ev.type) {
     case "goal":
-      return { icon: "⚽", detailKo: scorerName, kindKo: isSide ? "득점" : "실점", emphasis: !isSide };
+      return { iconKey: "goal", detailKo: scorerName, kindKo: isSide ? "득점" : "실점", emphasis: !isSide };
     case "pen_goal":
       return {
-        icon: "⚽",
+        iconKey: "goal",
         detailKo: `${scorerName} (PK)`,
         kindKo: isSide ? "득점" : "실점",
         emphasis: !isSide,
       };
     case "own_goal":
       // own_goal.teamCode = 자책골을 자기 골문에 넣은(가해) 팀 -> 득점은 상대에 가산.
-      return { icon: "⚽", detailKo: scorerName, kindKo: "자책골", emphasis: isSide };
+      return { iconKey: "goal", detailKo: scorerName, kindKo: "자책골", emphasis: isSide };
     case "sub": {
       const inName = scorerName;
       const outName = ev.relatedPlayerId ? (nameById.get(ev.relatedPlayerId) ?? ev.relatedPlayerId) : undefined;
       const detailKo = outName ? `${outName} → ${inName}` : inName;
-      return { icon: "🔄", detailKo, kindKo: "교체", emphasis: false };
+      return { iconKey: "sub", detailKo, kindKo: "교체", emphasis: false };
     }
     case "yellow":
-      return { icon: "🟨", detailKo: scorerName, kindKo: "경고", emphasis: false };
+      return { iconKey: "yellow", detailKo: scorerName, kindKo: "경고", emphasis: false };
     case "red":
-      return { icon: "🟥", detailKo: scorerName, kindKo: "퇴장", emphasis: isSide };
+      return { iconKey: "red", detailKo: scorerName, kindKo: "퇴장", emphasis: isSide };
   }
 }
 
@@ -117,7 +121,7 @@ export function buildEventEntries(match: Wc2026Match, side: string): EntryPoint[
 
   return events.map((ev, index) => {
     const takeoverMinute = Math.max(ev.minute - 5, 0);
-    const { emphasis, kindKo, icon, detailKo } = detailForEvent(ev, side, nameById);
+    const { emphasis, kindKo, iconKey, detailKo } = detailForEvent(ev, side, nameById);
     const isOurs = ev.teamCode === side;
     return {
       id: `ev-${match.id}-${index}`,
@@ -130,7 +134,7 @@ export function buildEventEntries(match: Wc2026Match, side: string): EntryPoint[
       teamCode: ev.teamCode,
       isOurs,
       kindKo,
-      icon,
+      iconKey,
       detailKo,
     };
   });

@@ -4,22 +4,23 @@
 // 건너뛰기/다음/시작 버튼. 딤 배경 + 스포트라이트 톤의 카드.
 
 import { useEffect, useState } from "react";
+import { Hand, TrendUp, FlagCheckered, type Icon } from "@phosphor-icons/react";
 
 const STORAGE_KEY = "touchline-onboarding";
 
-const STEPS = [
+const STEPS: { Icon: Icon; title: string; body: string }[] = [
   {
-    icon: "🖐️",
+    Icon: Hand,
     title: "선수를 끌어 배치하세요",
     body: "스쿼드에서 선수를 피치로 드래그하거나, 탭해서 자리를 골라 배치할 수 있어요.",
   },
   {
-    icon: "📈",
+    Icon: TrendUp,
     title: "승률 변동을 확인하세요",
     body: "라인업·전술을 바꿀 때마다 오른쪽 '분석'에서 승률과 그 근거가 실시간으로 움직여요.",
   },
   {
-    icon: "🏁",
+    Icon: FlagCheckered,
     title: "준비되면 경기 시작",
     body: "11명을 모두 배치하면 하단의 '경기 시작' 버튼이 열립니다. 감독석에서 지휘해 보세요.",
   },
@@ -70,9 +71,7 @@ export function Coachmarks() {
         </div>
 
         <div className="mt-5 flex flex-col items-center text-center">
-          <span className="text-4xl" aria-hidden>
-            {cur.icon}
-          </span>
+          <cur.Icon size={40} weight="bold" className="text-accent" aria-hidden />
           <h2 id="coach-title" className="display mt-3 text-2xl text-ink">
             {cur.title}
           </h2>

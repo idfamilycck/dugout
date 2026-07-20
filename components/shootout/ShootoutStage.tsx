@@ -6,6 +6,7 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Lightning, SoccerBall, HandPalm } from "@phosphor-icons/react";
 import { playersOf } from "@/lib/data/players";
 import { teamById } from "@/lib/data/teams";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
@@ -115,8 +116,9 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
           </div>
         </div>
         {isSuddenDeath && !done && (
-          <p className="mt-3 text-center text-xs font-black uppercase tracking-widest text-danger">
-            ⚡ 서든데스
+          <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs font-black uppercase tracking-widest text-danger">
+            <Lightning weight="bold" className="size-3.5" aria-hidden />
+            서든데스
           </p>
         )}
       </div>
@@ -163,7 +165,7 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
                 transition={{ duration: 0.7, ease: "easeOut" }}
                 aria-hidden
               >
-                ⚽
+                <SoccerBall weight="bold" className="size-6" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -177,10 +179,18 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
                 key={`flash-${revealed}`}
                 initial={{ opacity: 0, y: 6, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                className="text-center text-xl font-black"
+                className="flex items-center justify-center gap-1.5 text-center text-xl font-black"
                 style={{ color: active.scored ? "var(--color-gain)" : "var(--color-danger)" }}
               >
-                {active.scored ? "골! ⚽" : "실축! 🧤"}
+                {active.scored ? (
+                  <>
+                    골! <SoccerBall weight="bold" className="size-5" aria-hidden />
+                  </>
+                ) : (
+                  <>
+                    실축! <HandPalm weight="bold" className="size-5" aria-hidden />
+                  </>
+                )}
               </motion.p>
             )}
           </AnimatePresence>

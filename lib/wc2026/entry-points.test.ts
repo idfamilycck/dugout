@@ -203,7 +203,7 @@ describe("buildEventEntries", () => {
     expect(entries[0].isOurs).toBe(false);
     expect(entries[0].detailKo).toBe("치아구 → 호드리구");
     expect(entries[0].kindKo).toBe("교체");
-    expect(entries[0].icon).toBe("🔄");
+    expect(entries[0].iconKey).toBe("sub");
   });
 
   it("우리 팀 이벤트는 teamCode=side, isOurs=true", () => {

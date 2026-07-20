@@ -5,6 +5,7 @@
 // 일괄 반영한다. 동기 CPU 작업이라 스피너가 먼저 그려지도록 다음 프레임에 실행한다.
 
 import { useState } from "react";
+import { Lightning, CheckCircle } from "@phosphor-icons/react";
 import { useAppStore } from "@/lib/store";
 import { recommend, type Recommendation } from "@/lib/engine/recommend";
 
@@ -67,7 +68,10 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
             분석 중…
           </>
         ) : (
-          <>⚡ 추천 전술 보기</>
+          <>
+            <Lightning weight="bold" className="size-4" aria-hidden />
+            추천 전술 보기
+          </>
         )}
       </button>
 
@@ -115,13 +119,20 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
             type="button"
             onClick={apply}
             disabled={applied}
-            className={`rounded-full border py-2.5 text-sm font-bold transition-colors ${
+            className={`flex items-center justify-center gap-1.5 rounded-full border py-2.5 text-sm font-bold transition-colors ${
               applied
                 ? "border-line bg-surface-2 text-dim"
                 : "border-accent bg-accent/10 text-accent hover:bg-accent/20"
             }`}
           >
-            {applied ? "✓ 적용됨" : "이 전술 적용하기"}
+            {applied ? (
+              <>
+                <CheckCircle weight="bold" className="size-4" aria-hidden />
+                적용됨
+              </>
+            ) : (
+              "이 전술 적용하기"
+            )}
           </button>
           {deltaPct !== undefined && deltaPct === 0 && (
             <p className="text-center text-[11px] text-dim">

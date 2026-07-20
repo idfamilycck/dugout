@@ -1,5 +1,7 @@
 "use client";
 
+import type { ComponentType } from "react";
+import { Mountains, ThermometerHot, Buildings, type IconProps } from "@phosphor-icons/react";
 import { VENUES } from "@/lib/data/venues";
 import type { Venue } from "@/lib/types";
 
@@ -8,12 +10,12 @@ interface VenuePickerProps {
   onSelect: (venueId: string) => void;
 }
 
-// 경기장 특성 아이콘: 고도>1500 🏔 · 기온≥30℃(비돔) 🥵 · 돔 🏟
-function venueTraits(v: Venue): { icon: string; label: string }[] {
-  const traits: { icon: string; label: string }[] = [];
-  if (v.altitude > 1500) traits.push({ icon: "🏔", label: "고지대" });
-  if (v.avgTempC >= 30 && !v.dome) traits.push({ icon: "🥵", label: "폭염" });
-  if (v.dome) traits.push({ icon: "🏟", label: "돔구장" });
+// 경기장 특성 아이콘: 고도>1500 Mountains · 기온≥30℃(비돔) ThermometerHot · 돔 Buildings
+function venueTraits(v: Venue): { Icon: ComponentType<IconProps>; label: string }[] {
+  const traits: { Icon: ComponentType<IconProps>; label: string }[] = [];
+  if (v.altitude > 1500) traits.push({ Icon: Mountains, label: "고지대" });
+  if (v.avgTempC >= 30 && !v.dome) traits.push({ Icon: ThermometerHot, label: "폭염" });
+  if (v.dome) traits.push({ Icon: Buildings, label: "돔구장" });
   return traits;
 }
 
@@ -47,10 +49,10 @@ export function VenuePicker({ venueId, onSelect }: VenuePickerProps) {
                     <div className="truncate text-sm font-bold text-ink">{v.nameKo}</div>
                     <div className="text-[11px] text-dim">{v.cityKo}</div>
                   </div>
-                  <div className="flex gap-0.5 text-base leading-none">
+                  <div className="flex gap-1 leading-none text-dim">
                     {traits.map((t) => (
                       <span key={t.label}>
-                        <span aria-hidden>{t.icon}</span>
+                        <t.Icon size={16} weight="bold" aria-hidden />
                         <span className="sr-only">{t.label}</span>
                       </span>
                     ))}

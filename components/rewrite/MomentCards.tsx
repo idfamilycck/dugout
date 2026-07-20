@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { SoccerBall, ArrowsClockwise, Square } from "@phosphor-icons/react";
 import { useAppStore } from "@/lib/store";
-import { buildPresets, buildEventEntries, type EntryPoint } from "@/lib/wc2026/entry-points";
+import { buildPresets, buildEventEntries, type EntryPoint, type EntryPointIconKey } from "@/lib/wc2026/entry-points";
 import type { Wc2026Match } from "@/lib/wc2026/types";
 import { wc2026TeamId } from "@/lib/wc2026/data";
 import { teamById } from "@/lib/data/teams";
@@ -12,6 +13,21 @@ import { OfficialBoard } from "@/components/ui/OfficialBoard";
 interface MomentCardsProps {
   match: Wc2026Match;
   side: string; // 3-letter code (match.home 또는 match.away)
+}
+
+// EntryPoint.iconKey(시맨틱) -> 실제 Phosphor 아이콘. 카드/경고는 별도 아이콘이 없어
+// Square를 색으로 구분한다(옐로/레드 카드와 동일한 은유).
+function EntryPointIcon({ iconKey, className }: { iconKey: EntryPointIconKey; className?: string }) {
+  switch (iconKey) {
+    case "goal":
+      return <SoccerBall weight="bold" className={className} aria-hidden />;
+    case "sub":
+      return <ArrowsClockwise weight="bold" className={className} aria-hidden />;
+    case "yellow":
+      return <Square weight="bold" className={className} style={{ color: "#eab308" }} aria-hidden />;
+    case "red":
+      return <Square weight="bold" className={className} style={{ color: "var(--color-danger)" }} aria-hidden />;
+  }
 }
 
 // wc 팀 코드 → 표시용 한국어 이름/배지 색상. MatchBrowser.tsx의 teamDisplay와 동일한
@@ -101,11 +117,9 @@ export function MomentCards({ match, side }: MomentCardsProps) {
                       </span>
                     </div>
 
-                    {team && (
+                    {team && entry.iconKey && (
                       <div className="flex min-w-0 items-center gap-1.5">
-                        <span aria-hidden className="text-sm leading-none">
-                          {entry.icon}
-                        </span>
+                        <EntryPointIcon iconKey={entry.iconKey} className="size-4 shrink-0" />
                         <FlagBadge code={entry.teamCode ?? ""} color1={team.color1} color2={team.color2} size={18} />
                         <span className="truncate text-[11px] font-bold text-dim">{team.nameKo}</span>
                       </div>

@@ -3,9 +3,12 @@
 // 전술 평가 & 보완 패널: 통한 전술 / 발목 잡은 부분 / 다음 경기 보완 제안.
 // 내용은 buildTacticsReview(순수 로직)가 엔진 데이터로 생성한다.
 
+import { CheckCircle, Warning, ClipboardText } from "@phosphor-icons/react";
 import type { TacticsReview } from "./tactics-review";
 import type { AppliedRule } from "@/lib/engine/modifiers";
 
+// rule.icon은 lib/engine/modifiers.ts의 규칙 문구(방송 근거 카드 텍스트)에 딸린 값이라
+// 그대로 표시한다 — 이 패널 자체의 UI 크롬(섹션 헤딩 아이콘)만 Phosphor로 교체한다.
 function RuleRow({ rule, tone }: { rule: AppliedRule; tone: "good" | "bad" }) {
   return (
     <li className="flex items-start gap-2 text-sm">
@@ -25,7 +28,9 @@ export function TacticsReviewPanel({ review }: { review: TacticsReview }) {
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-[10px] border border-gain/30 bg-gain/5 p-4">
-          <h3 className="text-sm font-bold text-gain">✅ 통한 전술</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-bold text-gain">
+            <CheckCircle size={16} weight="bold" aria-hidden /> 통한 전술
+          </h3>
           {review.worked.length > 0 ? (
             <ul className="mt-2 flex flex-col gap-1.5">
               {review.worked.map((r) => (
@@ -38,7 +43,9 @@ export function TacticsReviewPanel({ review }: { review: TacticsReview }) {
         </div>
 
         <div className="rounded-[10px] border border-danger/30 bg-danger/5 p-4">
-          <h3 className="text-sm font-bold text-danger">⚠️ 발목 잡은 부분</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-bold text-danger">
+            <Warning size={16} weight="bold" aria-hidden /> 발목 잡은 부분
+          </h3>
           {review.hurt.length > 0 ? (
             <ul className="mt-2 flex flex-col gap-1.5">
               {review.hurt.map((r) => (
@@ -52,7 +59,9 @@ export function TacticsReviewPanel({ review }: { review: TacticsReview }) {
       </div>
 
       <div className="mt-4 rounded-[10px] border border-line bg-surface-2/60 p-4">
-        <h3 className="text-sm font-bold text-ink">📋 다음 경기 보완</h3>
+        <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+          <ClipboardText size={16} weight="bold" aria-hidden /> 다음 경기 보완
+        </h3>
         <ol className="mt-2 flex list-decimal flex-col gap-1.5 pl-5">
           {review.tips.map((tip) => (
             <li key={tip} className="text-sm leading-relaxed text-ink">

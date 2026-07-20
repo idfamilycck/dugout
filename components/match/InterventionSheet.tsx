@@ -12,6 +12,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ArrowsClockwise, X } from "@phosphor-icons/react";
 import { FORMATIONS } from "@/lib/data/formations";
 import { playersOf } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
@@ -286,8 +287,9 @@ export function InterventionSheet({
                     key={i}
                     className="flex items-center justify-between rounded-[10px] border border-accent/30 bg-accent/10 px-3 py-2 text-[12px]"
                   >
-                    <span className="text-ink">
-                      🔄 {nameOf(s.out)} <span className="text-dim">→</span>{" "}
+                    <span className="flex items-center gap-1.5 text-ink">
+                      <ArrowsClockwise weight="bold" className="size-3.5 shrink-0" aria-hidden />
+                      {nameOf(s.out)} <span className="text-dim">→</span>{" "}
                       <span className="font-bold text-accent">{nameOf(s.in)}</span>
                     </span>
                     <button
@@ -296,7 +298,7 @@ export function InterventionSheet({
                       aria-label="교체 취소"
                       className="text-dim hover:text-danger"
                     >
-                      ✕
+                      <X weight="bold" className="size-3.5" aria-hidden />
                     </button>
                   </li>
                 ))}

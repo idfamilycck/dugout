@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { TrendUp, TrendDown, Target, type Icon } from "@phosphor-icons/react";
 import { useAppStore } from "@/lib/store";
 import { counterfactual } from "@/lib/engine/counterfactual";
 import { teamById } from "@/lib/data/teams";
@@ -29,10 +30,10 @@ function countBy(events: MatchEvent[], side: "me" | "opp", pred: (e: MatchEvent)
   return events.filter((e) => e.side === side && pred(e)).length;
 }
 
-const HERO_TONE: Record<"gain" | "danger" | "neutral", { color: string; bg: string; icon: string }> = {
-  gain: { color: "var(--color-gain)", bg: "rgba(59,227,138,0.12)", icon: "📈" },
-  danger: { color: "var(--color-danger)", bg: "rgba(255,92,122,0.12)", icon: "📉" },
-  neutral: { color: "var(--color-ink)", bg: "rgba(34,211,238,0.10)", icon: "🎯" },
+const HERO_TONE: Record<"gain" | "danger" | "neutral", { color: string; bg: string; Icon: Icon }> = {
+  gain: { color: "var(--color-gain)", bg: "rgba(59,227,138,0.12)", Icon: TrendUp },
+  danger: { color: "var(--color-danger)", bg: "rgba(255,92,122,0.12)", Icon: TrendDown },
+  neutral: { color: "var(--color-ink)", bg: "rgba(34,211,238,0.10)", Icon: Target },
 };
 
 export default function ResultPage() {
@@ -196,7 +197,7 @@ export default function ResultPage() {
           결정적 순간
         </p>
         <p className="mt-2 flex items-start gap-2 text-xl font-black leading-snug text-ink">
-          <span aria-hidden>{tone.icon}</span>
+          <tone.Icon size={22} weight="bold" className="mt-0.5 shrink-0" aria-hidden />
           <span>{hero.text}</span>
         </p>
         <p className="mt-2 text-[12px] text-dim">

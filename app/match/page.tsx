@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { Play, Pause, Brain } from "@phosphor-icons/react";
 import { useAppStore } from "@/lib/store";
 import { Scoreboard, minuteLabel } from "@/components/match/Scoreboard";
 import { LivePitch } from "@/components/match/LivePitch";
@@ -218,9 +219,13 @@ export default function MatchPage() {
               onClick={() => setPlaying((p) => !p)}
               disabled={match.finished}
               aria-label={playing ? "일시정지" : "재생"}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-lg text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
             >
-              {playing ? "⏸" : "▶"}
+              {playing ? (
+                <Pause weight="bold" className="size-5" aria-hidden />
+              ) : (
+                <Play weight="bold" className="size-5" aria-hidden />
+              )}
             </button>
             <span className="text-[11px] text-dim">주요 장면 자동 정지 · 나머지는 빠르게 진행돼요</span>
           </div>
@@ -239,9 +244,10 @@ export default function MatchPage() {
               type="button"
               onClick={openSheet}
               disabled={match.finished}
-              className="rounded-full border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-bold text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-bold text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              🧠 작전 변경
+              <Brain weight="bold" className="size-4" aria-hidden />
+              작전 변경
             </button>
           </div>
         </div>
