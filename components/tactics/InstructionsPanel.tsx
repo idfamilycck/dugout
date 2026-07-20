@@ -190,7 +190,7 @@ export function InstructionsPanel() {
             }`}
           >
             <span
-              className="absolute top-0.5 h-5 w-5 rounded-full bg-ink transition-all"
+              className="absolute top-0.5 h-5 w-5 rounded-full bg-ink transition-[left]"
               style={{ left: instructions.offsideTrap ? "22px" : "2px" }}
             />
           </button>

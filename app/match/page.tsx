@@ -151,9 +151,19 @@ export default function MatchPage() {
     if (finished) setPlaying(false);
   }, [finished]);
 
+  // 하프타임 안내는 모달이므로 Escape로도 닫을 수 있어야 한다.
+  useEffect(() => {
+    if (!halftime) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setHalftime(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [halftime]);
+
   if (!match) {
     return (
-      <main className="flex flex-1 items-center justify-center px-5 py-24 text-center">
+      <main id="main" className="flex flex-1 scroll-mt-14 items-center justify-center px-5 py-24 text-center">
         <p className="text-sm text-dim">경기 정보를 불러오는 중…</p>
       </main>
     );
@@ -176,7 +186,7 @@ export default function MatchPage() {
   const isDraw = match.scoreMe === match.scoreOpp;
 
   return (
-    <main className="flex flex-1 flex-col pb-10">
+    <main id="main" className="flex flex-1 scroll-mt-14 flex-col pb-10">
       <h1 className="sr-only">경기 중계 — 실시간 지휘</h1>
       <CrisisBanner events={match.events} onIntervene={openSheet} />
 
@@ -285,14 +295,19 @@ export default function MatchPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="absolute inset-0 bg-black/60" onClick={() => setHalftime(false)} />
+            <button
+              type="button"
+              aria-label="하프타임 안내 닫기"
+              onClick={() => setHalftime(false)}
+              className="absolute inset-0 m-0 cursor-default appearance-none border-0 bg-black/60 p-0"
+            />
             <motion.div
               initial={{ scale: 0.92, y: 12 }}
               animate={{ scale: 1, y: 0 }}
-              className="panel relative w-full max-w-sm rounded-[10px] p-6 text-center"
+              className="panel relative w-full max-w-sm overscroll-contain rounded-[10px] p-6 text-center"
             >
               <p className="eyebrow text-accent">하프타임</p>
-              <h2 className="display mt-2 text-2xl text-ink">전반 종료</h2>
+              <h2 className="display mt-2 text-balance text-2xl text-ink">전반 종료</h2>
               <p className="mt-3 text-sm text-dim">작전을 지시할 좋은 타이밍입니다.</p>
               <div className="mt-6 flex gap-2">
                 <button

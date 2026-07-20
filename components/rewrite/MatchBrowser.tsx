@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Wc2026Match, Wc2026Round } from "@/lib/wc2026/types";
 import { wc2026TeamId } from "@/lib/wc2026/data";
 import { teamById } from "@/lib/data/teams";
@@ -8,6 +9,15 @@ import { sortForBrowser, roundLabelKo, availableGroups } from "@/components/rewr
 import { FlagBadge } from "@/components/ui/FlagBadge";
 
 const ROUND_ORDER: Wc2026Round[] = ["group", "r32", "r16", "qf", "sf", "third", "final"];
+const ROUND_SET = new Set<string>(ROUND_ORDER);
+
+function parseRound(v: string | null): Wc2026Round | undefined {
+  return v && ROUND_SET.has(v) ? (v as Wc2026Round) : undefined;
+}
+
+// 렌더 예산: 초기 24장만 그리고 "더 보기"로 이어붙인다(전체 가상화는 새 의존성이
+// 필요해 도입하지 않음). 필터가 바뀌면 다시 24장부터 시작한다.
+const PAGE_SIZE = 24;
 
 interface MatchBrowserProps {
   matches: Wc2026Match[];
@@ -35,8 +45,24 @@ export function MatchBrowser({
   onSelectMatch,
   onSelectSide,
 }: MatchBrowserProps) {
-  const [roundFilter, setRoundFilter] = useState<Wc2026Round | undefined>(undefined);
-  const [groupFilter, setGroupFilter] = useState<string | undefined>(undefined);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // 라운드/조 필터는 URL 쿼리(?round=&group=)가 단일 소스다 — 뒤로/앞으로가기와
+  // 딥링크로 그대로 복원된다.
+  const roundFilter = parseRound(searchParams.get("round"));
+  const groupFilter = searchParams.get("group") ?? undefined;
+
+  function updateQuery(next: Record<string, string | undefined>) {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(next)) {
+      if (value === undefined) params.delete(key);
+      else params.set(key, value);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
 
   // 실제 데이터에 존재하는 라운드만 탭으로 노출한다(예: 결승이 아직 데이터에
   // 없으면 "결승" 탭은 숨김).
@@ -50,14 +76,23 @@ export function MatchBrowser({
 
   // 라운드를 조별리그가 아닌 곳으로 바꾸면 조 필터를 초기화한다.
   function pickRound(r: Wc2026Round | undefined) {
-    setRoundFilter(r);
-    if (r !== "group") setGroupFilter(undefined);
+    updateQuery({ round: r, group: r === "group" ? groupFilter : undefined });
+  }
+  function pickGroup(g: string | undefined) {
+    updateQuery({ group: g });
   }
 
   const visible = useMemo(
     () => sortForBrowser(matches, roundFilter, roundFilter === "group" ? groupFilter : undefined),
     [matches, roundFilter, groupFilter],
   );
+
+  // 렌더 예산: 필터가 바뀌면 24장부터 다시 시작.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [roundFilter, groupFilter]);
+  const shown = visible.slice(0, visibleCount);
 
   return (
     <div className="flex flex-col gap-5">
@@ -91,7 +126,7 @@ export function MatchBrowser({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setGroupFilter(undefined)}
+            onClick={() => pickGroup(undefined)}
             className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
               groupFilter === undefined ? "bg-accent/80 text-accent-ink" : "bg-surface text-dim"
             }`}
@@ -102,7 +137,7 @@ export function MatchBrowser({
             <button
               key={g}
               type="button"
-              onClick={() => setGroupFilter(g)}
+              onClick={() => pickGroup(g)}
               className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
                 groupFilter === g ? "bg-accent/80 text-accent-ink" : "bg-surface text-dim"
               }`}
@@ -113,9 +148,9 @@ export function MatchBrowser({
         </div>
       )}
 
-      {/* 경기 카드 그리드 */}
+      {/* 경기 카드 그리드 — 렌더 예산(초기 24장)을 넘는 카드는 "더 보기"로 이어붙인다 */}
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {visible.map((m) => {
+        {shown.map((m) => {
           const home = teamDisplay(m.home);
           const away = teamDisplay(m.away);
           const isKor = m.home === "KOR" || m.away === "KOR";
@@ -190,6 +225,16 @@ export function MatchBrowser({
           );
         })}
       </ul>
+
+      {visible.length > visibleCount && (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          className="mx-auto min-h-[44px] rounded-full border border-line bg-surface-2/60 px-6 text-xs font-bold text-ink transition-colors hover:border-white/25"
+        >
+          더 보기 · {visible.length - visibleCount}경기 남음
+        </button>
+      )}
 
       {visible.length === 0 && (
         <p className="py-8 text-center text-sm text-dim">이 라운드에는 경기가 없습니다.</p>

@@ -224,9 +224,9 @@ export default function TacticsPage() {
   // 매치업 미선택 상태(직접 URL 진입 등) 방어.
   if (!me) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center px-5 py-24 text-center">
+      <main id="main" className="flex flex-1 scroll-mt-14 flex-col items-center justify-center px-5 py-24 text-center">
         <p className="eyebrow text-accent">TOUCHLINE</p>
-        <h1 className="display mt-4 text-4xl text-ink">먼저 매치업을 골라주세요</h1>
+        <h1 className="display mt-4 text-balance text-4xl text-ink">먼저 매치업을 골라주세요</h1>
         <p className="mt-4 max-w-sm text-sm text-dim">
           작전실은 내 팀과 상대를 정한 뒤에 열립니다.
         </p>
@@ -268,7 +268,7 @@ export default function TacticsPage() {
   ];
 
   return (
-    <main className="flex flex-1 flex-col pb-28">
+    <main id="main" className="flex flex-1 scroll-mt-14 flex-col pb-28">
       {/* ── 헤더 ─────────────────────────────────────────── */}
       <header className="border-b border-line px-5 py-4">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">

@@ -84,7 +84,7 @@ export function Coachmarks() {
           {STEPS.map((_, i) => (
             <span
               key={i}
-              className="h-1.5 rounded-full transition-all"
+              className="h-1.5 rounded-full transition-[width,background-color]"
               style={{
                 width: i === step ? 20 : 8,
                 background: i === step ? "var(--color-accent)" : "var(--color-surface-2)",

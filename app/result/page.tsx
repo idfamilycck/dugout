@@ -101,7 +101,7 @@ export default function ResultPage() {
 
   if (!hydrated || !match || !cf) {
     return (
-      <main className="flex flex-1 items-center justify-center px-5 py-24 text-center">
+      <main id="main" className="flex flex-1 scroll-mt-14 items-center justify-center px-5 py-24 text-center">
         <p className="text-sm text-dim">
           {hydrated && !match ? "홈으로 이동합니다…" : "복기를 준비하는 중…"}
         </p>
@@ -164,10 +164,10 @@ export default function ResultPage() {
   ];
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6 sm:px-5">
+    <main id="main" className="mx-auto flex w-full max-w-md flex-1 scroll-mt-14 flex-col gap-4 px-4 py-6 sm:px-5">
       {/* 헤드라인 */}
       <header className="panel rounded-[10px] px-4 py-5 text-center">
-        <h1 className="eyebrow text-accent">경기 복기</h1>
+        <h1 className="eyebrow text-balance text-accent">경기 복기</h1>
         <div className="mt-3 flex items-center justify-center gap-2 text-xs font-bold text-dim">
           <span>{me?.code ?? "ME"}</span>
           <span className="stat-num display text-5xl text-ink">

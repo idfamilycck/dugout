@@ -38,7 +38,13 @@ test("월드컵 다시 쓰기 → 결정적 순간 선택 → 경기 완주 → 
     const card = matchCards.nth(i);
     await card.locator("button").first().click();
 
+    // 경기 선택은 이제 라우터 쿼리(?match=)로 반영되어 클릭과 렌더 사이에 비동기
+    // 틈이 생긴다. 사이드 버튼이 뜰 때까지 명시적으로 기다린 뒤 세어야 한다
+    // (count()는 자동 재시도하지 않아, 기다리지 않으면 0으로 읽혀 루프가 헛돈다).
     const sideButtons = card.getByRole("button", { name: /지휘하기/ });
+    if (!(await sideButtons.first().isVisible())) {
+      await expect(sideButtons.first()).toBeVisible({ timeout: 5_000 }).catch(() => {});
+    }
     const sideCount = await sideButtons.count();
     for (let s = 0; s < sideCount && !picked; s++) {
       await sideButtons.nth(s).click();

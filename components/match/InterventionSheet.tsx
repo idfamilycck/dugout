@@ -10,7 +10,7 @@
 // 슬롯 재배치가 불가능해 온피치 인원이 어긋나기 때문이다(엔진 applyIntervention은
 // autoPlace를 다시 돌리지 않음).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FORMATIONS } from "@/lib/data/formations";
 import { playersOf } from "@/lib/data/players";
@@ -185,6 +185,52 @@ export function InterventionSheet({
     onSubmit(iv);
   };
 
+  // 다이얼로그 접근성: Escape로 닫기 + 포커스를 시트 안에 가두고, 열릴 때 시트로
+  // 옮긴 뒤 닫히면 트리거로 되돌린다. 의존성 없이 keydown 리스너 + 포커스 가능
+  // 요소 스캔만으로 구현한다.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+
+    const focusable = (): HTMLElement[] =>
+      panel
+        ? Array.from(
+            panel.querySelectorAll<HTMLElement>(
+              'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+          ).filter((el) => el.offsetParent !== null)
+        : [];
+
+    (focusable()[0] ?? panel)?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <motion.div
@@ -195,9 +241,11 @@ export function InterventionSheet({
         onClick={onClose}
       />
       <motion.div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="작전 변경"
+        tabIndex={-1}
         initial={{ y: "100%", opacity: 0.6 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%" }}
@@ -223,7 +271,7 @@ export function InterventionSheet({
         </div>
 
         {/* 본문 */}
-        <div className="flex flex-col gap-6 overflow-y-auto px-5 py-5">
+        <div className="flex flex-col gap-6 overflow-y-auto overscroll-contain px-5 py-5">
           {/* 교체 */}
           <section>
             <div className="mb-2 flex items-baseline justify-between">

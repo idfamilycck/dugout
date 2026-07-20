@@ -89,7 +89,7 @@ function Slot({
     >
       <div
         ref={setDropRef}
-        className={`rounded-[10px] p-1 transition-all ${
+        className={`rounded-[10px] p-1 transition-[background-color,box-shadow] ${
           isOver
             ? "bg-accent/25 ring-2 ring-accent"
             : isEligibleTarget

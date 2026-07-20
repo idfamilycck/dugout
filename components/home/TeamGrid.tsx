@@ -66,7 +66,10 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
               : "var(--color-line)";
 
           return (
-            <li key={t.id}>
+            // content-visibility: auto — 화면 밖 카드는 레이아웃/페인트를 건너뛴다.
+            // 48장 전체를 그대로 렌더하되(가상화는 새 의존성이 필요해 도입하지 않음)
+            // 렌더 비용만 낮춘다. contain-intrinsic-size는 스크롤바 튐 방지용 추정 높이.
+            <li key={t.id} className="[content-visibility:auto] [contain-intrinsic-size:220px]">
               <button
                 type="button"
                 onClick={() => onSelect(t.id)}

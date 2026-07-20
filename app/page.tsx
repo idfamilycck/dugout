@@ -58,7 +58,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex flex-1 flex-col pb-28">
+    <main id="main" className="flex flex-1 scroll-mt-14 flex-col pb-28">
       {/* ── 히어로 ───────────────────────────────────────── */}
       <section
         aria-label="히어로"
@@ -66,10 +66,10 @@ export default function Home() {
       >
         <div className="mx-auto w-full max-w-5xl px-5 pb-8 pt-10 sm:pt-14">
           <p className="eyebrow text-accent">국가대표 전술 시뮬레이터</p>
-          <h1 className="display mt-4 text-5xl text-ink sm:text-7xl">
+          <h1 className="display mt-4 text-balance text-5xl text-ink sm:text-7xl">
             당신이<br />감독이라면.
           </h1>
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-dim">
+          <p className="mt-5 max-w-xl text-pretty text-base leading-relaxed text-dim">
             포메이션과 지시 하나로 승부가 뒤집힙니다. 대표팀을 골라 벤치에 앉고,
             90분을 직접 지휘해 보세요.
           </p>
@@ -93,7 +93,7 @@ export default function Home() {
       <section aria-label="매치업 구성" className="mx-auto w-full max-w-5xl px-5 pt-10">
         <header className="accent-tab mb-6 pl-4">
           <p className="eyebrow text-dim">STEP 01 · 매치업</p>
-          <h2 className="display mt-1 text-3xl text-ink">누구를 이끌고, 누구를 상대할까</h2>
+          <h2 className="display mt-1 text-balance text-3xl text-ink">누구를 이끌고, 누구를 상대할까</h2>
         </header>
         <TeamGrid myTeamId={myTeamId} oppTeamId={oppTeamId} onSelect={handleTeamClick} />
       </section>
@@ -102,7 +102,7 @@ export default function Home() {
       <section aria-label="경기장 선택" className="mx-auto w-full max-w-5xl px-5 pt-10">
         <header className="accent-tab mb-6 pl-4">
           <p className="eyebrow text-dim">STEP 02 · 경기장</p>
-          <h2 className="display mt-1 text-3xl text-ink">어디에서 맞붙을까</h2>
+          <h2 className="display mt-1 text-balance text-3xl text-ink">어디에서 맞붙을까</h2>
         </header>
         <VenuePicker venueId={venueId} onSelect={setVenueId} />
       </section>
@@ -131,7 +131,7 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="h-full rounded-full transition-[width,background-color]"
                     style={{
                       width: `${pct}%`,
                       background: favored ? "var(--color-gain)" : "var(--color-danger)",
