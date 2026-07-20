@@ -6,13 +6,32 @@
 // "실제 역사"라는 점이 다르다. 유리(결과 개선)=초록, 불리(결과 악화)=빨강,
 // 동일=중립.
 
+import { SoccerBall, ClockCounterClockwise } from "@phosphor-icons/react";
 import type { RewriteCompare, ResultWord } from "./compare";
 import { resultRank } from "./compare";
+import type { GoalTimeline, RealGoal } from "./goal-timeline";
 
 interface RealVsParallelProps {
   compare: RewriteCompare;
   meCode: string;
   oppCode: string;
+  // 인수 시점 이후 구간의 골 타임라인 대조. rewriteContext가 없거나 실제 경기를
+  // 찾지 못한 경우를 대비해 선택 값으로 둔다(없으면 스코어 비교만 보여준다).
+  timeline?: GoalTimeline;
+}
+
+// 실제 골 목록은 최대 5개까지만 나열하고 나머지는 개수로 요약한다.
+const MAX_LISTED_GOALS = 5;
+
+interface ListedGoal extends RealGoal {
+  conceded: boolean;
+}
+
+function mergeRealGoals(timeline: GoalTimeline): ListedGoal[] {
+  return [
+    ...timeline.realScored.map((g) => ({ ...g, conceded: false })),
+    ...timeline.realConceded.map((g) => ({ ...g, conceded: true })),
+  ].sort((a, b) => a.minute - b.minute);
 }
 
 function wordColor(word: ResultWord): string {
@@ -61,7 +80,63 @@ function ScoreCard({
   );
 }
 
-export function RealVsParallel({ compare, meCode, oppCode }: RealVsParallelProps) {
+// 인수 시점 이후 구간의 대조를 기존 카드 안에 문장으로 덧붙인다. 별도 섹션을 만들지
+// 않는 이유: 이 분석은 위 스코어 비교의 근거(어느 시간대에서 무엇이 달라졌는가)이지
+// 독립된 주제가 아니다.
+function TimelineNote({ timeline }: { timeline: GoalTimeline }) {
+  const listed = mergeRealGoals(timeline);
+  const shown = listed.slice(0, MAX_LISTED_GOALS);
+  const hidden = listed.length - shown.length;
+
+  return (
+    <div className="mt-3 rounded-panel border border-line bg-surface-2/40 px-3.5 py-3">
+      <p className="eyebrow flex items-center gap-1.5 text-dim">
+        <ClockCounterClockwise size={13} weight="bold" aria-hidden />
+        <span>
+          <span className="tnum">{timeline.fromMinute}</span>분 이후 구간 대조
+        </span>
+      </p>
+
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {timeline.linesKo.map((line) => (
+          <li key={line} className="text-[13px] leading-relaxed text-ink">
+            {line}
+          </li>
+        ))}
+      </ul>
+
+      {listed.length > 0 && (
+        <>
+          <p className="mt-3 text-[11px] text-dim">이 구간의 실제 골 기록</p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {shown.map((g) => (
+              <li
+                key={`${g.minute}-${g.playerName}-${g.conceded ? "a" : "f"}`}
+                className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]"
+                style={{
+                  borderColor: g.conceded ? "var(--color-danger)" : "var(--color-gain)",
+                  color: g.conceded ? "var(--color-danger)" : "var(--color-gain)",
+                }}
+              >
+                <SoccerBall size={11} weight="bold" aria-hidden />
+                <span className="tnum font-bold">{g.minute}&apos;</span>
+                <span className="text-ink">{g.playerName}</span>
+                {g.ownGoal && <span className="text-dim">자책</span>}
+              </li>
+            ))}
+            {hidden > 0 && (
+              <li className="rounded-full border border-line px-2 py-0.5 text-[11px] text-dim">
+                외 <span className="tnum">{hidden}</span>골
+              </li>
+            )}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function RealVsParallel({ compare, meCode, oppCode, timeline }: RealVsParallelProps) {
   const realWord = compare.realResultKo;
   const myWord = compare.myResultKo;
   const realFor = compare.realFor;
@@ -114,6 +189,8 @@ export function RealVsParallel({ compare, meCode, oppCode }: RealVsParallelProps
       >
         {compare.deltaKo}
       </p>
+
+      {timeline && <TimelineNote timeline={timeline} />}
     </section>
   );
 }

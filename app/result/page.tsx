@@ -24,6 +24,7 @@ import { TacticsReviewPanel } from "@/components/result/TacticsReviewPanel";
 import { Disclaimer } from "@/components/ui/Disclaimer";
 import { RealVsParallel } from "@/components/rewrite/RealVsParallel";
 import { buildCompare, resultRank } from "@/components/rewrite/compare";
+import { buildGoalTimeline } from "@/components/rewrite/goal-timeline";
 import { wc2026MatchById } from "@/lib/wc2026/data";
 
 function countBy(events: MatchEvent[], side: "me" | "opp", pred: (e: MatchEvent) => boolean): number {
@@ -86,6 +87,22 @@ export default function ResultPage() {
       realMatch,
       rewriteContext.side,
       { scoreMe: match.scoreMe, scoreOpp: match.scoreOpp },
+      rewriteContext.endMinute ?? 90
+    );
+  }, [mode, rewriteContext, match]);
+
+  // rewrite 모드 전용: 인수 시점 이후 구간에서 실제 골 타임라인과 내 시뮬의 골을
+  // 대조한다. rewriteCompare와 같은 가드 조건이지만, 스코어 비교와 달리 여기서는
+  // takeoverMinute(개입 가능 시작 시점)이 반드시 필요하다.
+  const goalTimeline = useMemo(() => {
+    if (mode !== "rewrite" || !rewriteContext || !match) return undefined;
+    const realMatch = wc2026MatchById(rewriteContext.matchId);
+    if (!realMatch) return undefined;
+    return buildGoalTimeline(
+      realMatch,
+      rewriteContext.side,
+      match.events,
+      rewriteContext.takeoverMinute,
       rewriteContext.endMinute ?? 90
     );
   }, [mode, rewriteContext, match]);
@@ -212,7 +229,12 @@ export default function ResultPage() {
       {/* 평행세계 비교: rewrite 모드는 "실제 역사" vs "나의 개입", free 모드는
           "실제 경기" vs "무개입 재시뮬레이션"이라는 서로 다른 개념이라 컴포넌트를 분기한다. */}
       {rewriteCompare ? (
-        <RealVsParallel compare={rewriteCompare} meCode={me?.code ?? "ME"} oppCode={opp?.code ?? "OPP"} />
+        <RealVsParallel
+          compare={rewriteCompare}
+          meCode={me?.code ?? "ME"}
+          oppCode={opp?.code ?? "OPP"}
+          timeline={goalTimeline}
+        />
       ) : (
         <CfCompare cf={cf} match={match} />
       )}
