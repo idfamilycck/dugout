@@ -26,8 +26,10 @@ const DESCRIPTION =
   "국가대표 전술 시뮬레이터. 대표팀을 골라 포메이션과 지시를 짜고 90분을 직접 지휘하세요. 모든 능력치는 가상 데이터입니다.";
 
 // 페이지 배경(--color-pitch)과 맞춘 브라우저 크롬 색상(주소창 등).
+// 주의: globals.css의 --color-pitch를 바꾸면 여기도 같이 바꿔야 한다. 토큰을 참조할 수
+// 없는 자리라(메타 태그) 값이 갈리면 모바일에서 주소창만 옛 색으로 남는다.
 export const viewport: Viewport = {
-  themeColor: "#0f1319",
+  themeColor: "#070C0A",
 };
 
 export const metadata: Metadata = {
