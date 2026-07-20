@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Wc2026Match, Wc2026Round } from "@/lib/wc2026/types";
 import { wc2026TeamId } from "@/lib/wc2026/data";
@@ -87,11 +87,16 @@ export function MatchBrowser({
     [matches, roundFilter, groupFilter],
   );
 
-  // 렌더 예산: 필터가 바뀌면 24장부터 다시 시작.
+  // 렌더 예산: 필터가 바뀌면 24장부터 다시 시작. 이펙트 대신 렌더 중 이전 필터 키와
+  // 비교해 조건부로 초기화한다("Adjusting state when a prop changes" 패턴) — 별도
+  // 커밋 없이 같은 렌더에서 바로 반영돼 이펙트보다 한 프레임 빠르다.
+  const filterKey = `${roundFilter ?? ""}|${groupFilter ?? ""}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  useEffect(() => {
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setVisibleCount(PAGE_SIZE);
-  }, [roundFilter, groupFilter]);
+  }
   const shown = visible.slice(0, visibleCount);
 
   return (

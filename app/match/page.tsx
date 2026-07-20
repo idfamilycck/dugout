@@ -70,6 +70,8 @@ export default function MatchPage() {
   useEffect(() => {
     const p = useAppStore.persist;
     if (!p || p.hasHydrated()) {
+      // zustand persist(sessionStorage) 재수화 여부를 확인하는 외부 시스템 동기화라 setState가 맞다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHydrated(true);
       return;
     }
@@ -109,6 +111,8 @@ export default function MatchPage() {
     sceneSeenRef.current = m;
     const evs = sceneEventsAt(match.events, m);
     if (!shouldStopScene(evs)) return;
+    // 외부 스토어(zustand)의 분 진행을 감지해 로컬 장면 커서를 동기화하는 것이라 setState가 맞다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setScene(evs);
     if (sceneTimerRef.current) clearTimeout(sceneTimerRef.current);
     sceneTimerRef.current = setTimeout(() => setScene(null), sceneDurationMs(evs));
@@ -142,15 +146,12 @@ export default function MatchPage() {
     const halftimeIsLatest = lastEvent?.type === "halftime";
     if ((halftimeIsLatest || match.minute === 45) && match.events.some((e) => e.type === "halftime")) {
       halftimeHandledRef.current = true;
+      // 외부 스토어(zustand)의 분 진행에서 하프타임을 감지해 한 번만 정지시키는 동기화라 setState가 맞다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlaying(false);
       setHalftime(true);
     }
   }, [match]);
-
-  // 종료 시 정지.
-  useEffect(() => {
-    if (finished) setPlaying(false);
-  }, [finished]);
 
   // 하프타임 안내는 모달이므로 Escape로도 닫을 수 있어야 한다.
   useEffect(() => {
@@ -185,6 +186,9 @@ export default function MatchPage() {
   };
 
   const isDraw = match.scoreMe === match.scoreOpp;
+  // 종료된 경기는 재생 버튼이 비활성화되지만, 표시용 아이콘/라벨은 항상 "정지"로
+  // 렌더 중 파생시킨다(재생 루프 이펙트는 이미 finished를 조건에 포함해 정지한다).
+  const isPlayingDisplay = playing && !match.finished;
 
   return (
     <main id="main" className="flex flex-1 scroll-mt-14 flex-col pb-10">
@@ -218,10 +222,10 @@ export default function MatchPage() {
               type="button"
               onClick={() => setPlaying((p) => !p)}
               disabled={match.finished}
-              aria-label={playing ? "일시정지" : "재생"}
+              aria-label={isPlayingDisplay ? "일시정지" : "재생"}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
             >
-              {playing ? (
+              {isPlayingDisplay ? (
                 <Pause weight="bold" className="size-5" aria-hidden />
               ) : (
                 <Play weight="bold" className="size-5" aria-hidden />
@@ -282,7 +286,7 @@ export default function MatchPage() {
 
         {/* 중계 + 승률 타임라인 */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <CommentaryFeed events={match.events} meTeamId={match.me.teamId} />
+          <CommentaryFeed events={match.events} />
           <ProbTimeline
             timeline={match.probTimeline}
             events={match.events}

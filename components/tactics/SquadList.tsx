@@ -46,6 +46,10 @@ const STAT_OPTIONS: { key: StatSortKey; label: string }[] = [
 // 헤더가 다루는 정렬 대상 3가지. "stat"은 STAT_OPTIONS에서 고른 키를 가리킨다.
 type SortSlot = "name" | "age" | "stat";
 
+// aria-sort는 role="columnheader"인 요소에만 허용된다(button의 암묵적 role은
+// "button"이라 지원되지 않음). 정렬 상태는 이 헤더 셀(span, role="columnheader")에
+// 얹고, 안쪽 button은 정렬을 트리거하기만 한다. className="contents"로 셀이
+// 레이아웃에 관여하지 않게 해 기존 flex 배치는 그대로 button이 맡는다.
 function SortHeaderButton({
   label,
   active,
@@ -60,20 +64,25 @@ function SortHeaderButton({
   className?: string;
 }) {
   return (
-    <button
-      type="button"
-      data-keep-selection
-      onClick={onClick}
+    <span
+      role="columnheader"
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
-      className={`flex min-h-11 items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors sm:min-h-0 ${
-        active ? "text-accent" : "text-dim hover:text-ink"
-      } ${className ?? ""}`}
+      className="contents"
     >
-      {label}
-      <span aria-hidden className="text-[9px] leading-none">
-        {active ? (dir === "asc" ? "▲" : "▼") : ""}
-      </span>
-    </button>
+      <button
+        type="button"
+        data-keep-selection
+        onClick={onClick}
+        className={`flex min-h-11 items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors sm:min-h-0 ${
+          active ? "text-accent" : "text-dim hover:text-ink"
+        } ${className ?? ""}`}
+      >
+        {label}
+        <span aria-hidden className="text-[9px] leading-none">
+          {active ? (dir === "asc" ? "▲" : "▼") : ""}
+        </span>
+      </button>
+    </span>
   );
 }
 
@@ -87,8 +96,10 @@ interface HeaderRowProps {
 }
 
 function HeaderRow({ sortSlot, sortDir, statKey, statLabel, onToggle, onStatKeyChange }: HeaderRowProps) {
+  const statSortState = sortSlot === "stat" ? (sortDir === "asc" ? "ascending" : "descending") : "none";
   return (
-    <div className="mb-1.5 flex items-center gap-3 px-2.5">
+    // role="row"에 담긴 정렬 가능한 헤더 셀들이 각자 role="columnheader"로 aria-sort를 낸다.
+    <div className="mb-1.5 flex items-center gap-3 px-2.5" role="row">
       <span className="w-[38px] shrink-0" aria-hidden="true" />
       <SortHeaderButton
         label="이름"
@@ -104,33 +115,35 @@ function HeaderRow({ sortSlot, sortDir, statKey, statLabel, onToggle, onStatKeyC
         onClick={() => onToggle("age")}
         className="hidden w-9 shrink-0 justify-center text-center sm:flex"
       />
-      <div className="flex shrink-0 items-center gap-1">
-        <select
-          aria-label="정렬 기준 능력치 선택"
-          data-keep-selection
-          value={statKey}
-          onChange={(e) => onStatKeyChange(e.target.value as StatSortKey)}
-          className="h-11 rounded-[8px] border border-line bg-surface-2 px-1 text-[10px] font-bold text-ink sm:h-6 sm:px-1.5"
-        >
-          {STAT_OPTIONS.map((o) => (
-            <option key={o.key} value={o.key}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          data-keep-selection
-          onClick={() => onToggle("stat")}
-          aria-sort={sortSlot === "stat" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
-          aria-label={`${statLabel} 기준 정렬`}
-          className={`flex h-11 w-6 shrink-0 items-center justify-center text-[11px] font-bold sm:h-6 ${
-            sortSlot === "stat" ? "text-accent" : "text-dim hover:text-ink"
-          }`}
-        >
-          <span aria-hidden>{sortSlot === "stat" ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>
-        </button>
-      </div>
+      {/* "스탯" 열: 능력치 선택 + 정렬 버튼을 한 헤더 셀로 묶어 aria-sort를 낸다. */}
+      <span role="columnheader" aria-sort={statSortState} className="contents">
+        <div className="flex shrink-0 items-center gap-1">
+          <select
+            aria-label="정렬 기준 능력치 선택"
+            data-keep-selection
+            value={statKey}
+            onChange={(e) => onStatKeyChange(e.target.value as StatSortKey)}
+            className="h-11 rounded-[8px] border border-line bg-surface-2 px-1 text-[10px] font-bold text-ink sm:h-6 sm:px-1.5"
+          >
+            {STAT_OPTIONS.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            data-keep-selection
+            onClick={() => onToggle("stat")}
+            aria-label={`${statLabel} 기준 정렬`}
+            className={`flex h-11 w-6 shrink-0 items-center justify-center text-[11px] font-bold sm:h-6 ${
+              sortSlot === "stat" ? "text-accent" : "text-dim hover:text-ink"
+            }`}
+          >
+            <span aria-hidden>{sortSlot === "stat" ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>
+          </button>
+        </div>
+      </span>
     </div>
   );
 }

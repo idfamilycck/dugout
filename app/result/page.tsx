@@ -55,6 +55,8 @@ export default function ResultPage() {
   useEffect(() => {
     const p = useAppStore.persist;
     if (!p || p.hasHydrated()) {
+      // zustand persist(sessionStorage) 재수화 여부를 확인하는 외부 시스템 동기화라 setState가 맞다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHydrated(true);
       return;
     }

@@ -41,10 +41,9 @@ const MAX_ROWS = 40;
 
 interface CommentaryFeedProps {
   events: MatchEvent[];
-  meTeamId: string;
 }
 
-export function CommentaryFeed({ events, meTeamId }: CommentaryFeedProps) {
+export function CommentaryFeed({ events }: CommentaryFeedProps) {
   // 최근 MAX_ROWS개만, 최신이 위로 오도록 역순.
   const rows = events.slice(-MAX_ROWS).reverse();
 

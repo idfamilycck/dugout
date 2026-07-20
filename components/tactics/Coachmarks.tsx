@@ -31,7 +31,11 @@ export function Coachmarks() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // localStorage(브라우저 API, 서버에는 없음)를 마운트 후에만 읽어야 SSR과
+    // 클라이언트 첫 렌더가 항상 "닫힘"으로 일치해 하이드레이션 불일치가 없다.
+    // 렌더 중 lazy useState 초기값으로 옮기면 서버/클라이언트 결과가 갈릴 수 있다.
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
     } catch {
       // localStorage 접근 불가 환경에서는 조용히 표시하지 않는다.
