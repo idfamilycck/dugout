@@ -235,9 +235,9 @@ const TEXT_TEMPLATES: Record<"chance" | "shot" | "goal" | "save" | "corner" | "c
     `${name}, 과감하게 슈팅을 시도합니다!`,
   ],
   goal: (name) => [
-    `⚽ ${name}, 골망을 흔듭니다!!`,
-    `⚽ ${name}의 환상적인 골!`,
-    `⚽ ${name}, 결국 골을 만들어냅니다!`,
+    `${name}, 골망을 흔듭니다!!`,
+    `${name}의 환상적인 골!`,
+    `${name}, 결국 골을 만들어냅니다!`,
   ],
   save: (name) => [
     `${name}의 슈팅, 골키퍼 선방에 막힙니다.`,
@@ -250,9 +250,9 @@ const TEXT_TEMPLATES: Record<"chance" | "shot" | "goal" | "save" | "corner" | "c
     `코너킥! ${name}의 슈팅이 수비에 걸립니다.`,
   ],
   card: (name) => [
-    `🟨 ${name}, 경고를 받습니다.`,
-    `🟨 심판이 ${name}에게 카드를 꺼냅니다.`,
-    `🟨 거친 파울로 ${name}, 옐로카드!`,
+    `${name}, 경고를 받습니다.`,
+    `심판이 ${name}에게 카드를 꺼냅니다.`,
+    `거친 파울로 ${name}, 옐로카드!`,
   ],
 };
 
@@ -263,14 +263,14 @@ function eventText(type: keyof typeof TEXT_TEMPLATES, rng: Rng, name: string): s
 function crisisText(rng: Rng, conceded: boolean): string {
   const variants = conceded
     ? [
-        "🚨 위기! 실점 직후 흔들리는 수비진입니다.",
-        "🚨 위기! 실점으로 분위기가 넘어갑니다.",
-        "🚨 위기! 골을 내주며 위태로운 상황입니다.",
+        "위기! 실점 직후 흔들리는 수비진입니다.",
+        "위기! 실점으로 분위기가 넘어갑니다.",
+        "위기! 골을 내주며 위태로운 상황입니다.",
       ]
     : [
-        "🚨 위기! 상대의 연속된 공세에 수비가 흔들립니다.",
-        "🚨 위기! 상대에게 계속 기회를 내주고 있습니다.",
-        "🚨 위기! 위험한 장면이 반복되고 있습니다.",
+        "위기! 상대의 연속된 공세에 수비가 흔들립니다.",
+        "위기! 상대에게 계속 기회를 내주고 있습니다.",
+        "위기! 위험한 장면이 반복되고 있습니다.",
       ];
   return pickVariant(rng, variants);
 }
@@ -279,10 +279,10 @@ function crisisText(rng: Rng, conceded: boolean): string {
 // RNG를 소비할 수 없다(카운터팩추얼 불변식). 따라서 이 두 타입은 rng 없이 항상
 // 0번째 변형을 사용한다.
 function subText(outName: string, inName: string): string {
-  return `🔄 선수 교체: ${outName} → ${inName} 투입`;
+  return `선수 교체: ${outName} → ${inName} 투입`;
 }
 function tacticChangeText(): string {
-  return "📋 전술이 변경되었습니다.";
+  return "전술이 변경되었습니다.";
 }
 
 // ---- 위기 감지 ---------------------------------------------------------------
@@ -353,7 +353,7 @@ export function initMatch(me: SideSetup, opp: SideSetup, venueId: string, seed: 
     scoreOpp: 0,
     stamina,
     rngState: seed,
-    events: [{ minute: 0, type: "kickoff", side: "me", textKo: "🏟 경기가 시작되었습니다!" }],
+    events: [{ minute: 0, type: "kickoff", side: "me", textKo: "경기가 시작되었습니다!" }],
     interventions: [],
     me,
     opp,
@@ -531,7 +531,7 @@ export function simulateMinute(state: MatchState): MatchState {
 
   let finished = false;
   if (injuryTime > 0 && newMinute === 90 + injuryTime) {
-    additions.push({ minute: newMinute, type: "fulltime", side: "me", textKo: "🏁 경기 종료!" });
+    additions.push({ minute: newMinute, type: "fulltime", side: "me", textKo: "경기 종료!" });
     finished = true;
   }
 

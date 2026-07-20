@@ -109,7 +109,7 @@ describe("attackAttribution", () => {
     textKo: `rule-${id}`,
     deltaAttack,
     deltaDefense: 0,
-    icon: "⚡",
+    iconKey: "bolt",
   });
 
   it("deltaAttack이 가장 큰 양수 규칙을 고른다", () => {

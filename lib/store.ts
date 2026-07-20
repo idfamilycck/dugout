@@ -291,7 +291,7 @@ export const useAppStore = create<AppState>()(
               finished: true,
               events: [
                 ...next.events,
-                { minute: next.minute, type: "fulltime", side: "me", textKo: "🏁 세션 종료" },
+                { minute: next.minute, type: "fulltime", side: "me", textKo: "세션 종료" },
               ],
             },
           });

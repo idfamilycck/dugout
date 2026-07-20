@@ -3,12 +3,31 @@ import { playersOf } from "@/lib/data/players";
 import { playerContribution } from "./strength";
 import type { Formation, HeadToHead, Player, SideSetup, Team, Venue } from "@/lib/types";
 
+// 규칙 카드 아이콘의 시맨틱 키. 데이터(엔진)는 의미만 들고, 실제 그림은 UI가
+// components/ui/RuleIcon.tsx에서 Phosphor 아이콘으로 매핑한다
+// (lib/wc2026/entry-points.ts의 EntryPointIconKey와 동일한 패턴).
+export type RuleIconKey =
+  | "warning"
+  | "target"
+  | "lock"
+  | "swap"
+  | "bolt"
+  | "shield"
+  | "magnet"
+  | "mountain"
+  | "heat"
+  | "flame"
+  | "slump"
+  | "chart"
+  | "brain"
+  | "run";
+
 export interface AppliedRule {
   id: string;
   textKo: string;
   deltaAttack: number;
   deltaDefense: number;
-  icon: string;
+  iconKey: RuleIconKey;
 }
 
 export interface ModifierResult {
@@ -51,7 +70,7 @@ interface RuleDef {
   when: (ctx: RuleCtx) => boolean;
   effect: (ctx: RuleCtx) => { da: number; dd: number };
   textKo: (ctx: RuleCtx) => string;
-  icon: (ctx: RuleCtx) => string;
+  iconKey: (ctx: RuleCtx) => RuleIconKey;
 }
 
 function playerAt(side: SideSetup, squad: Player[], slotId: string): Player | undefined {
@@ -167,8 +186,8 @@ export const RULE_DEFS: RuleDef[] = [
     id: "high_line_vs_pace",
     when: (ctx) => ctx.me.instructions.line === 3 && ctx.oppAttPaceAvg > 80,
     effect: () => ({ da: 0, dd: -0.08 }),
-    textKo: () => "⚠ 높은 라인, 상대 스피드에 배후가 뚫릴 수 있어요 −8%",
-    icon: () => "⚠️",
+    textKo: () => "높은 라인, 상대 스피드에 배후가 뚫릴 수 있어요 −8%",
+    iconKey: () => "warning",
   },
   {
     id: "direct_targetman",
@@ -178,15 +197,15 @@ export const RULE_DEFS: RuleDef[] = [
         .filter((s) => s.position === "ST")
         .some((s) => ctx.me.roles[s.id] === "st_target"),
     effect: () => ({ da: 0.06, dd: 0 }),
-    textKo: () => "🎯 롱볼과 타겟맨 조합, 상대 배후를 노립니다 +6%",
-    icon: () => "🎯",
+    textKo: () => "롱볼과 타겟맨 조합, 상대 배후를 노립니다 +6%",
+    iconKey: () => "target",
   },
   {
     id: "short_vs_press",
     when: (ctx) => ctx.me.instructions.buildup === "short" && ctx.opp.instructions.pressing === 3,
     effect: () => ({ da: -0.05, dd: 0 }),
-    textKo: () => "🔒 짧은 빌드업이 상대의 강한 압박에 막힙니다 −5%",
-    icon: () => "🔒",
+    textKo: () => "짧은 빌드업이 상대의 강한 압박에 막힙니다 −5%",
+    iconKey: () => "lock",
   },
   {
     id: "focus_vs_weakflank",
@@ -201,9 +220,9 @@ export const RULE_DEFS: RuleDef[] = [
     effect: () => ({ da: 0.07, dd: 0 }),
     textKo: (ctx) => {
       const side = ctx.me.instructions.focus === "left" ? "오른쪽" : "왼쪽";
-      return `🎯 상대 ${side} 측면이 약점입니다 +7%`;
+      return `상대 ${side} 측면이 약점입니다 +7%`;
     },
-    icon: () => "🎯",
+    iconKey: () => "target",
   },
   {
     id: "wide_vs_narrow",
@@ -216,16 +235,16 @@ export const RULE_DEFS: RuleDef[] = [
       ctx.me.instructions.width === "wide" ? { da: 0.03, dd: 0 } : { da: -0.03, dd: 0 },
     textKo: (ctx) =>
       ctx.me.instructions.width === "wide"
-        ? "↔ 넓은 폭 공격이 상대의 좁은 수비 사이 공간을 벌립니다 +3%"
-        : "↔ 좁은 폭이 상대의 넓은 수비 조직에 고립됩니다 −3%",
-    icon: () => "↔️",
+        ? "넓은 폭 공격이 상대의 좁은 수비 사이 공간을 벌립니다 +3%"
+        : "좁은 폭이 상대의 넓은 수비 조직에 고립됩니다 −3%",
+    iconKey: () => "swap",
   },
   {
     id: "counter_style",
     when: (ctx) => ctx.me.instructions.attacking === 1 && ctx.opp.instructions.line === 3,
     effect: () => ({ da: 0.06, dd: 0 }),
-    textKo: () => "⚡ 상대의 높은 라인 뒤 공간을 역습으로 노립니다 +6%",
-    icon: () => "⚡",
+    textKo: () => "상대의 높은 라인 뒤 공간을 역습으로 노립니다 +6%",
+    iconKey: () => "bolt",
   },
   {
     id: "offside_trap",
@@ -236,16 +255,16 @@ export const RULE_DEFS: RuleDef[] = [
     effect: (ctx) => (offsideTrapIsRisk(ctx) ? { da: 0, dd: -0.05 } : { da: 0, dd: 0.04 }),
     textKo: (ctx) =>
       offsideTrapIsRisk(ctx)
-        ? "⚠ 오프사이드 트랩이 상대의 스피드에 무너질 위험이 있습니다 −5%"
-        : "🥅 오프사이드 트랩이 상대 공격을 무력화합니다 −4%",
-    icon: (ctx) => (offsideTrapIsRisk(ctx) ? "⚠️" : "🥅"),
+        ? "오프사이드 트랩이 상대의 스피드에 무너질 위험이 있습니다 −5%"
+        : "오프사이드 트랩이 상대 공격을 무력화합니다 −4%",
+    iconKey: (ctx) => (offsideTrapIsRisk(ctx) ? "warning" : "shield"),
   },
   {
     id: "man_marking_fatigue",
     when: (ctx) => !!ctx.me.special?.manMark,
     effect: () => ({ da: 0, dd: 0.05 }),
-    textKo: () => "🧲 맨마킹으로 수비 조직력이 강화됩니다 +5%",
-    icon: () => "🧲",
+    textKo: () => "맨마킹으로 수비 조직력이 강화됩니다 +5%",
+    iconKey: () => "magnet",
   },
   {
     id: "man_marking_scheme",
@@ -257,24 +276,24 @@ export const RULE_DEFS: RuleDef[] = [
     effect: (ctx) => (ctx.oppAttDribblingAvg >= 78 ? { da: 0, dd: -0.03 } : { da: 0, dd: 0.02 }),
     textKo: (ctx) =>
       ctx.oppAttDribblingAvg >= 78
-        ? "🧲 맨마킹, 상대의 뛰어난 개인기에 뚫릴 위험이 있습니다 −3%"
-        : "🧲 맨마킹으로 상대 공격을 밀착 봉쇄합니다 +2%",
-    icon: () => "🧲",
+        ? "맨마킹, 상대의 뛰어난 개인기에 뚫릴 위험이 있습니다 −3%"
+        : "맨마킹으로 상대 공격을 밀착 봉쇄합니다 +2%",
+    iconKey: () => "magnet",
   },
   {
     id: "altitude",
     when: (ctx) => ctx.venue.altitude > 1500 && ctx.me.instructions.pressing === 3,
     effect: () => ({ da: -0.04, dd: 0 }),
-    textKo: () => "🏔 고지대, 강한 압박은 후반에 지칩니다 −4%",
-    icon: () => "🏔",
+    textKo: () => "고지대, 강한 압박은 후반에 지칩니다 −4%",
+    iconKey: () => "mountain",
   },
   {
     id: "heat",
     when: (ctx) =>
       ctx.venue.avgTempC >= 30 && !ctx.venue.dome && ctx.me.instructions.pressing === 3,
     effect: () => ({ da: -0.03, dd: 0 }),
-    textKo: () => "🥵 폭염, 체력 소모가 큽니다 −3%",
-    icon: () => "🥵",
+    textKo: () => "폭염, 체력 소모가 큽니다 −3%",
+    iconKey: () => "heat",
   },
   {
     id: "form",
@@ -282,9 +301,9 @@ export const RULE_DEFS: RuleDef[] = [
     effect: (ctx) => (ctx.meTeam.form >= 8 ? { da: 0.03, dd: 0 } : { da: -0.03, dd: 0 }),
     textKo: (ctx) =>
       ctx.meTeam.form >= 8
-        ? "🔥 물오른 폼, 경기력이 살아납니다 +3%"
-        : "📉 부진한 폼이 발목을 잡습니다 −3%",
-    icon: (ctx) => (ctx.meTeam.form >= 8 ? "🔥" : "📉"),
+        ? "물오른 폼, 경기력이 살아납니다 +3%"
+        : "부진한 폼이 발목을 잡습니다 −3%",
+    iconKey: (ctx) => (ctx.meTeam.form >= 8 ? "flame" : "slump"),
   },
   {
     id: "h2h_edge",
@@ -292,8 +311,8 @@ export const RULE_DEFS: RuleDef[] = [
     // 전적으로 "우위"를 판정하면 우연에 의한 노이즈를 규칙으로 오인할 수 있다.
     when: (ctx) => !!ctx.h2h && ctx.h2h.winA >= 3 && ctx.h2h.winA >= ctx.h2h.winB * 2,
     effect: () => ({ da: 0.02, dd: 0 }),
-    textKo: () => "📊 상대 전적 우위, 심리적으로 앞서갑니다 +2%",
-    icon: () => "📊",
+    textKo: () => "상대 전적 우위, 심리적으로 앞서갑니다 +2%",
+    iconKey: () => "chart",
   },
   {
     id: "captain_mental",
@@ -304,15 +323,15 @@ export const RULE_DEFS: RuleDef[] = [
       return !!captain && captain.mental >= 85;
     },
     effect: () => ({ da: 0, dd: 0.02 }),
-    textKo: () => "🧠 강심장 주장이 수비 라인을 안정시킵니다 +2%",
-    icon: () => "🧠",
+    textKo: () => "강심장 주장이 수비 라인을 안정시킵니다 +2%",
+    iconKey: () => "brain",
   },
   {
     id: "tempo_stamina",
     when: (ctx) => ctx.me.instructions.tempo === 3,
     effect: () => ({ da: 0.03, dd: 0 }),
-    textKo: () => "🏃 빠른 템포로 상대를 몰아붙입니다 +3%",
-    icon: () => "🏃",
+    textKo: () => "빠른 템포로 상대를 몰아붙입니다 +3%",
+    iconKey: () => "run",
   },
 ];
 
@@ -328,7 +347,7 @@ export function evaluateModifiers(ctx: RuleCtx): ModifierResult {
       textKo: def.textKo(ctx),
       deltaAttack: da,
       deltaDefense: dd,
-      icon: def.icon(ctx),
+      iconKey: def.iconKey(ctx),
     });
   }
   const attackMult = rules.reduce((m, r) => m * (1 + r.deltaAttack), 1);
