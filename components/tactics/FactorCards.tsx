@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 정보 3계층의 2층: winProbability().rules → 아이콘 + 한 문장 + 델타 칩 카드.
 // 조작→반응 1:1 원칙: 마지막 조작으로 새로 뜨거나 효과가 바뀐 카드에만 한 번 펄스.
@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import type { AppliedRule } from "@/lib/engine/modifiers";
+import { RuleIcon } from "@/components/ui/RuleIcon";
 
 interface FactorCardsProps {
   rules: AppliedRule[];
@@ -82,9 +83,9 @@ export function FactorCards({ rules }: FactorCardsProps) {
 
   if (rules.length === 0) {
     return (
-      <div className="panel rounded-[10px] p-5">
+      <div className="panel rounded-panel p-5">
         <p className="eyebrow text-dim">전술 근거</p>
-        <p className="mt-3 rounded-[10px] border border-line bg-surface/50 p-3 text-[12px] leading-relaxed text-dim">
+        <p className="mt-3 rounded-panel border border-line bg-surface/50 p-3 text-[12px] leading-relaxed text-dim">
           지금은 승률을 크게 흔드는 요인이 없어요. 포메이션·지시·특수 전술을 바꾸면
           그 근거가 여기에 카드로 나타납니다.
         </p>
@@ -93,7 +94,7 @@ export function FactorCards({ rules }: FactorCardsProps) {
   }
 
   return (
-    <div className="panel rounded-[10px] p-5">
+    <div className="panel rounded-panel p-5">
       <div className="flex items-center justify-between">
         <p className="eyebrow text-dim">전술 근거</p>
         <span className="stat-num text-[11px] text-dim">{rules.length}개</span>
@@ -104,13 +105,11 @@ export function FactorCards({ rules }: FactorCardsProps) {
           return (
             <li
               key={isPulsed ? `${r.id}-${nonce}` : r.id}
-              className={`flex items-start gap-3 rounded-[10px] border border-line bg-surface/50 p-3 ${
+              className={`flex items-start gap-3 rounded-panel border border-line bg-surface/50 p-3 ${
                 isPulsed ? "touchline-pulse" : ""
               }`}
             >
-              <span className="mt-0.5 text-lg leading-none" aria-hidden>
-                {r.icon}
-              </span>
+              <RuleIcon iconKey={r.iconKey} size={18} className="mt-0.5 shrink-0 text-dim" />
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] leading-snug text-ink">{r.textKo}</p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">

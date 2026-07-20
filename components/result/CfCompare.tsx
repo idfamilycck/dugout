@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 카운터팩추얼 비교: 실제 스코어 vs "평행세계"(개입 없이 처음부터 다시 돌린) 스코어를
 // 나란히 보여주고, 개입별 승률 델타를 색+수치로 나열한다. 유리=초록/불리=빨강.
@@ -38,7 +38,7 @@ function ScoreCard({
   const wordColor = me > opp ? "var(--color-gain)" : me === opp ? "var(--color-dim)" : "var(--color-danger)";
   return (
     <div
-      className={`flex flex-1 flex-col items-center rounded-[10px] border px-3 py-4 ${
+      className={`flex flex-1 flex-col items-center rounded-panel border px-3 py-4 ${
         highlight ? "border-accent/60 bg-accent/10" : "border-line bg-surface-2/40"
       }`}
     >
@@ -64,7 +64,7 @@ export function CfCompare({ cf, match }: CfCompareProps) {
   const oppCode = opp?.code ?? "OPP";
 
   return (
-    <section className="panel rounded-[10px] p-4">
+    <section className="panel rounded-panel p-4">
       <div className="flex items-center justify-between">
         <p className="eyebrow text-accent">평행세계 비교</p>
         <span className="text-[11px] text-dim">개입이 없었다면?</span>
@@ -124,7 +124,7 @@ export function CfCompare({ cf, match }: CfCompareProps) {
           })}
         </ul>
       ) : (
-        <p className="mt-4 rounded-[10px] bg-surface-2/50 px-3 py-3 text-center text-[13px] text-dim">
+        <p className="mt-4 rounded-panel bg-surface-2/50 px-3 py-3 text-center text-[13px] text-dim">
           이 경기에서는 작전 개입이 없었습니다. 실제 결과가 곧 데이터가 예측한 결과입니다.
         </p>
       )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 선수 능력치 전체 프로필 — FM식 촘촘한 데이터 그리드. attrs 8개 + setPiece/aerial/
 // penalty/mental 4개, 총 12개 값을 3개 군집(공격 / 수비·피지컬 / 특기)으로 나눠 보여준다.
@@ -73,7 +73,7 @@ function StatCell({ row }: { row: StatRow }) {
 export function AttributeGrid({ player, className }: AttributeGridProps) {
   if (!player) {
     return (
-      <div className={`panel rounded-[10px] p-4 ${className ?? ""}`}>
+      <div className={`panel rounded-panel p-4 ${className ?? ""}`}>
         <p className="eyebrow text-dim">선수 능력치</p>
         <p className="mt-3 text-[12px] leading-relaxed text-dim">
           스쿼드에서 선수를 선택하면 전체 능력치가 여기에 표시돼요.
@@ -86,7 +86,7 @@ export function AttributeGrid({ player, className }: AttributeGridProps) {
   const clusters = clustersOf(player);
 
   return (
-    <div className={`panel rounded-[10px] p-4 ${className ?? ""}`}>
+    <div className={`panel rounded-panel p-4 ${className ?? ""}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="eyebrow text-dim">선수 능력치</p>

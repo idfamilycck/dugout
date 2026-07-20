@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 전술 패널 탭 2: 선수 역할.
 // 왼쪽에 선발 11명(현재 역할 표기) 목록 → 슬롯 선택 → 해당 포지션의 역할 후보
@@ -50,7 +50,7 @@ export function RolePicker() {
                 type="button"
                 aria-pressed={active}
                 onClick={() => setActiveSlot(s.id)}
-                className={`flex flex-col items-start rounded-[10px] border px-2.5 py-1.5 text-left transition-colors ${
+                className={`flex flex-col items-start rounded-panel border px-2.5 py-1.5 text-left transition-colors ${
                   active ? "border-accent bg-accent/15" : "border-line bg-surface-2/50 hover:border-white/20"
                 }`}
               >
@@ -85,7 +85,7 @@ export function RolePicker() {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setRole(slot.id, roleId)}
-                  className={`rounded-[10px] border px-3 py-2.5 text-left transition-colors ${
+                  className={`rounded-panel border px-3 py-2.5 text-left transition-colors ${
                     active ? "border-accent bg-accent/15" : "border-line bg-surface-2/50 hover:border-white/20"
                   }`}
                 >

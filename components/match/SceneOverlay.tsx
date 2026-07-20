@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 장면 모드 자막 오버레이: 하이라이트 분에 라이브 피치 위로 헤드라인·체인·발동 전술 칩을 띄운다.
 // (스펙 §2 — 하이라이트 점프 재생의 장면 자막 + 전술 귀속)
@@ -31,7 +31,7 @@ export function SceneOverlay({ sceneEvents, attribution }: SceneOverlayProps) {
           aria-live="polite"
         >
           <div
-            className="rounded-[10px] border px-4 py-3 backdrop-blur-md"
+            className="rounded-panel border px-4 py-3 backdrop-blur-md"
             style={{
               background: "rgba(6, 22, 14, 0.82)",
               borderColor: primary.side === "me" ? "rgba(34,211,238,0.4)" : "rgba(255,90,120,0.4)",

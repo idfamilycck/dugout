@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 승부차기 연출: 미리 계산된 rounds를 "차기" 버튼 1회당 한 세트(우리 킥 → 상대 킥)씩
 // 재생한다. 볼 애니메이션(Framer Motion)·골/실축 플래시·득점 도트로 서스펜스를 준다.
@@ -100,7 +100,7 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
   return (
     <div className="flex flex-col gap-4">
       {/* 스코어 헤더 */}
-      <div className="panel rounded-[10px] px-4 py-4">
+      <div className="panel rounded-panel px-4 py-4">
         <p className="eyebrow text-center text-accent">승부차기</p>
         <div className="mt-2 flex items-center justify-center gap-5">
           <div className="flex flex-1 flex-col items-end gap-1.5">
@@ -124,7 +124,7 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
       </div>
 
       {/* 골대 + 볼 연출 */}
-      <div className="panel relative flex flex-col items-center overflow-hidden rounded-[10px] px-4 pb-5 pt-6">
+      <div className="panel relative flex flex-col items-center overflow-hidden rounded-panel px-4 pb-5 pt-6">
         <div className="pitch-stripes pointer-events-none absolute inset-0 opacity-40" aria-hidden />
 
         {/* 골대 프레임 */}
@@ -221,7 +221,7 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
 
       {/* 컨트롤 / 결과 */}
       {done ? (
-        <div className="panel rounded-[10px] p-5 text-center">
+        <div className="panel rounded-panel p-5 text-center">
           <p className="eyebrow text-accent">승부차기 종료</p>
           <h2
             className="display mt-2 text-3xl"
@@ -235,7 +235,7 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
           <button
             type="button"
             onClick={onFinish}
-            className="mt-5 w-full rounded-full bg-accent py-4 text-base font-black text-accent-ink transition-transform hover:-translate-y-0.5"
+            className="mt-5 w-full rounded-control bg-accent py-4 text-base font-black text-accent-ink transition-transform hover:-translate-y-0.5"
           >
             결과 보기 →
           </button>
@@ -245,7 +245,7 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
           type="button"
           onClick={kick}
           disabled={busy}
-          className="sticky bottom-3 z-10 w-full rounded-full bg-accent py-4 text-base font-black text-accent-ink shadow-lg transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+          className="sticky bottom-3 z-10 w-full rounded-control bg-accent py-4 text-base font-black text-accent-ink shadow-lg transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? "…" : "차기"}
         </button>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 정보 3계층의 1층: 항상 보이는 대형 승률 지표.
 // - 반원 SVG 게이지 + 대형 승률 숫자(카운트업)
@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMotionValueEvent, useSpring } from "framer-motion";
 import type { LineStrengths } from "@/lib/engine/strength";
+import { EDGE_COLOR, edgeToneFromWinLoss, type EdgeTone } from "@/lib/edge-tone";
 
 interface WinGaugeProps {
   /** winProbability() 결과. 매치업 미구성 시 undefined */
@@ -88,7 +89,14 @@ export function WinGauge({ wp, lines }: WinGaugeProps) {
   const win = wp ? Math.round(winRaw) : undefined;
   const draw = wp ? Math.round(wp.draw * 100) : undefined;
   const loss = wp ? Math.round(wp.loss * 100) : undefined;
-  const favored = win !== undefined && loss !== undefined && win >= loss;
+
+  // 우세 판정은 3-상태 + 데드밴드(lib/edge-tone.ts). 홈 하단 바와 같은 규칙을 쓴다.
+  const tone: EdgeTone = wp ? edgeToneFromWinLoss(wp.win * 100, wp.loss * 100) : "even";
+  const TONE_LABEL: Record<EdgeTone, string> = {
+    favored: "우리가 유리해요",
+    even: "팽팽해요",
+    behind: "상대가 유리해요",
+  };
 
   const display = useCountUp(win ?? 0);
 
@@ -103,11 +111,11 @@ export function WinGauge({ wp, lines }: WinGaugeProps) {
     prevWinRef.current = win;
   }, [win]);
 
-  const gaugeColor = favored ? "var(--color-gain)" : "var(--color-danger)";
+  const gaugeColor = EDGE_COLOR[tone];
   const fillLen = ((win ?? 0) / 100) * ARC_LEN;
 
   return (
-    <div className="panel flex flex-col gap-5 rounded-[10px] p-5">
+    <div className="panel flex flex-col gap-5 rounded-panel p-5">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="eyebrow text-dim">라이브 승률 예측</p>
@@ -156,9 +164,7 @@ export function WinGauge({ wp, lines }: WinGaugeProps) {
             </span>
             <span className="mb-1.5 text-xl font-black text-dim">%</span>
           </div>
-          <span className="text-xs font-bold text-ink">
-            {favored ? "우리가 유리해요" : "상대가 유리해요"}
-          </span>
+          <span className="text-xs font-bold text-ink">{TONE_LABEL[tone]}</span>
         </div>
       </div>
 
@@ -187,7 +193,7 @@ export function WinGauge({ wp, lines }: WinGaugeProps) {
 
       {/* 라인별 전력 대결 막대 */}
       {lines && (
-        <div className="flex flex-col gap-3 rounded-[10px] border border-line bg-surface/40 p-3">
+        <div className="flex flex-col gap-3 rounded-panel border border-line bg-surface/40 p-3">
           <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
             <span className="text-accent">우리</span>
             <span className="text-dim">라인별 전력</span>

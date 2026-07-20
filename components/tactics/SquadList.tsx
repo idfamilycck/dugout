@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 스쿼드 리스트: 선발 11명(하이라이트) + 벤치 9명. 각 행은 드래그 소스이자
 // 탭-투-배치 버튼. 정보 3계층 원칙에 따라 행별 요약 스탯은 포지션별 핵심 값 +
@@ -123,7 +123,7 @@ function HeaderRow({ sortSlot, sortDir, statKey, statLabel, onToggle, onStatKeyC
             data-keep-selection
             value={statKey}
             onChange={(e) => onStatKeyChange(e.target.value as StatSortKey)}
-            className="h-11 rounded-[8px] border border-line bg-surface-2 px-1 text-[10px] font-bold text-ink sm:h-6 sm:px-1.5"
+            className="h-11 rounded-control border border-line bg-surface-2 px-1 text-[10px] font-bold text-ink sm:h-6 sm:px-1.5"
           >
             {STAT_OPTIONS.map((o) => (
               <option key={o.key} value={o.key}>
@@ -182,7 +182,7 @@ function Row({
       aria-pressed={isSelected}
       aria-label={`${player.name} · ${POSITION_KO[primary]} · ${player.age}세`}
       onClick={() => onSelectPlayer({ playerId: player.id })}
-      className={`flex w-full cursor-grab items-center gap-3 rounded-[10px] border px-2.5 py-2 text-left transition-colors active:cursor-grabbing ${
+      className={`flex w-full cursor-grab items-center gap-3 rounded-panel border px-2.5 py-2 text-left transition-colors active:cursor-grabbing ${
         isSelected
           ? "border-accent bg-accent/10"
           : starter

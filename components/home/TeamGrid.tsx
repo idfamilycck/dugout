@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { wc2026TeamList } from "@/lib/wc2026/data";
 import { h2hOf } from "@/lib/data/h2h";
 import { FlagBadge } from "@/components/ui/FlagBadge";
+import { attrColor, attrTierKo } from "@/components/tactics/attr-color";
 
 interface TeamGridProps {
   myTeamId?: string;
@@ -10,16 +11,26 @@ interface TeamGridProps {
   onSelect: (teamId: string) => void;
 }
 
+// 폼(0~10)을 능력치 스케일(0~99)에 얹어 FM식 등급 색으로 칠한다. 전 팀이 같은 초록이던
+// 이전 버전과 달리, 48장을 훑는 것만으로 폼 좋은 팀이 눈에 먼저 들어온다.
+// 색이 유일한 신호가 되지 않도록 등급 한글 라벨을 sr-only로 함께 낸다.
 function FormMeter({ form }: { form: number }) {
+  const scaled = form * 10;
+  const color = attrColor(scaled);
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="h-1.5 w-14 overflow-hidden rounded-full bg-surface-2">
+    <div className="flex shrink-0 items-center gap-1.5">
+      {/* 375px 2열에서는 카드 폭이 ~155px라 게이지+수치가 넘쳐 "/10"이 잘렸다.
+          좁은 화면에서는 막대를 줄이고 sm 이상에서만 원래 폭으로 돌린다. */}
+      <div className="h-1.5 w-8 overflow-hidden rounded-full bg-surface-2 sm:w-14">
         <div
-          className="h-full rounded-full bg-gain"
-          style={{ width: `${(form / 10) * 100}%` }}
+          className="h-full rounded-full"
+          style={{ width: `${(form / 10) * 100}%`, background: color }}
         />
       </div>
-      <span className="stat-num text-[11px] text-dim">{form}/10</span>
+      <span className="stat-num whitespace-nowrap text-[11px]" style={{ color }}>
+        {form}/10
+      </span>
+      <span className="sr-only">폼 {attrTierKo(scaled)}</span>
     </div>
   );
 }
@@ -74,7 +85,7 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                 type="button"
                 onClick={() => onSelect(t.id)}
                 aria-pressed={selected}
-                className="panel group relative flex h-full w-full flex-col gap-3 rounded-[10px] p-3 text-left transition-colors duration-150 hover:border-white/25"
+                className="panel group relative flex h-full w-full flex-col gap-2.5 rounded-panel p-2.5 text-left transition-colors duration-150 hover:border-white/25"
                 style={{ borderColor: selected ? ring : undefined }}
               >
                 {/* 선택 상태는 스크린리더에 텍스트로도 전달(색/리본은 시각 전용) */}
@@ -99,10 +110,10 @@ export function TeamGrid({ myTeamId, oppTeamId, onSelect }: TeamGridProps) {
                   </div>
                 </div>
 
-                <div className="flex items-baseline justify-between">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-dim">ELO</div>
-                    <div className="stat-num text-xl text-ink">{t.elo}</div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="flex min-w-0 items-baseline gap-1.5">
+                    <span className="data-label">ELO</span>
+                    <span className="stat-num text-xl leading-none text-ink sm:text-2xl">{t.elo}</span>
                   </div>
                   <FormMeter form={t.form} />
                 </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 작전실 피치 보드: 세로형 SVG 피치 위에 FORMATIONS 좌표로 11개 슬롯을 렌더한다.
 // 각 슬롯은 dnd-kit 드롭 타깃이자, 안의 아바타는 드래그 소스 + 탭-투-배치 버튼이다.
@@ -89,7 +89,7 @@ function Slot({
     >
       <div
         ref={setDropRef}
-        className={`rounded-[10px] p-1 transition-[background-color,box-shadow] ${
+        className={`rounded-panel p-1 transition-[background-color,box-shadow] ${
           isOver
             ? "bg-accent/25 ring-2 ring-accent"
             : isEligibleTarget
@@ -160,7 +160,7 @@ export function PitchBoard({
   return (
     <div className="flex flex-col items-center">
       <div
-        className="relative mx-auto w-full max-w-[430px] overflow-hidden rounded-[10px] border border-line shadow-2xl"
+        className="relative mx-auto w-full max-w-[430px] overflow-hidden rounded-panel border border-line shadow-2xl"
         style={{
           aspectRatio: "68 / 105",
           background: "linear-gradient(180deg, var(--color-turf), var(--color-turf-2))",

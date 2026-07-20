@@ -1,4 +1,4 @@
-// components/tournament/KnockoutBracket.tsx
+﻿// components/tournament/KnockoutBracket.tsx
 //
 // 토너먼트 대진표: 32강 → 16강 → 8강 → 4강 → 결승을 가로 컬럼으로, 3·4위전은
 // 별도 카드로 그린다. 순수 프레젠테이션(계산은 lib/wc2026/standings.ts). 결승
@@ -31,7 +31,7 @@ interface KnockoutBracketProps {
 export function KnockoutBracket({ bracket }: KnockoutBracketProps) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="overflow-x-auto rounded-[10px] border border-line bg-surface/40 p-4">
+      <div className="overflow-x-auto rounded-panel border border-line bg-surface/40 p-4">
         <div className="flex min-w-max items-stretch gap-4">
           {MAIN_ROUNDS.map((round) => {
             const ties = bracket[round] ?? [];
@@ -46,7 +46,7 @@ export function KnockoutBracket({ bracket }: KnockoutBracketProps) {
                   {ties.length > 0 ? (
                     ties.map((tie) => <BracketTie key={tie.id} tie={tie} />)
                   ) : (
-                    <div className="panel flex min-h-[88px] items-center justify-center rounded-[10px] p-4 text-center">
+                    <div className="panel flex min-h-[88px] items-center justify-center rounded-panel p-4 text-center">
                       <p className="text-xs leading-relaxed text-dim">결승 데이터 준비 중</p>
                     </div>
                   )}
@@ -79,7 +79,7 @@ function BracketTie({ tie }: { tie: BracketMatch }) {
   return (
     <Link
       href={`/rewrite?match=${tie.id}`}
-      className="panel flex flex-col gap-1.5 rounded-[10px] p-2.5 transition-colors duration-150 hover:border-white/25"
+      className="panel flex flex-col gap-1.5 rounded-panel p-2.5 transition-colors duration-150 hover:border-white/25"
     >
       <TieRow
         code={tie.home}
@@ -123,7 +123,7 @@ function TieRow({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-2 rounded-[8px] px-1.5 py-1"
+      className="flex items-center justify-between gap-2 rounded-control px-1.5 py-1"
       style={{ background: isWinner ? "rgba(34, 211, 238, 0.10)" : undefined }}
     >
       <div className="flex min-w-0 items-center gap-1.5">

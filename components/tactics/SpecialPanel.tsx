@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 전술 패널 탭 3: 특수 지시.
 // 주장(C)/프리킥(FK)/코너킥(CK) 지정 · 맨마킹(우리 마커 + 상대 타깃, 위협순 정렬) ·
@@ -42,7 +42,7 @@ function LabeledSelect({
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="rounded-[8px] border border-line bg-surface-2 px-3 py-2 text-[13px] text-ink"
+        className="rounded-control border border-line bg-surface-2 px-3 py-2 text-[13px] text-ink"
       >
         <option value="">{placeholder}</option>
         {players.map((p) => (
@@ -123,19 +123,19 @@ export function SpecialPanel() {
               else if (!targetId) setSpecial({ manMark: undefined });
             }}
             disabled={!special.manMark?.markerId}
-            className="rounded-[8px] border border-line bg-surface-2 px-3 py-2 text-[13px] text-ink disabled:opacity-50"
+            className="rounded-control border border-line bg-surface-2 px-3 py-2 text-[13px] text-ink disabled:opacity-50"
           >
             <option value="">선택 안 함</option>
             {oppStarters.map((p, i) => (
               <option key={p.id} value={p.id}>
-                {i === 0 ? "⚠ " : ""}
+                {i === 0 ? "최우선 " : ""}
                 {p.name} · 위협 {Math.round(threat(p))}
               </option>
             ))}
           </select>
         </label>
         {special.manMark && (
-          <p className="rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2 text-[11px] text-danger">
+          <p className="rounded-panel border border-danger/30 bg-danger/10 px-3 py-2 text-[11px] text-danger">
             맨마킹 활성: 피치에 마킹 라인이 표시되고 상대 타깃의 기여도가 낮아집니다.
           </p>
         )}
@@ -143,7 +143,7 @@ export function SpecialPanel() {
 
       {/* 코너 장신 전진 */}
       <section>
-        <div className="flex items-center justify-between rounded-[10px] border border-line bg-surface-2/50 px-3 py-2.5">
+        <div className="flex items-center justify-between rounded-panel border border-line bg-surface-2/50 px-3 py-2.5">
           <div>
             <span className="text-[13px] font-bold text-ink">코너킥 시 장신 수비수 전진</span>
             <p className="text-[10px] text-dim">우리 코너에서 키 큰 수비수를 상대 골문 앞으로</p>

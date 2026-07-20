@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 공유 카드: <canvas>에 직접 드로잉(외부 라이브러리 없음)한 결과 카드 PNG를 만든다.
 // 서비스명 · 팀 코드/스코어 · 결과 · 최대 카운터팩추얼 델타 한 줄. "이미지 저장"(다운로드)
@@ -196,9 +196,9 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
   };
 
   return (
-    <section className="panel rounded-[10px] p-4">
+    <section className="panel rounded-panel p-4">
       <p className="eyebrow text-accent">공유 카드</p>
-      <div className="mt-3 overflow-hidden rounded-[10px] border border-line">
+      <div className="mt-3 overflow-hidden rounded-panel border border-line">
         <canvas
           ref={canvasRef}
           className="block w-full"
@@ -211,14 +211,14 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
         <button
           type="button"
           onClick={saveImage}
-          className="flex-1 rounded-full bg-accent py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5"
+          className="flex-1 rounded-control bg-accent py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5"
         >
           이미지 저장
         </button>
         <button
           type="button"
           onClick={copyLink}
-          className="flex-1 rounded-full border border-line py-3 text-sm font-bold text-ink transition-colors hover:border-white/25"
+          className="flex-1 rounded-control border border-line py-3 text-sm font-bold text-ink transition-colors hover:border-white/25"
         >
           링크 복사
         </button>

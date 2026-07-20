@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // "추천 전술 보기" — 온디맨드로 recommend()(약 100ms, 전술 조합 전수 탐색)를 돌려
 // 추천 승률·현재 대비 델타·핵심 근거 3개를 보여주고, "적용" 시 instructions/lineup/roles를
@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Lightning, CheckCircle } from "@phosphor-icons/react";
 import { useAppStore } from "@/lib/store";
 import { recommend, type Recommendation } from "@/lib/engine/recommend";
+import { RuleIcon } from "@/components/ui/RuleIcon";
 
 interface RecommendPanelProps {
   currentWin?: number; // 0~1
@@ -48,10 +49,10 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
     rec && currentWin !== undefined ? Math.round(rec.winProb * 100) - Math.round(currentWin * 100) : undefined;
 
   return (
-    <div className="panel flex flex-col gap-4 rounded-[10px] p-5">
+    <div className="panel flex flex-col gap-4 rounded-panel p-5">
       <div className="flex items-center justify-between">
         <div>
-          <p className="eyebrow text-dim">AI 추천 전술</p>
+          <p className="eyebrow text-dim">AI 수석코치 전술</p>
           <p className="mt-1 text-[11px] text-dim">수천 개 조합을 훑어 최적 세팅을 제안해요.</p>
         </div>
       </div>
@@ -60,7 +61,7 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
         type="button"
         onClick={run}
         disabled={loading || !me}
-        className="flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="flex items-center justify-center gap-2 rounded-control bg-accent px-5 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-px active:scale-[0.99] disabled:opacity-60"
       >
         {loading ? (
           <>
@@ -70,14 +71,14 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
         ) : (
           <>
             <Lightning weight="bold" className="size-4" aria-hidden />
-            추천 전술 보기
+            수석코치 전술 보기
           </>
         )}
       </button>
 
       {rec && !loading && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-end justify-between rounded-[10px] border border-line bg-surface/50 p-3">
+          <div className="flex items-end justify-between rounded-panel border border-line bg-surface/50 p-3">
             <div>
               <p className="text-[11px] text-dim">추천 세팅 예상 승률</p>
               <p className="stat-num text-3xl text-gain">{recWinPct}%</p>
@@ -104,11 +105,9 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
               {rec.topFactors.map((f) => (
                 <li
                   key={f.id}
-                  className="flex items-start gap-2 rounded-[10px] border border-line bg-surface/40 px-3 py-2"
+                  className="flex items-start gap-2 rounded-panel border border-line bg-surface/40 px-3 py-2"
                 >
-                  <span className="text-base leading-none" aria-hidden>
-                    {f.icon}
-                  </span>
+                  <RuleIcon iconKey={f.iconKey} className="mt-0.5 shrink-0 text-dim" />
                   <span className="text-[11px] leading-snug text-ink">{f.textKo}</span>
                 </li>
               ))}

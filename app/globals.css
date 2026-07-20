@@ -31,12 +31,15 @@
   --color-turf: #10331f;
   --color-turf-2: #0b2616;
 
-  /* 반경 락: 패널/카드 10px · 인풋/버튼 8px · 필(탭·칩·아바타)만 rounded-full 예외. */
-  --radius-panel: 10px;
-  --radius-control: 8px;
+  /* 반경 락: 패널/카드 8px · 인풋/버튼 6px · 필(탭·칩·아바타)만 rounded-full 예외.
+     FM식 데이터 도구 톤을 위해 이전(10/8)보다 한 단계 각지게 조였다. */
+  --radius-panel: 8px;
+  --radius-control: 6px;
 
-  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Apple SD Gothic Neo",
-    "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-sans: var(--font-gothic), ui-sans-serif, system-ui, "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
+  /* 라틴/숫자만 컨덴스드. 한글 글리프는 이 패밀리에 없어 자동으로 Gothic A1로 폴백된다. */
+  --font-display: var(--font-barlow), var(--font-gothic), ui-sans-serif, sans-serif;
 }
 
 /* 브리프가 요구하는 시맨틱 별칭(--pitch/--surface/--accent/--danger/--ink) */
@@ -79,19 +82,24 @@ body {
   );
 }
 
-/* 방송 스코어보드 숫자: 고정폭 + 큰 무게 + 좁은 자간 (condensed 느낌) */
+/* 방송 스코어보드 숫자: 컨덴스드 + 고정폭 + 큰 무게.
+   진짜 컨덴스드 패밀리로 바뀌면서 같은 폭에 자릿수가 더 들어간다 — 밀도 확보의 핵심. */
 .stat-num {
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: 0;
   font-feature-settings: "tnum" 1;
 }
 
-/* 대형 디스플레이 헤드라인 — 자간을 좁혀 중계 자막 톤 */
+/* 대형 디스플레이 헤드라인 — 컨덴스드 + 좁은 자간으로 중계 자막 톤.
+   행간 주의: 한글 글리프는 라틴보다 em 박스를 꽉 채워서 라틴 기준의 0.9x 행간을 쓰면
+   두 줄짜리 한글 헤드라인이 서로 겹친다. 1.04가 "겹치지 않는 가장 좁은 값". */
 .display {
+  font-family: var(--font-display);
   font-weight: 900;
-  letter-spacing: -0.045em;
-  line-height: 0.92;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
 }
 
 /* 방송 자막 하단 3분할(lower-third)의 시안 탭 */
@@ -110,22 +118,28 @@ body {
   border-radius: 2px;
 }
 
-/* 라벨/아이브로 — 넓은 자간의 대문자 캡션 */
+/* 라벨/아이브로 — 컨덴스드 대문자 캡션.
+   자간 주의: 이 앱의 아이브로는 사실상 전부 한글이다. 한글 음절 블록은 이미 자체 여백을
+   갖고 있어서 라틴 기준의 와이드 트래킹(예전 0.34em)을 그대로 걸면 "라 이 브 승 률"처럼
+   글자가 흩어져 단어로 안 읽힌다. 0.06em은 라벨 성격은 남기면서 어절이 붙어 있는 값. */
 .eyebrow {
-  letter-spacing: 0.34em;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 700;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
-/* 카드 공통 */
+/* 카드 공통 — 그라디언트를 걷어낸 플랫 표면. FM26의 판때기 톤. */
 .panel {
-  background: linear-gradient(180deg, var(--color-surface), var(--color-pitch-2));
+  background: var(--color-surface);
   border: 1px solid var(--color-line);
 }
 
-/* 데이터 숫자 기본값: 표 형태 스탯/분/스코어가 자릿수마다 흔들리지 않게 고정폭으로. */
+/* 데이터 숫자 기본값: 표 형태 스탯/분/스코어가 자릿수마다 흔들리지 않게 고정폭으로.
+   컨덴스드 패밀리를 함께 물려 좁은 열에도 자릿수가 다 들어간다. */
 .tnum {
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
@@ -138,13 +152,39 @@ body {
   border-bottom: 0;
 }
 
+/* 데이터 라벨 — 값 바로 옆/위에 붙는 초소형 열 이름(ELO, 폼, 점유 등).
+   섹션 헤더 위의 아이브로와는 다른 물건이다: 이건 값이 주인공인 데이터 UI의 열 이름이라
+   개수 제한 대상이 아니다. 아이브로(.eyebrow)는 섹션당 배분을 지켜야 한다. */
+.data-label {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-dim);
+  line-height: 1;
+}
+
+/* 데이터 표 헤더 — FM의 정렬 가능한 열 머리. 본문보다 한 단계 어둡게 눌러
+   행이 아무리 많아도 머리와 몸통이 시각적으로 분리된다. */
+.data-head {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-dim);
+  background: var(--color-pitch-2);
+  border-bottom: 1px solid var(--color-line);
+}
+
 /* 패널 헤더 공통 레이아웃: 제목 + 보조 액션을 한 줄에. */
 .panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.7rem;
   border-bottom: 1px solid var(--color-line);
 }
 

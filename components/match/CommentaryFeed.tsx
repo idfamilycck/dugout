@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 실시간 중계 피드: 최신 이벤트가 위로 쌓인다. 타입별 아이콘 + 골/위기 강조.
 // aria-live="polite"로 스크린리더가 새 중계를 읽어준다. 성능을 위해 최근 ~40개만 렌더한다.
@@ -48,7 +48,7 @@ export function CommentaryFeed({ events }: CommentaryFeedProps) {
   const rows = events.slice(-MAX_ROWS).reverse();
 
   return (
-    <div className="panel flex h-full flex-col rounded-[10px]">
+    <div className="panel flex h-full flex-col rounded-panel">
       <div className="panel-head">
         <p className="eyebrow text-accent">실시간 중계</p>
         <span className="text-[11px] text-dim">최신순</span>

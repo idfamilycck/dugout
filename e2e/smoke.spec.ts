@@ -1,25 +1,27 @@
 import { test, expect } from "@playwright/test";
 
 // 스모크 E2E: 전체 유저 여정 한 바퀴.
-// 퀵스타트(한국 vs 브라질) → 작전실(승률 게이지) → 경기 시작 → 배속 재생 →
-// 하프타임 처리 → 종료 → (무승부면 승부차기 분기) → 복기(/result) 도달.
+// 매치업 구성(내 팀 → 상대 팀 → 경기장) → 작전실(승률 게이지) → 경기 시작 →
+// 재생 → 하프타임 처리 → 종료 → (무승부면 승부차기 분기) → 복기(/result) 도달.
 //
-// 주의: 앱은 시드-결정적이지만 startQuick()은 seed = Date.now()라 매 실행마다
+// 주의: 앱은 시드-결정적이지만 selectMatchup()은 seed = Date.now()라 매 실행마다
 // 정규종료(승/패)와 무승부(승부차기) 분기가 갈릴 수 있다. 두 분기를 모두 처리한다.
 
-test("퀵스타트 → 작전실 → 경기 완주 → 복기 도달", async ({ page }) => {
-  // ── 홈: 퀵스타트 ──────────────────────────────────────────
+test("매치업 구성 → 작전실 → 경기 완주 → 복기 도달", async ({ page }) => {
+  // ── 홈: 팀 2개 + 경기장 선택 후 작전실 입장 ────────────────
   await page.goto("/");
-  await page
-    .getByRole("button", { name: /바로 지휘하기/ })
-    .click();
+  const teamCards = page.getByRole("region", { name: "매치업 구성" }).getByRole("button");
+  await teamCards.nth(0).click(); // 내 팀
+  await teamCards.nth(1).click(); // 상대 팀
+  await page.getByRole("region", { name: "경기장 선택" }).getByRole("button").first().click();
+  await page.getByRole("button", { name: /작전실 입장/ }).click();
 
   // ── 작전실: 승률 게이지 확인 ──────────────────────────────
   await expect(page).toHaveURL(/\/tactics/);
   // 첫 진입 온보딩 코치마크(딤 오버레이)가 클릭을 가로채므로 건너뛴다.
   await page.getByRole("button", { name: "건너뛰기" }).click();
   await expect(page.getByText("라이브 승률 예측")).toBeVisible();
-  // 퀵스타트는 11명 자동 배치 → 경기 시작 버튼이 활성.
+  // selectMatchup은 양 팀 11명을 자동 배치 → 경기 시작 버튼이 활성.
   const beginBtn = page.getByRole("button", { name: /경기 시작/ });
   await expect(beginBtn).toBeEnabled();
   await beginBtn.click();

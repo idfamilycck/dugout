@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { ComponentType } from "react";
 import { Mountains, ThermometerHot, Buildings, type IconProps } from "@phosphor-icons/react";
@@ -35,7 +35,7 @@ export function VenuePicker({ venueId, onSelect }: VenuePickerProps) {
                 type="button"
                 onClick={() => onSelect(v.id)}
                 aria-pressed={selected}
-                className="panel relative flex h-full w-full flex-col gap-2 rounded-[10px] p-3 text-left transition-colors duration-150 hover:border-white/25"
+                className="panel relative flex h-full w-full flex-col gap-2 rounded-panel p-3 text-left transition-colors duration-150 hover:border-white/25"
                 style={{ borderColor: selected ? "var(--color-accent)" : undefined }}
               >
                 {selected && <span className="sr-only">선택됨</span>}

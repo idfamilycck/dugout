@@ -1,4 +1,4 @@
-// components/tournament/GroupStandings.tsx
+﻿// components/tournament/GroupStandings.tsx
 //
 // 12개 조(A~L) 순위표. lib/wc2026/standings.ts의 groupStandings() 결과를 그대로
 // 받아 그린다(계산 로직 없음 — 순수 프레젠테이션). 각 조는 실제 <table>이며,
@@ -44,7 +44,7 @@ export function GroupStandings({ standings }: GroupStandingsProps) {
 
 function GroupTable({ group, rows }: { group: string; rows: GroupRow[] }) {
   return (
-    <div className="panel overflow-hidden rounded-[10px]">
+    <div className="panel overflow-hidden rounded-panel">
       <div className="panel-head">
         <h3 className="text-sm font-black text-ink">{group}조</h3>
         <span className="text-[10px] font-bold uppercase tracking-wider text-dim">진출 2팀</span>
@@ -53,12 +53,14 @@ function GroupTable({ group, rows }: { group: string; rows: GroupRow[] }) {
         <table className="w-full min-w-[300px] text-[11px]">
           <caption className="sr-only">{group}조 순위표</caption>
           <thead>
-            <tr className="data-row text-dim">
-              <th scope="col" className="px-2.5 py-1.5 text-left font-bold">
+            {/* .data-head — 본문보다 한 단계 어두운 열 머리. 12개 조가 세로로 이어질 때
+                머리와 몸통이 눌러붙어 보이던 문제를 없앤다. */}
+            <tr className="data-head">
+              <th scope="col" className="px-2.5 py-1.5 text-left">
                 팀
               </th>
               {COLUMNS.map((col) => (
-                <th key={col.key} scope="col" className="px-1 py-1.5 text-center font-bold">
+                <th key={col.key} scope="col" className="px-1 py-1.5 text-center">
                   {col.label}
                 </th>
               ))}

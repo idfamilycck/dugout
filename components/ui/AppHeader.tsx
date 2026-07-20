@@ -25,7 +25,8 @@ export function AppHeader() {
           aria-label="터치라인 홈으로"
         >
           <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-[2px] bg-accent" />
-          <span className="tracking-[-0.02em]">TOUCHLINE</span>
+          {/* 워드마크는 라틴이라 컨덴스드 디스플레이 패밀리가 그대로 먹는다 — 중계 자막 톤. */}
+          <span className="font-display text-[15px] tracking-[0.02em]">TOUCHLINE</span>
         </Link>
 
         <nav aria-label="주요 이동" className="flex shrink-0 items-center gap-1">

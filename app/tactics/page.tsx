@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 작전실 — 감독석의 핵심 화면.
 // 데스크톱: 3열(스쿼드 | 피치 보드 | 분석 패널). 모바일: 탭 전환(스쿼드/피치/분석).
@@ -63,7 +63,7 @@ function AnalysisPanel() {
       <WinGauge wp={wp} lines={lines} />
 
       {/* 전술 패널 탭 */}
-      <div className="panel rounded-[10px] p-4">
+      <div className="panel rounded-panel p-4">
         <div role="tablist" aria-label="전술 지시 종류" className="mb-4 flex gap-1.5">
           {TACTIC_TABS.map((t) => (
             <button
@@ -94,7 +94,7 @@ function AnalysisPanel() {
 
       {/* 3층 상세 보기 */}
       {wp && lines && (
-        <details className="panel rounded-[10px] p-5">
+        <details className="panel rounded-panel p-5">
           <summary className="cursor-pointer list-none">
             <span className="flex items-center justify-between">
               <span className="eyebrow text-dim">상세 보기 (계산 근거)</span>
@@ -103,11 +103,11 @@ function AnalysisPanel() {
           </summary>
           <div className="mt-4 flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-[10px] border border-line bg-surface/40 p-3">
+              <div className="rounded-panel border border-line bg-surface/40 p-3">
                 <p className="text-[10px] text-dim">우리 기대 득점 (λ)</p>
                 <p className="stat-num text-2xl text-gain">{wp.lambdaMe.toFixed(2)}</p>
               </div>
-              <div className="rounded-[10px] border border-line bg-surface/40 p-3">
+              <div className="rounded-panel border border-line bg-surface/40 p-3">
                 <p className="text-[10px] text-dim">상대 기대 득점 (λ)</p>
                 <p className="stat-num text-2xl text-danger">{wp.lambdaOpp.toFixed(2)}</p>
               </div>
@@ -139,7 +139,7 @@ function AnalysisPanel() {
               </tbody>
             </table>
 
-            <p className="rounded-[10px] border border-line bg-surface/50 p-3 text-[11px] leading-relaxed text-dim">
+            <p className="rounded-panel border border-line bg-surface/50 p-3 text-[11px] leading-relaxed text-dim">
               라인별 전력으로 양 팀의 기대 득점(λ)을 구하고, 전술 근거가 이를 보정합니다.
               두 팀의 λ를 포아송 분포에 넣어 승·무·패 확률을 계산해요.
             </p>
@@ -233,7 +233,7 @@ export default function TacticsPage() {
         </p>
         <Link
           href="/"
-          className="mt-8 rounded-full bg-accent px-6 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5"
+          className="mt-8 rounded-control bg-accent px-6 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5"
         >
           ← 홈으로 가서 팀 고르기
         </Link>
@@ -292,7 +292,7 @@ export default function TacticsPage() {
           </div>
           <Link
             href="/"
-            className="shrink-0 rounded-full border border-line px-4 py-2 text-xs font-bold text-dim transition-colors hover:border-white/25 hover:text-ink"
+            className="shrink-0 rounded-control border border-line px-4 py-2 text-xs font-bold text-dim transition-colors hover:border-white/25 hover:text-ink"
           >
             ← 매치업
           </Link>
@@ -411,7 +411,7 @@ export default function TacticsPage() {
             type="button"
             onClick={onBeginMatch}
             disabled={!canStart}
-            className="shrink-0 rounded-full bg-accent px-7 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+            className="shrink-0 rounded-control bg-accent px-7 py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
           >
             경기 시작 →
           </button>

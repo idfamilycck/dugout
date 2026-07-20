@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 방송 스코어보드(스코어버그): 양 팀 배지·코드 + 대형 스코어 + 경기 시각 + 경기장.
 // 시각은 전·후반 추가시간을 45+ / 90+ 로 표기한다(엔진은 전반 추가시간을 만들지 않으므로
@@ -39,7 +39,7 @@ export function Scoreboard({
   const venue = venueById(venueId);
 
   return (
-    <div className="panel rounded-[10px] px-4 py-3 sm:px-6 sm:py-4">
+    <div className="panel rounded-panel px-4 py-3 sm:px-6 sm:py-4">
       <div className="flex items-center justify-center gap-4 sm:gap-8">
         {/* 우리 팀 */}
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">

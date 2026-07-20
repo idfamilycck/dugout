@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 개입 시트(작전실 축약판): 일시정지 상태에서 열린다. 초안(draft)을 누적한 뒤
 // "지시 전달"을 누르면 단 한 번의 intervene() 호출로 제출한다 → 자동 재개.
@@ -251,7 +251,7 @@ export function InterventionSheet({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", stiffness: 260, damping: 30 }}
-        className="panel relative flex max-h-[88vh] w-full max-w-lg flex-col rounded-t-[10px] sm:rounded-[10px]"
+        className="panel relative flex max-h-[88vh] w-full max-w-lg flex-col rounded-t-[10px] sm:rounded-panel"
       >
         {/* 헤더 */}
         <div className="panel-head">
@@ -265,7 +265,7 @@ export function InterventionSheet({
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="rounded-full border border-line px-3 py-1.5 text-xs font-bold text-dim hover:text-ink"
+            className="rounded-control border border-line px-3 py-1.5 text-xs font-bold text-dim hover:text-ink"
           >
             취소
           </button>
@@ -285,7 +285,7 @@ export function InterventionSheet({
                 {subs.map((s, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between rounded-[10px] border border-accent/30 bg-accent/10 px-3 py-2 text-[12px]"
+                    className="flex items-center justify-between rounded-panel border border-accent/30 bg-accent/10 px-3 py-2 text-[12px]"
                   >
                     <span className="flex items-center gap-1.5 text-ink">
                       <ArrowsClockwise weight="bold" className="size-3.5 shrink-0" aria-hidden />
@@ -312,7 +312,7 @@ export function InterventionSheet({
                   value={outId}
                   onChange={(e) => setOutId(e.target.value)}
                   disabled={remainingSubs <= 0}
-                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택</option>
                   {onPitch.map((p) => (
@@ -328,7 +328,7 @@ export function InterventionSheet({
                   value={inId}
                   onChange={(e) => setInId(e.target.value)}
                   disabled={remainingSubs <= 0}
-                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택</option>
                   {bench.map((p) => (
@@ -343,7 +343,7 @@ export function InterventionSheet({
               type="button"
               onClick={addSub}
               disabled={!outId || !inId || remainingSubs <= 0}
-              className="mt-2 w-full rounded-[8px] border border-line bg-surface-2/60 py-2 text-[12px] font-bold text-ink transition-colors hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-2 w-full rounded-control border border-line bg-surface-2/60 py-2 text-[12px] font-bold text-ink transition-colors hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
             >
               + 교체 추가
             </button>
@@ -435,7 +435,7 @@ export function InterventionSheet({
                 <select
                   value={special.manMark?.markerId ?? ""}
                   onChange={(e) => setManMarker(e.target.value)}
-                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink"
                 >
                   <option value="">선택 안 함</option>
                   {startersOf(meSetup, squad).map((p) => (
@@ -451,12 +451,12 @@ export function InterventionSheet({
                   value={special.manMark?.targetId ?? ""}
                   onChange={(e) => setManTarget(e.target.value)}
                   disabled={!special.manMark?.markerId}
-                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택 안 함</option>
                   {oppStarters.map((p, i) => (
                     <option key={p.id} value={p.id}>
-                      {i === 0 ? "⚠ " : ""}
+                      {i === 0 ? "최우선 " : ""}
                       {p.name}
                     </option>
                   ))}
@@ -472,7 +472,7 @@ export function InterventionSheet({
             type="button"
             onClick={submit}
             disabled={!hasChanges}
-            className="w-full rounded-full bg-accent py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+            className="w-full rounded-control bg-accent py-3 text-sm font-black text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
           >
             지시 전달 → 경기 재개
           </button>

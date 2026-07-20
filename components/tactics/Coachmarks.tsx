@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 첫 진입 온보딩 3단계. localStorage "touchline-onboarding"로 1회만 표시.
 // 건너뛰기/다음/시작 버튼. 딤 배경 + 스포트라이트 톤의 카드.
@@ -62,7 +62,7 @@ export function Coachmarks() {
       aria-modal="true"
       aria-labelledby="coach-title"
     >
-      <div className="panel w-full max-w-sm rounded-[10px] p-6 shadow-2xl">
+      <div className="panel w-full max-w-sm rounded-panel p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <span className="eyebrow text-accent">작전실 안내 {step + 1}/{STEPS.length}</span>
           <button

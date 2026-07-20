@@ -59,24 +59,30 @@ function RewriteContent() {
         aria-label="히어로"
         className="pitch-stripes relative overflow-hidden border-b border-line"
       >
-        <div className="mx-auto w-full max-w-5xl px-5 pb-8 pt-8 sm:pt-12">
+        {/* PC에서는 제목과 설명을 가로로 나눠 히어로 높이를 줄인다. 세로로 쌓으면
+            경기 브라우저가 화면 밖으로 밀려 "본론이 안 보이는" 첫인상이 된다. */}
+        <div className="mx-auto w-full max-w-5xl px-5 pb-6 pt-6 sm:pt-8">
           <Link href="/" className="text-xs text-dim transition-colors hover:text-ink">
             ← 처음으로
           </Link>
-          <p className="eyebrow mt-4 text-accent">2026 월드컵 다시 쓰기</p>
-          <h1 className="display mt-3 text-balance text-4xl text-ink sm:text-5xl">
-            그 순간,<br />감독이었다면.
-          </h1>
-          <p className="mt-5 max-w-xl text-pretty text-sm leading-relaxed text-dim sm:text-base">
-            실제 2026 월드컵 경기에서 승부를 가른 결정적 순간을 골라, 그 시점부터
-            직접 전술을 지휘해 결과를 바꿔보세요.
-          </p>
+          <div className="mt-3 grid grid-cols-1 gap-x-10 gap-y-4 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-end">
+            <div>
+              <p className="eyebrow text-accent">2026 월드컵 다시 쓰기</p>
+              <h1 className="display mt-2 text-balance text-4xl text-ink sm:text-5xl">
+                그 순간,<br />감독이었다면.
+              </h1>
+            </div>
+            <p className="max-w-xl text-pretty text-sm leading-relaxed text-dim sm:text-base lg:pb-1">
+              실제 2026 월드컵 경기에서 승부를 가른 결정적 순간을 골라, 그 시점부터
+              직접 전술을 지휘해 결과를 바꿔보세요.
+            </p>
+          </div>
         </div>
       </section>
 
       {/* ── 경기 브라우저 ────────────────────────────────── */}
-      <section aria-label="경기 선택" className="mx-auto w-full max-w-5xl px-5 pt-12">
-        <header className="accent-tab mb-6 pl-4">
+      <section aria-label="경기 선택" className="mx-auto w-full max-w-5xl px-5 pt-9">
+        <header className="accent-tab mb-5 pl-4">
           <h2 className="display text-balance text-2xl text-ink sm:text-3xl">어느 경기를 다시 쓸까</h2>
         </header>
         <MatchBrowser
@@ -90,8 +96,8 @@ function RewriteContent() {
 
       {/* ── 결정적 순간 카드 ─────────────────────────────── */}
       {selectedMatch && selectedSide && (
-        <section aria-label="결정적 순간 선택" className="mx-auto w-full max-w-5xl px-5 pt-10">
-          <header className="accent-tab mb-6 flex flex-wrap items-center justify-between gap-3 pl-4">
+        <section aria-label="결정적 순간 선택" className="mx-auto w-full max-w-5xl px-5 pt-9">
+          <header className="accent-tab mb-5 flex flex-wrap items-center justify-between gap-3 pl-4">
             <div>
               <h2 className="display text-balance text-2xl text-ink sm:text-3xl">
                 어디서부터 다시 쓸까

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 승부차기 키커 지정: 필드 위 11명 중 5명을 순서대로 선택한다(탭-투-추가/제거).
 // 각 행에 PK(페널티)·멘탈·체력을 노출해 비축구팬도 근거를 갖고 고르게 한다.
@@ -56,7 +56,7 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="panel rounded-[10px] p-4">
+      <div className="panel rounded-panel p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="eyebrow text-accent">키커 지정</p>
@@ -88,7 +88,7 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
             type="button"
             onClick={clear}
             disabled={order.length === 0}
-            className="rounded-full border border-line px-3.5 py-1.5 text-xs font-bold text-dim transition-colors hover:text-ink disabled:opacity-40"
+            className="rounded-control border border-line px-3.5 py-1.5 text-xs font-bold text-dim transition-colors hover:text-ink disabled:opacity-40"
           >
             초기화
           </button>
@@ -97,7 +97,7 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
 
       {/* 선택된 순서 미리보기 */}
       {order.length > 0 && (
-        <div className="panel rounded-[10px] p-4">
+        <div className="panel rounded-panel p-4">
           <p className="eyebrow mb-2 text-dim">킥 순서</p>
           <ol className="flex flex-wrap gap-2">
             {order.map((id, i) => {
@@ -132,7 +132,7 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
                 aria-pressed={selected}
                 aria-label={`${p.name}, 페널티 ${p.penalty}, 멘탈 ${p.mental}, 체력 ${stPct}퍼센트${selected ? `, ${idx + 1}번째 키커로 선택됨` : ""}`}
                 onClick={() => toggle(p.id)}
-                className={`flex w-full items-center gap-3 rounded-[10px] border px-2.5 py-2 text-left transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-panel border px-2.5 py-2 text-left transition-colors ${
                   selected
                     ? "border-accent bg-accent/10"
                     : "border-line bg-surface-2/50 hover:border-white/20"
@@ -180,7 +180,7 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
         type="button"
         disabled={!ready}
         onClick={() => ready && onConfirm(order)}
-        className="sticky bottom-3 z-10 w-full rounded-full bg-accent py-4 text-base font-black text-accent-ink shadow-lg transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+        className="sticky bottom-3 z-10 w-full rounded-control bg-accent py-4 text-base font-black text-accent-ink shadow-lg transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {ready ? "승부차기 시작 →" : `${NEED - order.length}명 더 선택하세요`}
       </button>
