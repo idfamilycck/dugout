@@ -66,7 +66,7 @@ export function MatchBrowser({
         <button
           type="button"
           onClick={() => pickRound(undefined)}
-          className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
+          className={`inline-flex min-h-[44px] items-center rounded-full px-4 text-xs font-bold transition-colors sm:min-h-[32px] ${
             roundFilter === undefined ? "bg-accent text-accent-ink" : "bg-surface-2 text-dim"
           }`}
         >
@@ -77,7 +77,7 @@ export function MatchBrowser({
             key={r}
             type="button"
             onClick={() => pickRound(r)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
+            className={`inline-flex min-h-[44px] items-center rounded-full px-4 text-xs font-bold transition-colors sm:min-h-[32px] ${
               roundFilter === r ? "bg-accent text-accent-ink" : "bg-surface-2 text-dim"
             }`}
           >
@@ -92,7 +92,7 @@ export function MatchBrowser({
           <button
             type="button"
             onClick={() => setGroupFilter(undefined)}
-            className={`rounded-full px-3 py-1 text-[11px] font-bold transition-colors ${
+            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
               groupFilter === undefined ? "bg-accent/80 text-accent-ink" : "bg-surface text-dim"
             }`}
           >
@@ -103,7 +103,7 @@ export function MatchBrowser({
               key={g}
               type="button"
               onClick={() => setGroupFilter(g)}
-              className={`rounded-full px-3 py-1 text-[11px] font-bold transition-colors ${
+              className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
                 groupFilter === g ? "bg-accent/80 text-accent-ink" : "bg-surface text-dim"
               }`}
             >

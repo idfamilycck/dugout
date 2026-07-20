@@ -80,7 +80,7 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
           <button
             type="button"
             onClick={autoPick}
-            className="rounded-full border border-accent/50 bg-accent/10 px-3.5 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent/20"
+            className="inline-flex min-h-[44px] items-center rounded-full border border-accent/50 bg-accent/10 px-4 text-xs font-bold text-accent transition-colors hover:bg-accent/20 sm:min-h-[32px]"
           >
             추천 5인 자동 선택
           </button>
