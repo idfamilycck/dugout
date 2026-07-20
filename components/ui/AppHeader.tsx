@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 const NAV = [
   { href: "/", label: "자유 매치업", short: "자유" },
   { href: "/rewrite", label: "월드컵 다시 쓰기", short: "다시 쓰기" },
+  { href: "/tournament", label: "대회", short: "대회" },
 ] as const;
 
 export function AppHeader() {
