@@ -7,6 +7,7 @@ import { wc2026TeamId } from "@/lib/wc2026/data";
 import { teamById } from "@/lib/data/teams";
 import { sortForBrowser, roundLabelKo, availableGroups } from "@/components/rewrite/match-browser";
 import { FlagBadge } from "@/components/ui/FlagBadge";
+import { ROUND_LABEL_CLASS, roundTone } from "@/lib/wc2026/stage";
 
 const ROUND_ORDER: Wc2026Round[] = ["group", "r32", "r16", "qf", "sf", "third", "final"];
 const ROUND_SET = new Set<string>(ROUND_ORDER);
@@ -112,13 +113,17 @@ export function MatchBrowser({
         >
           전체
         </button>
+        {/* 선택된 칩은 시안(상호작용 규칙 유지). 선택되지 않은 칩만 라운드 골드 램프로
+            물들여, 대진표와 같은 "결승으로 갈수록 진해지는" 위계를 여기서도 읽히게 한다. */}
         {availableRounds.map((r) => (
           <button
             key={r}
             type="button"
             onClick={() => pickRound(r)}
             className={`inline-flex min-h-[44px] items-center rounded-full px-4 text-xs font-bold transition-colors sm:min-h-[32px] ${
-              roundFilter === r ? "bg-accent text-accent-ink" : "bg-surface-2 text-dim"
+              roundFilter === r
+                ? "bg-accent text-accent-ink"
+                : `bg-surface-2 ${ROUND_LABEL_CLASS[roundTone(r)]}`
             }`}
           >
             {roundLabelKo(r)}
@@ -132,7 +137,7 @@ export function MatchBrowser({
           <button
             type="button"
             onClick={() => pickGroup(undefined)}
-            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
+            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[13px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
               groupFilter === undefined ? "bg-accent/80 text-accent-ink" : "bg-surface text-dim"
             }`}
           >
@@ -143,7 +148,7 @@ export function MatchBrowser({
               key={g}
               type="button"
               onClick={() => pickGroup(g)}
-              className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
+              className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3.5 text-[13px] font-bold transition-colors sm:min-h-[28px] sm:min-w-0 ${
                 groupFilter === g ? "bg-accent/80 text-accent-ink" : "bg-surface text-dim"
               }`}
             >
@@ -171,8 +176,10 @@ export function MatchBrowser({
                 className="panel flex w-full flex-col gap-2.5 rounded-panel p-4 text-left transition-colors duration-150 hover:border-white/25"
                 style={{ borderColor: isSelected ? "var(--color-accent)" : undefined }}
               >
-                <div className="flex items-center justify-between text-[10px] text-dim">
-                  <span className="font-bold uppercase tracking-wider">{roundLabelKo(m.round)}</span>
+                <div className="flex items-center justify-between text-[13px] text-dim">
+                  <span className={`font-bold uppercase tracking-wider ${ROUND_LABEL_CLASS[roundTone(m.round)]}`}>
+                    {roundLabelKo(m.round)}
+                  </span>
                   {isKor && (
                     <span className="rounded-full bg-accent/15 px-2 py-0.5 font-black text-accent">
                       KOR
@@ -194,7 +201,7 @@ export function MatchBrowser({
                   </div>
                 </div>
 
-                <div className="border-t border-line pt-2 text-[11px] text-dim">
+                <div className="border-t border-line pt-2 text-[13px] text-dim">
                   총 {totalGoals}골 · 이벤트 {m.events.length}건
                 </div>
               </button>

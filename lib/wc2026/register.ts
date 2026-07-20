@@ -17,6 +17,7 @@ import { makeVirtualPlayer } from "@/lib/wc2026/players";
 import { koreanName } from "@/lib/wc2026/player-names";
 import { wc2026Matches, wc2026TeamId } from "@/lib/wc2026/source";
 import { WC_STADIUM_VENUES } from "@/lib/wc2026/venues";
+import { stageOf } from "@/lib/wc2026/stage";
 import teamsJson from "@/data/wc2026/teams.json";
 
 interface Wc2026TeamRow {
@@ -112,18 +113,10 @@ function fallbackColors(code: string): { color1: string; color2: string } {
   };
 }
 
-// finishRound(대회 최종 성적) -> 팀 카드 하단에 보여줄 한 줄 태그. WC 팀은 H2H 데이터가
-// 없어 TeamGrid의 styleTags 폴백 분기가 항상 쓰이므로, 이 태그가 카드 정보의 전부가
-// 된다. "final"은 데이터상 우승/준우승을 구분하지 못해(같은 elo로 동률 저장) 안전하게
-// "결승 진출"로 통합한다. "third"는 4강에서 3~4위전을 치른 팀(=준결승 진출자)이다.
-const FINISH_TAG: Record<string, string> = {
-  final: "결승 진출",
-  third: "4강",
-  qf: "8강",
-  r16: "16강",
-  r32: "32강",
-  group: "조별리그",
-};
+// finishRound(대회 최종 성적) -> 팀 카드 하단 태그. 라벨과 색 등급은 lib/wc2026/stage.ts가
+// 단일 소스다(카드·대진표·경기 브라우저가 같은 표를 공유해 표기가 갈리지 않게 한다).
+// WC 팀은 H2H 데이터가 없어 TeamGrid의 styleTags 폴백 분기가 항상 쓰이므로, 이 태그가
+// 카드 정보의 전부가 된다.
 
 function formFromElo(elo: number): number {
   return Math.max(1, Math.min(10, Math.round((elo - 1400) / 80)));
@@ -165,7 +158,7 @@ export function registerWc2026(): void {
       elo: row.elo,
       fifaRank: rankByCode.get(row.code) ?? 99,
       form: formFromElo(row.elo),
-      styleTags: [FINISH_TAG[row.finishRound] ?? row.finishRound],
+      styleTags: [stageOf(row.finishRound).labelKo],
       color1: colors.color1,
       color2: colors.color2,
     };
@@ -194,13 +187,24 @@ export function registerWc2026(): void {
   for (const [teamId, bucket] of playersByTeam) {
     const code = teamId.slice(3).toUpperCase(); // "wc_esp" -> "ESP"
     const teamElo = eloByCode.get(code) ?? 1600;
-    const players = [...bucket.entries()].map(([playerId, info]) =>
+    const roster = [...bucket.entries()];
+
+    // 이름 표기는 팀 단위로 통일한다: 그 팀 선수가 "전원" 한글 매핑을 갖고 있을 때만
+    // 한글로 쓰고, 한 명이라도 빠지면 그 팀은 전부 로마자로 간다.
+    //
+    // 이유: 매핑은 KOR 전원(26/26)과 세계적 스타 몇 명만 손으로 채워져 있어 전체
+    // 커버리지가 7%다. 선수별로 "있으면 한글"을 적용하면 같은 피치 위에 "카세미루"와
+    // "Marquinhos"가 나란히 서서 표기 규칙이 없어 보인다. 팀 단위로 끊으면 대한민국은
+    // 전원 한글, 나머지는 전원 로마자로 최소한 한 팀 안에서는 규칙이 일관된다.
+    // (나중에 어떤 팀의 매핑을 다 채우면 그 팀이 자동으로 한글로 바뀐다.)
+    const allMapped = roster.every(([, info]) => koreanName(info.name) !== undefined);
+
+    const players = roster.map(([playerId, info]) =>
       makeVirtualPlayer({
         id: playerId,
         teamId,
-        // 한국 관객 기준: 로마자 표기(ESPN 원본)를 한글 이름으로 치환한다(매핑이 없으면
-        // 로마자 그대로 폴백). 이 name만 바뀌므로 이하 능력치는 항상 VIRTUAL 그대로다.
-        name: koreanName(info.name) ?? info.name,
+        // 이 name만 바뀌므로 이하 능력치는 항상 VIRTUAL 그대로다.
+        name: allMapped ? (koreanName(info.name) ?? info.name) : info.name,
         position: info.position,
         teamElo,
       }),

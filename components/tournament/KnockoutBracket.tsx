@@ -21,6 +21,8 @@ import { teamDisplay } from "@/components/tournament/team-display";
 import { roundLabelKo } from "@/components/rewrite/match-browser";
 import type { Wc2026Round } from "@/lib/wc2026/types";
 import type { BracketMatch } from "@/lib/wc2026/standings";
+import { ROUND_LABEL_CLASS, roundTone } from "@/lib/wc2026/stage";
+import { Reveal } from "@/components/ui/Reveal";
 
 const MAIN_ROUNDS: Wc2026Round[] = ["r32", "r16", "qf", "sf", "final"];
 
@@ -37,21 +39,32 @@ export function KnockoutBracket({ bracket }: KnockoutBracketProps) {
             const ties = bracket[round] ?? [];
             if (ties.length === 0 && round !== "final") return null;
             return (
-              <div key={round} className="flex w-60 shrink-0 flex-col gap-2.5">
-                <p className="eyebrow px-1 shrink-0 text-dim">{roundLabelKo(round)}</p>
+              // 라운드 컬럼을 왼쪽부터 차례로 들여보낸다. 32강에서 결승으로 진행하는
+              // 대회의 방향과 읽는 방향이 일치한다.
+              <Reveal
+                key={round}
+                index={MAIN_ROUNDS.indexOf(round)}
+                step={0.07}
+                className="flex w-60 shrink-0 flex-col gap-2.5"
+              >
+                {/* 라운드가 깊어질수록 라벨이 골드로 진해진다. 대진표를 왼쪽에서
+                    오른쪽으로 훑으면 결승을 향해 색이 차오르는 것이 보인다. */}
+                <p className={`eyebrow shrink-0 px-1 ${ROUND_LABEL_CLASS[roundTone(round)]}`}>
+                  {roundLabelKo(round)}
+                </p>
                 {/* 이 안쪽 래퍼만 늘어난 컬럼 높이를 실제로 나눠 가진다(라벨은 제외) —
                     라운드마다 available height가 동일해야 위 주석의 재귀적 중앙 정렬
                     수학이 성립한다. */}
                 <div className="flex flex-1 flex-col justify-around gap-2.5">
                   {ties.length > 0 ? (
-                    ties.map((tie) => <BracketTie key={tie.id} tie={tie} />)
+                    ties.map((tie) => <BracketTie key={tie.id} tie={tie} round={round} />)
                   ) : (
                     <div className="panel flex min-h-[88px] items-center justify-center rounded-panel p-4 text-center">
                       <p className="text-xs leading-relaxed text-dim">결승 데이터 준비 중</p>
                     </div>
                   )}
                 </div>
-              </div>
+              </Reveal>
             );
           })}
         </div>
@@ -59,10 +72,12 @@ export function KnockoutBracket({ bracket }: KnockoutBracketProps) {
 
       {(bracket.third ?? []).length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <p className="eyebrow px-1 text-dim">{roundLabelKo("third")}</p>
+          <p className={`eyebrow px-1 ${ROUND_LABEL_CLASS[roundTone("third")]}`}>
+            {roundLabelKo("third")}
+          </p>
           <div className="max-w-xs">
             {bracket.third.map((tie) => (
-              <BracketTie key={tie.id} tie={tie} />
+              <BracketTie key={tie.id} tie={tie} round="third" />
             ))}
           </div>
         </div>
@@ -71,15 +86,21 @@ export function KnockoutBracket({ bracket }: KnockoutBracketProps) {
   );
 }
 
-function BracketTie({ tie }: { tie: BracketMatch }) {
+function BracketTie({ tie, round }: { tie: BracketMatch; round: string }) {
   const home = teamDisplay(tie.home);
   const away = teamDisplay(tie.away);
   const hasPens = tie.penHome !== undefined && tie.penAway !== undefined;
+  // 결승의 승자 = 우승팀. 대회 전체에서 골드를 가장 강하게 쓰는 단 한 곳이다.
+  const isFinal = round === "final";
 
   return (
     <Link
       href={`/rewrite?match=${tie.id}`}
-      className="panel flex flex-col gap-1.5 rounded-panel p-2.5 transition-colors duration-150 hover:border-white/25"
+      className={`flex flex-col gap-1.5 rounded-panel p-2.5 transition-colors duration-150 ${
+        isFinal
+          ? "border border-gold/40 bg-gold/5 hover:border-gold/70"
+          : "panel hover:border-white/25"
+      }`}
     >
       <TieRow
         code={tie.home}
@@ -88,6 +109,7 @@ function BracketTie({ tie }: { tie: BracketMatch }) {
         color2={home.color2}
         score={tie.scoreHome}
         isWinner={tie.winner === tie.home}
+        isChampion={isFinal && tie.winner === tie.home}
       />
       <TieRow
         code={tie.away}
@@ -96,9 +118,10 @@ function BracketTie({ tie }: { tie: BracketMatch }) {
         color2={away.color2}
         score={tie.scoreAway}
         isWinner={tie.winner === tie.away}
+        isChampion={isFinal && tie.winner === tie.away}
       />
       {hasPens && (
-        <p className="tnum pt-0.5 text-center text-[10px] font-bold text-dim">
+        <p className="tnum pt-0.5 text-center text-[13px] font-bold text-dim">
           (승부차기 {tie.penHome}-{tie.penAway})
         </p>
       )}
@@ -113,6 +136,7 @@ function TieRow({
   color2,
   score,
   isWinner,
+  isChampion,
 }: {
   code: string;
   name: string;
@@ -120,22 +144,45 @@ function TieRow({
   color2: string;
   score: number;
   isWinner: boolean;
+  isChampion: boolean;
 }) {
+  // 승자 강조는 중립 표면 + 굵기로 한다. 시안은 이 앱에서 "누를 수 있는 것"을 뜻하므로
+  // 결과 표시에 쓰면 의미가 흐려진다. 골드는 우승팀 한 줄에만 허용한다.
+  const bg = isChampion
+    ? "rgba(245, 197, 99, 0.16)"
+    : isWinner
+      ? "rgba(255, 255, 255, 0.06)"
+      : undefined;
+
   return (
     <div
       className="flex items-center justify-between gap-2 rounded-control px-1.5 py-1"
-      style={{ background: isWinner ? "rgba(34, 211, 238, 0.10)" : undefined }}
+      style={{ background: bg }}
     >
       <div className="flex min-w-0 items-center gap-1.5">
         <FlagBadge code={code} color1={color1} color2={color2} size={20} />
-        <span className={`relative truncate text-xs ${isWinner ? "font-black text-ink" : "text-dim"}`}>
+        <span
+          className={`relative truncate text-xs ${
+            isChampion ? "font-black text-gold" : isWinner ? "font-black text-ink" : "text-dim"
+          }`}
+        >
           {name}
           {/* relative 부모 안에 가둬 sr-only(absolute)가 가로 스크롤 컨테이너 밖으로
               튀어나가 문서 전체의 가로 스크롤을 유발하지 않도록 한다. */}
-          {isWinner && <span className="sr-only"> (승)</span>}
+          {isChampion ? (
+            <span className="sr-only"> (우승)</span>
+          ) : isWinner ? (
+            <span className="sr-only"> (승)</span>
+          ) : null}
         </span>
       </div>
-      <span className={`stat-num shrink-0 text-sm ${isWinner ? "text-accent" : "text-ink"}`}>{score}</span>
+      <span
+        className={`stat-num shrink-0 text-sm ${
+          isChampion ? "text-gold" : isWinner ? "text-ink" : "text-dim"
+        }`}
+      >
+        {score}
+      </span>
     </div>
   );
 }
