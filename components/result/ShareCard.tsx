@@ -66,36 +66,36 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
     ctx.scale(scale, scale);
     const font = '"Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 
-    // 배경 그라디언트(다크 차콜 피치)
+    // 배경 그라디언트(네이비-슬레이트 피치)
     const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, "#16181c");
-    bg.addColorStop(1, "#0e0f11");
+    bg.addColorStop(0, "#181e2a");
+    bg.addColorStop(1, "#0f1319");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
-    // 상단 앰버 글로우
+    // 상단 시안 글로우
     const glow = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W * 0.7);
-    glow.addColorStop(0, "rgba(255,176,32,0.14)");
-    glow.addColorStop(1, "rgba(255,176,32,0)");
+    glow.addColorStop(0, "rgba(34,211,238,0.14)");
+    glow.addColorStop(1, "rgba(34,211,238,0)");
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, 360);
 
     // 테두리
-    ctx.strokeStyle = "rgba(240,241,243,0.1)";
+    ctx.strokeStyle = "rgba(238,242,248,0.1)";
     ctx.lineWidth = 2;
     ctx.strokeRect(24, 24, W - 48, H - 48);
 
     // 서비스명
     ctx.textAlign = "center";
-    ctx.fillStyle = "#ffb020";
+    ctx.fillStyle = "#22d3ee";
     ctx.font = `800 30px ${font}`;
     ctx.fillText("T O U C H L I N E", W / 2, 108);
-    ctx.fillStyle = "#949aa3";
+    ctx.fillStyle = "#8f9bb0";
     ctx.font = `600 18px ${font}`;
     ctx.fillText("당신이 감독이라면", W / 2, 140);
 
     // 팀 코드
-    ctx.fillStyle = "#f0f1f3";
+    ctx.fillStyle = "#eef2f8";
     ctx.font = `900 44px ${font}`;
     ctx.textAlign = "left";
     ctx.fillText(meCode, 96, 320);
@@ -105,10 +105,10 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
     // 스코어
     ctx.textAlign = "center";
     ctx.font = `900 150px ${font}`;
-    ctx.fillStyle = "#f0f1f3";
+    ctx.fillStyle = "#eef2f8";
     ctx.fillText(`${match.scoreMe}`, W / 2 - 96, 360);
     ctx.fillText(`${match.scoreOpp}`, W / 2 + 96, 360);
-    ctx.fillStyle = "#949aa3";
+    ctx.fillStyle = "#8f9bb0";
     ctx.font = `700 80px ${font}`;
     ctx.fillText(":", W / 2, 348);
 
@@ -116,7 +116,7 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
     if (shootout) {
       const meK = shootout.rounds.filter((r) => r.side === "me" && r.scored).length;
       const oppK = shootout.rounds.filter((r) => r.side === "opp" && r.scored).length;
-      ctx.fillStyle = "#949aa3";
+      ctx.fillStyle = "#8f9bb0";
       ctx.font = `700 26px ${font}`;
       ctx.fillText(`승부차기 ${meK} : ${oppK}`, W / 2, 420);
     }
@@ -130,20 +130,20 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
     // 카운터팩추얼 한 줄 (박스 안 래핑)
     const boxY = 560;
     const boxH = 220;
-    ctx.fillStyle = "rgba(22,24,28,0.6)";
+    ctx.fillStyle = "rgba(24,30,42,0.6)";
     ctx.beginPath();
     ctx.roundRect(64, boxY, W - 128, boxH, 24);
     ctx.fill();
-    ctx.strokeStyle = "rgba(240,241,243,0.1)";
+    ctx.strokeStyle = "rgba(238,242,248,0.1)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "#ffb020";
+    ctx.fillStyle = "#22d3ee";
     ctx.font = `700 16px ${font}`;
     ctx.fillText("이 경기의 결정적 순간", W / 2, boxY + 44);
 
-    const heroColor = hero.tone === "gain" ? "#34e08a" : hero.tone === "danger" ? "#ff5470" : "#f0f1f3";
+    const heroColor = hero.tone === "gain" ? "#34e08a" : hero.tone === "danger" ? "#ff5470" : "#eef2f8";
     ctx.fillStyle = heroColor;
     ctx.font = `800 32px ${font}`;
     const lines = wrapText(ctx, hero.text, W - 200);
@@ -152,7 +152,7 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
     });
 
     // 푸터 디스클레이머
-    ctx.fillStyle = "#949aa3";
+    ctx.fillStyle = "#8f9bb0";
     ctx.font = `500 15px ${font}`;
     ctx.fillText("모든 능력치·결과는 가상 데이터입니다", W / 2, H - 56);
   }, [match, cf, shootout, meCode, oppCode, word, hero.text, hero.tone]);

@@ -7,7 +7,7 @@ const DESCRIPTION =
 
 // 페이지 배경(--color-pitch)과 맞춘 브라우저 크롬 색상(주소창 등).
 export const viewport: Viewport = {
-  themeColor: "#0e0f11",
+  themeColor: "#0f1319",
 };
 
 export const metadata: Metadata = {
