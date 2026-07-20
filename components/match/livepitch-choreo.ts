@@ -16,6 +16,13 @@ export interface BallPath {
   dur: number; // 초
 }
 
+/**
+ * 골 장면에서 공이 골문에 닿기까지의 시간(초).
+ * 자막·플래시·화면 흔들림이 전부 이 값에 맞춰 터지므로, 여기만 바꾸면 동기화가 유지된다.
+ */
+export const GOAL_BALL_DUR_SEC = 2.0;
+const SHOT_BALL_DUR_SEC = 1.7;
+
 export interface SceneChoreo {
   ball: BallPath;
   /** slotId → 공격 측 선수의 목표 위치 오버라이드 */
@@ -130,7 +137,7 @@ export function buildSceneChoreo(
         xs: [shooter.cx, mateP.cx + dir * 4, advanced.cx + dir * 5, outcome.cx],
         ys: [shooter.cy, mateP.cy, advanced.cy, outcome.cy],
         times: [0, 0.3, 0.62, 1],
-        dur: type === "goal" ? 2.0 : 1.7,
+        dur: type === "goal" ? GOAL_BALL_DUR_SEC : SHOT_BALL_DUR_SEC,
       },
       overrides,
       shooterSlot: shooter.slotId,

@@ -11,11 +11,23 @@ import { primaryEvent, sceneChain } from "./scene";
 interface SceneOverlayProps {
   sceneEvents: MatchEvent[]; // 빈 배열이면 렌더 안 함
   attribution: AppliedRule | null; // 공격 장면일 때 발동 전술 (없으면 칩 생략)
+  /**
+   * 골 장면에서 공이 실제로 골문에 닿았는가. false인 동안에는 결과("...의 골!")를
+   * 감추고 빌드업(찬스 -> 슛)까지만 보여준다. 공이 아직 중원에 있는데 골 문구가
+   * 먼저 뜨면 중계로서 가장 어색한 어긋남이 된다.
+   */
+  goalArrived?: boolean;
 }
 
-export function SceneOverlay({ sceneEvents, attribution }: SceneOverlayProps) {
+export function SceneOverlay({ sceneEvents, attribution, goalArrived = true }: SceneOverlayProps) {
   const primary = primaryEvent(sceneEvents);
-  const chain = sceneChain(sceneEvents);
+  const fullChain = sceneChain(sceneEvents);
+  const isGoal = primary?.type === "goal";
+  const pending = isGoal && !goalArrived;
+
+  // 도착 전에는 체인의 마지막 고리("골!")를 빼고, 문구도 진행형으로 바꾼다.
+  const chain = pending ? fullChain.slice(0, -1) : fullChain;
+  const headline = pending ? "슛이 골문으로 향합니다" : (primary?.textKo ?? "");
 
   return (
     <AnimatePresence>
@@ -45,8 +57,9 @@ export function SceneOverlay({ sceneEvents, attribution }: SceneOverlayProps) {
                 <span className="text-xs font-semibold tracking-wide text-dim">{chain.join(" → ")}</span>
               )}
             </div>
-            <p className="mt-1.5 text-sm font-bold leading-snug text-white sm:text-base">{primary.textKo}</p>
-            {attribution && (
+            <p className="mt-1.5 text-sm font-bold leading-snug text-white sm:text-base">{headline}</p>
+            {/* 발동 전술 칩은 결과가 확정된 뒤에 붙인다(빌드업 중에는 아직 근거가 아니다). */}
+            {attribution && !pending && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs text-dim">
                 <span
                   className="rounded-full border border-current px-1.5 py-0.5 font-semibold"

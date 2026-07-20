@@ -20,6 +20,8 @@ import { CrisisBanner } from "@/components/match/CrisisBanner";
 import { InterventionSheetPortal } from "@/components/match/InterventionSheet";
 import { RewriteContextBadge } from "@/components/rewrite/RewriteContextBadge";
 import { SceneOverlay } from "@/components/match/SceneOverlay";
+import { useBallArrival } from "@/components/match/use-ball-arrival";
+import { GOAL_BALL_DUR_SEC } from "@/components/match/livepitch-choreo";
 import {
   sceneEventsAt,
   primaryEvent,
@@ -163,6 +165,17 @@ export default function MatchPage() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [halftime]);
 
+  // 골 연출 동기화: 공이 골문에 닿는 시점을 페이지가 단일 소스로 계산해 피치(플래시·
+  // 화면 흔들림)와 자막(골 문구)에 같은 값을 내려준다. 두 컴포넌트가 각자 타이머를
+  // 돌리면 프레임이 어긋나 다시 따로 놀게 된다.
+  // 훅이므로 아래 로딩 가드(early return)보다 위에 있어야 호출 순서가 고정된다.
+  const scenePrimary = scene ? primaryEvent(scene) : undefined;
+  const goalArrived = useBallArrival(
+    scenePrimary ? `${scenePrimary.minute}-${scenePrimary.type}` : null,
+    GOAL_BALL_DUR_SEC * 1000,
+    scenePrimary?.type === "goal"
+  );
+
   if (!match) {
     return (
       <main id="main" className="flex flex-1 scroll-mt-14 items-center justify-center px-5 py-24 text-center">
@@ -275,6 +288,7 @@ export default function MatchPage() {
             lean={attackLean(match.events)}
             // 킥오프 전(0분)에는 피치를 완전히 정지시킨다.
             live={match.minute > 0}
+            goalArrived={goalArrived}
           />
           <SceneOverlay
             sceneEvents={scene ?? []}
@@ -283,6 +297,7 @@ export default function MatchPage() {
               if (!p || !isAttackScene(p)) return null;
               return attackAttribution(sideRules[p.side]);
             })()}
+            goalArrived={goalArrived}
           />
         </div>
 

@@ -71,6 +71,11 @@ interface LivePitchProps {
    * 경기 시작 전인데 선수들이 계속 꿈틀대면 "이미 진행 중"으로 오독된다.
    */
   live?: boolean;
+  /**
+   * 골 장면에서 공이 골문에 닿았는가. 골 플래시와 화면 흔들림이 이 값에 반응한다.
+   * 타이머를 페이지가 단일 소스로 들고 있어야 자막(SceneOverlay)과 어긋나지 않는다.
+   */
+  goalArrived?: boolean;
 }
 
 export function LivePitch({
@@ -79,6 +84,7 @@ export function LivePitch({
   scene = null,
   lean = 0,
   live = true,
+  goalArrived = false,
 }: LivePitchProps) {
   const meColor = teamById(meSetup.teamId)?.color2 ?? "var(--color-accent)";
   const oppColor = teamById(oppSetup.teamId)?.color1 ?? "var(--color-danger)";
@@ -207,7 +213,8 @@ export function LivePitch({
     <motion.div
       className="relative overflow-hidden rounded-panel border border-line"
       style={{ background: "linear-gradient(180deg, var(--color-turf), var(--color-turf-2))" }}
-      animate={scene?.type === "goal" ? { x: [0, -5, 5, -4, 4, 0] } : { x: 0 }}
+      // 화면 흔들림도 골이 "들어간 순간"에 맞춘다(장면 시작이 아니라).
+      animate={goalArrived ? { x: [0, -5, 5, -4, 4, 0] } : { x: 0 }}
       transition={{ duration: 0.5 }}
     >
       <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" role="img" aria-label="라이브 경기 피치">
@@ -351,9 +358,10 @@ export function LivePitch({
         )}
       </svg>
 
-      {/* 골 플래시 */}
+      {/* 골 플래시 — 공이 골문에 닿은 뒤에 터진다. 장면 시작에 띄우면 공이 아직 중원에
+          있는데 "GOAL!"이 먼저 뜨는 어긋남이 2초간 지속된다. */}
       <AnimatePresence>
-        {scene?.type === "goal" && (
+        {goalArrived && scene && (
           <motion.div
             key={scene.key}
             className="pointer-events-none absolute inset-0 flex items-center justify-center"
