@@ -126,8 +126,9 @@ test("월드컵 다시 쓰기 → 결정적 순간 선택 → 경기 완주 → 
   await expect(page).toHaveURL(/\/result/);
   await expect(page.getByRole("heading", { name: "경기 복기" })).toBeVisible();
   // RealVsParallel 전용 문구 — rewrite 모드에서만 렌더되는 "실제 역사 vs 평행세계"
-  // 비교 카드(내부적으로 compare.ts의 myScoreKo가 "당신의 지휘: N - N ..." 로 시작하는
-  // 값을 파싱해 스코어카드를 그리며, 그 카드의 라벨이 "당신의 평행세계"다).
+  // 비교 카드(내부적으로 compare.ts의 buildCompare가 돌려주는 구조화된 필드
+  // myFor/myAgainst/myResultKo 등으로 스코어카드를 그리며, 그 카드의 라벨이
+  // "당신의 평행세계"다).
   await expect(page.getByText("실제 역사 vs 평행세계")).toBeVisible();
   await expect(page.getByText("당신의 평행세계")).toBeVisible();
   await expect(page.getByText("실제 역사", { exact: true })).toBeVisible();

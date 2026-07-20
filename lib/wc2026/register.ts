@@ -15,7 +15,7 @@ import { registerPlayers } from "@/lib/data/players";
 import { registerVenue, venueById } from "@/lib/data/venues";
 import { makeVirtualPlayer } from "@/lib/wc2026/players";
 import { koreanName } from "@/lib/wc2026/player-names";
-import { wc2026Matches, wc2026TeamId } from "@/lib/wc2026/data";
+import { wc2026Matches, wc2026TeamId } from "@/lib/wc2026/source";
 import { WC_STADIUM_VENUES } from "@/lib/wc2026/venues";
 import teamsJson from "@/data/wc2026/teams.json";
 

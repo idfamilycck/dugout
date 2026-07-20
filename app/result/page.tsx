@@ -22,7 +22,7 @@ import { buildTacticsReview } from "@/components/result/tactics-review";
 import { TacticsReviewPanel } from "@/components/result/TacticsReviewPanel";
 import { Disclaimer } from "@/components/ui/Disclaimer";
 import { RealVsParallel } from "@/components/rewrite/RealVsParallel";
-import { buildCompare, resultRank, resultWordFromKo } from "@/components/rewrite/compare";
+import { buildCompare, resultRank } from "@/components/rewrite/compare";
 import { wc2026MatchById } from "@/lib/wc2026/data";
 
 function countBy(events: MatchEvent[], side: "me" | "opp", pred: (e: MatchEvent) => boolean): number {
@@ -139,8 +139,7 @@ export default function ResultPage() {
         text: rewriteCompare.deltaKo,
         tone: !rewriteCompare.changedOutcome
           ? ("neutral" as const)
-          : resultRank(resultWordFromKo(rewriteCompare.myScoreKo)) >
-              resultRank(resultWordFromKo(rewriteCompare.realScoreKo))
+          : resultRank(rewriteCompare.myResultKo) > resultRank(rewriteCompare.realResultKo)
             ? ("gain" as const)
             : ("danger" as const),
       }

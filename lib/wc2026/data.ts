@@ -3,15 +3,17 @@
 // Thin read-only accessors over the WC2026 raw JSON dataset
 // (data/wc2026/matches.json). No mutation, no registration side effects —
 // that lives in lib/wc2026/register.ts.
+//
+// wc2026Matches/wc2026MatchById/wc2026TeamId are re-exported from the leaf
+// module lib/wc2026/source.ts (no imports back from here), which is what
+// keeps this file and register.ts from importing each other.
 
 import type { Team } from "@/lib/types";
-import type { Wc2026Match } from "@/lib/wc2026/types";
 import { registerWc2026 } from "@/lib/wc2026/register";
 import { teamById } from "@/lib/data/teams";
-import matchesJson from "@/data/wc2026/matches.json";
 import teamsJson from "@/data/wc2026/teams.json";
 
-const ALL_MATCHES = matchesJson as Wc2026Match[];
+export { wc2026Matches, wc2026MatchById, wc2026TeamId } from "@/lib/wc2026/source";
 
 interface Wc2026TeamRow {
   code: string;
@@ -22,18 +24,6 @@ interface Wc2026TeamRow {
 }
 
 const ALL_TEAM_ROWS = teamsJson as Wc2026TeamRow[];
-
-export function wc2026Matches(): Wc2026Match[] {
-  return ALL_MATCHES.filter((m) => !m.excluded);
-}
-
-export function wc2026MatchById(id: string): Wc2026Match | undefined {
-  return ALL_MATCHES.find((m) => m.id === id);
-}
-
-export function wc2026TeamId(code: string): string {
-  return "wc_" + code.toLowerCase();
-}
 
 // 실제 2026 월드컵 48개국을 engine Team[]로 돌려준다. registerWc2026()이 아직 안
 // 돌았어도(예: 이 함수를 가장 먼저 호출하는 진입점) 여기서 한 번 더 호출해 보장한다

@@ -22,8 +22,8 @@ import { teamById } from "@/lib/data/teams";
 import { FORMATIONS } from "@/lib/data/formations";
 import { lineStrengths } from "@/lib/engine/strength";
 import { Disclaimer } from "@/components/ui/Disclaimer";
-import { OfficialBoard } from "@/components/ui/OfficialBoard";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { RewriteContextBadge } from "@/components/rewrite/RewriteContextBadge";
 import { SquadList } from "@/components/tactics/SquadList";
 import { PitchBoard } from "@/components/tactics/PitchBoard";
 import { WinGauge } from "@/components/tactics/WinGauge";
@@ -278,12 +278,12 @@ export default function TacticsPage() {
               {team?.nameKo ?? "우리 팀"} 라인업
             </h1>
             {mode === "rewrite" && rewriteContext && (
-              <span className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-accent/40 bg-accent/10 py-1 pl-3 pr-1.5 text-[11px] font-bold text-accent">
-                <span className="truncate">
-                  실제 경기 · {team?.nameKo ?? "우리 팀"} vs {oppTeam?.nameKo ?? "상대 팀"}
-                </span>
-                <OfficialBoard minute={rewriteContext.takeoverMinute} size="sm" label="부터 지휘" />
-              </span>
+              <RewriteContextBadge
+                className="mt-2"
+                meNameKo={team?.nameKo ?? "우리 팀"}
+                oppNameKo={oppTeam?.nameKo ?? "상대 팀"}
+                takeoverMinute={rewriteContext.takeoverMinute}
+              />
             )}
           </div>
           <Link

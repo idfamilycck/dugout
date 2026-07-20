@@ -7,19 +7,12 @@
 // 동일=중립.
 
 import type { RewriteCompare, ResultWord } from "./compare";
-import { resultRank, resultWordFromKo } from "./compare";
+import { resultRank } from "./compare";
 
 interface RealVsParallelProps {
   compare: RewriteCompare;
   meCode: string;
   oppCode: string;
-}
-
-// "실제: 1 - 2 패배" / "당신의 지휘: 2 - 2 무승부" 형식에서 숫자 두 개를 뽑아낸다.
-// compare.ts가 생성하는 고정 포맷에 의존하므로, 포맷이 바뀌면 이 파서도 같이 바뀌어야 한다.
-function parseScore(scoreKo: string): { scoreFor: number; scoreAgainst: number } {
-  const m = /(-?\d+)\s*-\s*(-?\d+)/.exec(scoreKo);
-  return { scoreFor: m ? Number(m[1]) : 0, scoreAgainst: m ? Number(m[2]) : 0 };
 }
 
 function wordColor(word: ResultWord): string {
@@ -69,10 +62,12 @@ function ScoreCard({
 }
 
 export function RealVsParallel({ compare, meCode, oppCode }: RealVsParallelProps) {
-  const realWord = resultWordFromKo(compare.realScoreKo);
-  const myWord = resultWordFromKo(compare.myScoreKo);
-  const { scoreFor: realFor, scoreAgainst: realAgainst } = parseScore(compare.realScoreKo);
-  const { scoreFor: myFor, scoreAgainst: myAgainst } = parseScore(compare.myScoreKo);
+  const realWord = compare.realResultKo;
+  const myWord = compare.myResultKo;
+  const realFor = compare.realFor;
+  const realAgainst = compare.realAgainst;
+  const myFor = compare.myFor;
+  const myAgainst = compare.myAgainst;
 
   const deltaColor = !compare.changedOutcome
     ? "var(--color-dim)"

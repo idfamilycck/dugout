@@ -12,8 +12,12 @@
 import type { Wc2026Match } from "@/lib/wc2026/types";
 
 export interface RewriteCompare {
-  realScoreKo: string; // e.g. "실제: 1 - 2 패배"
-  myScoreKo: string; // e.g. "당신의 지휘: 2 - 2 무승부"
+  realFor: number;
+  realAgainst: number;
+  realResultKo: ResultWord;
+  myFor: number;
+  myAgainst: number;
+  myResultKo: ResultWord;
   changedOutcome: boolean; // 승패 결과가 바뀌었는가
   deltaKo: string; // e.g. "실제 패배를 무승부로 바꿨습니다"
 }
@@ -30,14 +34,6 @@ export function resultWord(scored: number, against: number): ResultWord {
 const RESULT_RANK: Record<ResultWord, number> = { 패배: 0, 무승부: 1, 승리: 2 };
 export function resultRank(word: ResultWord): number {
   return RESULT_RANK[word];
-}
-
-// realScoreKo/myScoreKo(고정 포맷 문자열)에서 결과 단어만 다시 뽑아낸다 — UI 쪽에서
-// 색/톤을 정할 때 원본 숫자 없이 문구만 갖고 있어도 되도록 하는 얇은 헬퍼.
-export function resultWordFromKo(scoreKo: string): ResultWord {
-  if (scoreKo.includes("승리")) return "승리";
-  if (scoreKo.includes("무승부")) return "무승부";
-  return "패배";
 }
 
 // 한글 음절의 받침(종성) 유무 판정 — 유니코드 완성형 한글(가~힣) 범위에서
@@ -92,11 +88,18 @@ export function buildCompare(
   const myWord = resultWord(mine.scoreMe, mine.scoreOpp);
   const changedOutcome = realWord !== myWord;
 
-  const realScoreKo = `실제: ${realFor} - ${realAgainst} ${realWord}`;
-  const myScoreKo = `당신의 지휘: ${mine.scoreMe} - ${mine.scoreOpp} ${myWord}`;
   const deltaKo = changedOutcome
     ? `실제 ${withObjParticle(realWord)} ${withRoParticle(myWord)} 바꿨습니다`
     : `실제와 같은 ${myWord} 결과입니다`;
 
-  return { realScoreKo, myScoreKo, changedOutcome, deltaKo };
+  return {
+    realFor,
+    realAgainst,
+    realResultKo: realWord,
+    myFor: mine.scoreMe,
+    myAgainst: mine.scoreOpp,
+    myResultKo: myWord,
+    changedOutcome,
+    deltaKo,
+  };
 }
