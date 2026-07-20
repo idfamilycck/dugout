@@ -3,7 +3,12 @@ import { describe, it, expect } from "vitest";
 import { buildPresets, buildEventEntries } from "./entry-points";
 import type { Wc2026Match } from "@/lib/wc2026/types";
 
-function mk(events: Wc2026Match["events"], home = "KOR", away = "BRA"): Wc2026Match {
+function mk(
+  events: Wc2026Match["events"],
+  home = "KOR",
+  away = "BRA",
+  lineups: Wc2026Match["lineups"] = [] as unknown as Wc2026Match["lineups"],
+): Wc2026Match {
   return {
     id: "t",
     round: "group",
@@ -14,8 +19,24 @@ function mk(events: Wc2026Match["events"], home = "KOR", away = "BRA"): Wc2026Ma
     venueKo: "메트라이프",
     kickoffISO: "2026-06-11T00:00:00Z",
     events,
-    lineups: [] as unknown as Wc2026Match["lineups"],
+    lineups,
   };
+}
+
+// 교체 OUT 이름 해석 테스트용 라인업 픽스처: KOR/BRA 각각 선발+벤치에 선수를 채운다.
+function mkLineups(): Wc2026Match["lineups"] {
+  return [
+    {
+      teamCode: "KOR",
+      starters: [{ playerId: "k3", name: "김영권", position: "DF" }],
+      bench: [{ playerId: "k2", name: "조규성", position: "FW" }],
+    },
+    {
+      teamCode: "BRA",
+      starters: [{ playerId: "b3", name: "치아구", position: "DF" }],
+      bench: [{ playerId: "b2", name: "호드리구", position: "FW" }],
+    },
+  ];
 }
 
 describe("buildPresets", () => {
@@ -69,7 +90,9 @@ describe("buildEventEntries", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].emphasis).toBe(true);
     expect(entries[0].takeoverMinute).toBe(0); // max(3-5, 0)
-    expect(entries[0].labelKo).toBe("3′ 실점");
+    expect(entries[0].labelKo).toBe("3′ X 실점");
+    expect(entries[0].kindKo).toBe("실점");
+    expect(entries[0].detailKo).toBe("X");
   });
 
   it("실점 minute=50 → takeoverMinute=45", () => {
@@ -78,47 +101,116 @@ describe("buildEventEntries", () => {
     expect(entries[0].takeoverMinute).toBe(45);
   });
 
-  it("side의 자책골(own_goal, teamCode=side)은 '자책골 실점' + emphasis=true", () => {
+  it("side의 자책골(own_goal, teamCode=side)은 '자책골' + emphasis=true", () => {
     const m = mk([{ minute: 40, type: "own_goal", teamCode: "KOR", playerId: "k2", playerName: "Z" }]);
     const entries = buildEventEntries(m, "KOR");
-    expect(entries[0].labelKo).toBe("40′ 자책골 실점");
+    expect(entries[0].labelKo).toBe("40′ Z 자책골");
+    expect(entries[0].kindKo).toBe("자책골");
     expect(entries[0].emphasis).toBe(true);
   });
 
   it("상대의 자책골(teamCode=opponent)은 emphasis=false", () => {
     const m = mk([{ minute: 40, type: "own_goal", teamCode: "BRA", playerId: "b3", playerName: "W" }]);
     const entries = buildEventEntries(m, "KOR");
-    expect(entries[0].labelKo).toBe("40′ 상대 자책골(우리 득점)");
+    expect(entries[0].labelKo).toBe("40′ W 자책골");
     expect(entries[0].emphasis).toBe(false);
   });
 
-  it("우리 득점은 emphasis=false", () => {
+  it("우리 득점(PK)은 emphasis=false, detailKo에 (PK) 접미", () => {
     const m = mk([{ minute: 20, type: "pen_goal", teamCode: "KOR", playerId: "k1", playerName: "A" }]);
     const entries = buildEventEntries(m, "KOR");
-    expect(entries[0].labelKo).toBe("20′ 우리 득점");
+    expect(entries[0].labelKo).toBe("20′ A (PK) 득점");
+    expect(entries[0].detailKo).toBe("A (PK)");
+    expect(entries[0].kindKo).toBe("득점");
     expect(entries[0].emphasis).toBe(false);
   });
 
-  it("우리 퇴장은 emphasis=true, 상대 퇴장은 emphasis=false", () => {
+  it("일반 득점(goal)은 scorer 이름이 detailKo이고 '득점'/'실점'으로 팀에 따라 갈린다", () => {
+    const m = mk([
+      { minute: 12, type: "goal", teamCode: "KOR", playerId: "k1", playerName: "손흥민" },
+      { minute: 30, type: "goal", teamCode: "BRA", playerId: "b1", playerName: "네이마르" },
+    ]);
+    const entries = buildEventEntries(m, "KOR");
+    expect(entries[0].detailKo).toBe("손흥민");
+    expect(entries[0].kindKo).toBe("득점");
+    expect(entries[0].labelKo).toBe("12′ 손흥민 득점");
+    expect(entries[1].detailKo).toBe("네이마르");
+    expect(entries[1].kindKo).toBe("실점");
+    expect(entries[1].labelKo).toBe("30′ 네이마르 실점");
+  });
+
+  it("우리 퇴장은 emphasis=true, 상대 퇴장은 emphasis=false, 카드 수령자 이름이 detailKo", () => {
     const m = mk([
       { minute: 55, type: "red", teamCode: "KOR", playerId: "k1", playerName: "A" },
       { minute: 65, type: "red", teamCode: "BRA", playerId: "b1", playerName: "B" },
     ]);
     const entries = buildEventEntries(m, "KOR");
-    expect(entries[0].labelKo).toBe("55′ 우리 퇴장");
+    expect(entries[0].labelKo).toBe("55′ A 퇴장");
+    expect(entries[0].detailKo).toBe("A");
     expect(entries[0].emphasis).toBe(true);
-    expect(entries[1].labelKo).toBe("65′ 상대 퇴장");
+    expect(entries[1].labelKo).toBe("65′ B 퇴장");
+    expect(entries[1].detailKo).toBe("B");
     expect(entries[1].emphasis).toBe(false);
   });
 
-  it("교체 이벤트: 우리/상대 라벨 분기", () => {
+  it("옐로카드도 카드 수령자 이름이 detailKo", () => {
+    const m = mk([{ minute: 15, type: "yellow", teamCode: "BRA", playerId: "b1", playerName: "카시미루" }]);
+    const entries = buildEventEntries(m, "KOR");
+    expect(entries[0].detailKo).toBe("카시미루");
+    expect(entries[0].kindKo).toBe("경고");
+    expect(entries[0].labelKo).toBe("15′ 카시미루 경고");
+  });
+
+  it("교체 이벤트: 라인업으로 OUT/IN 양쪽 이름이 해석되어 'OUT → IN' 형식", () => {
+    const lineups = mkLineups();
+    const m = mk(
+      [
+        { minute: 60, type: "sub", teamCode: "KOR", playerId: "k2", playerName: "조규성", relatedPlayerId: "k3" },
+        { minute: 70, type: "sub", teamCode: "BRA", playerId: "b2", playerName: "호드리구", relatedPlayerId: "b3" },
+      ],
+      "KOR",
+      "BRA",
+      lineups,
+    );
+    const entries = buildEventEntries(m, "KOR");
+    expect(entries[0].labelKo).toBe("60′ 김영권 → 조규성 교체");
+    expect(entries[0].detailKo).toBe("김영권 → 조규성");
+    expect(entries[0].kindKo).toBe("교체");
+    expect(entries[1].labelKo).toBe("70′ 치아구 → 호드리구 교체");
+    expect(entries[1].detailKo).toBe("치아구 → 호드리구");
+  });
+
+  it("해석 불가능한 relatedPlayerId는 raw id로 폴백한다 (undefined 렌더 금지)", () => {
     const m = mk([
-      { minute: 60, type: "sub", teamCode: "KOR", playerId: "k2", playerName: "A", relatedPlayerId: "k3" },
-      { minute: 70, type: "sub", teamCode: "BRA", playerId: "b2", playerName: "B", relatedPlayerId: "b3" },
+      { minute: 60, type: "sub", teamCode: "KOR", playerId: "k2", playerName: "조규성", relatedPlayerId: "unknown-id" },
     ]);
     const entries = buildEventEntries(m, "KOR");
-    expect(entries[0].labelKo).toBe("60′ 우리 선수 교체");
-    expect(entries[1].labelKo).toBe("70′ 상대 선수 교체");
+    expect(entries[0].detailKo).toBe("unknown-id → 조규성");
+    expect(entries[0].detailKo).not.toContain("undefined");
+    expect(entries[0].labelKo).not.toContain("undefined");
+  });
+
+  it("상대 팀 이벤트도 teamCode/isOurs/detailKo를 전부 보유한다 (우리와 동일한 상세도)", () => {
+    const lineups = mkLineups();
+    const m = mk(
+      [{ minute: 70, type: "sub", teamCode: "BRA", playerId: "b2", playerName: "호드리구", relatedPlayerId: "b3" }],
+      "KOR",
+      "BRA",
+      lineups,
+    );
+    const entries = buildEventEntries(m, "KOR");
+    expect(entries[0].teamCode).toBe("BRA");
+    expect(entries[0].isOurs).toBe(false);
+    expect(entries[0].detailKo).toBe("치아구 → 호드리구");
+    expect(entries[0].kindKo).toBe("교체");
+    expect(entries[0].icon).toBe("🔄");
+  });
+
+  it("우리 팀 이벤트는 teamCode=side, isOurs=true", () => {
+    const m = mk([{ minute: 12, type: "goal", teamCode: "KOR", playerId: "k1", playerName: "손흥민" }]);
+    const entries = buildEventEntries(m, "KOR");
+    expect(entries[0].teamCode).toBe("KOR");
+    expect(entries[0].isOurs).toBe(true);
   });
 
   it("subKo는 '이 시점 5분 전(N′)부터' 형식이며 minute은 원래 이벤트 분이다", () => {
@@ -157,7 +249,8 @@ describe("buildEventEntries", () => {
   it("away 관점(side=away)에서도 정확히 라벨링된다", () => {
     const m = mk([{ minute: 10, type: "goal", teamCode: "KOR", playerId: "k1", playerName: "A" }], "KOR", "BRA");
     const entries = buildEventEntries(m, "BRA");
-    expect(entries[0].labelKo).toBe("10′ 실점");
+    expect(entries[0].labelKo).toBe("10′ A 실점");
     expect(entries[0].emphasis).toBe(true);
+    expect(entries[0].isOurs).toBe(false);
   });
 });

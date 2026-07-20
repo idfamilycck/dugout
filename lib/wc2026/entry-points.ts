@@ -18,6 +18,11 @@ export interface EntryPoint {
   subKo?: string; // secondary line
   minute?: number; // event minute (event category only)
   emphasis?: boolean; // highlight (our concede / our red / lost lead)
+  teamCode?: string; // event's team (event category only) — for badge + team name
+  isOurs?: boolean; // teamCode === side (event category only)
+  kindKo?: string; // "득점" | "실점" | "자책골" | "교체" | "경고" | "퇴장"
+  icon?: string; // "⚽" | "🔄" | "🟨" | "🟥"
+  detailKo?: string; // WHO: "손흥민" / "김영권 → 조규성" / "이강인"
 }
 
 // 고정 진행 방식 프리셋 — 이벤트 유무와 무관하게 항상 3개를 반환한다. 이것이
@@ -49,51 +54,75 @@ export function buildPresets(): EntryPoint[] {
   ];
 }
 
-// side/opponent 둘 중 하나만 있는 도메인이므로 "side가 아니면 opponent"로 충분하다
-// (opponent 자체는 필요 없다).
-function labelForEvent(ev: Wc2026Event, side: string): { labelKo: string; emphasis: boolean } {
-  const m = ev.minute;
+interface EventDetail {
+  emphasis: boolean;
+  kindKo: string;
+  icon: string;
+  detailKo: string;
+}
+
+// playerId -> name 맵을 이용해 이벤트 하나를 "누가 무엇을 했는지" 상세로 변환한다.
+// side/opponent 둘 중 하나만 있는 도메인이므로 "side가 아니면 opponent"로 충분하다.
+function detailForEvent(ev: Wc2026Event, side: string, nameById: Map<string, string>): EventDetail {
   const isSide = ev.teamCode === side;
   switch (ev.type) {
     case "goal":
+      return { icon: "⚽", detailKo: ev.playerName, kindKo: isSide ? "득점" : "실점", emphasis: !isSide };
     case "pen_goal":
-      if (isSide) return { labelKo: `${m}′ 우리 득점`, emphasis: false };
-      return { labelKo: `${m}′ 실점`, emphasis: true };
+      return {
+        icon: "⚽",
+        detailKo: `${ev.playerName} (PK)`,
+        kindKo: isSide ? "득점" : "실점",
+        emphasis: !isSide,
+      };
     case "own_goal":
       // own_goal.teamCode = 자책골을 자기 골문에 넣은(가해) 팀 -> 득점은 상대에 가산.
-      if (isSide) return { labelKo: `${m}′ 자책골 실점`, emphasis: true };
-      return { labelKo: `${m}′ 상대 자책골(우리 득점)`, emphasis: false };
-    case "sub":
-      if (isSide) return { labelKo: `${m}′ 우리 선수 교체`, emphasis: false };
-      return { labelKo: `${m}′ 상대 선수 교체`, emphasis: false };
+      return { icon: "⚽", detailKo: ev.playerName, kindKo: "자책골", emphasis: isSide };
+    case "sub": {
+      const inName = ev.playerName;
+      const outName = ev.relatedPlayerId ? (nameById.get(ev.relatedPlayerId) ?? ev.relatedPlayerId) : undefined;
+      const detailKo = outName ? `${outName} → ${inName}` : inName;
+      return { icon: "🔄", detailKo, kindKo: "교체", emphasis: false };
+    }
     case "yellow":
-      if (isSide) return { labelKo: `${m}′ 우리 경고`, emphasis: false };
-      return { labelKo: `${m}′ 상대 경고`, emphasis: false };
+      return { icon: "🟨", detailKo: ev.playerName, kindKo: "경고", emphasis: false };
     case "red":
-      if (isSide) return { labelKo: `${m}′ 우리 퇴장`, emphasis: true };
-      return { labelKo: `${m}′ 상대 퇴장`, emphasis: false };
+      return { icon: "🟥", detailKo: ev.playerName, kindKo: "퇴장", emphasis: isSide };
   }
 }
 
 // match.events(90분 이하)를 분 오름차순으로, 각각 "그 시점 5분 전" 진입점으로
 // 변환한다. 정규시간(90분) 이후 이벤트(연장전 등)는 제외한다 — 엔진이 정규시간만
-// 시뮬레이션하기 때문.
+// 시뮬레이션하기 때문. 두 팀 라인업(선발+벤치)에서 playerId -> name 맵을 만들어
+// 교체 OUT 선수(이름 필드가 없는 relatedPlayerId)를 이 맵으로 해석한다.
 export function buildEventEntries(match: Wc2026Match, side: string): EntryPoint[] {
+  const nameById = new Map<string, string>();
+  for (const lineup of match.lineups) {
+    for (const p of lineup.starters) nameById.set(p.playerId, p.name);
+    for (const p of lineup.bench) nameById.set(p.playerId, p.name);
+  }
+
   const events = [...match.events]
     .filter((e) => e.minute <= 90)
     .sort((a, b) => a.minute - b.minute);
 
   return events.map((ev, index) => {
     const takeoverMinute = Math.max(ev.minute - 5, 0);
-    const { labelKo, emphasis } = labelForEvent(ev, side);
+    const { emphasis, kindKo, icon, detailKo } = detailForEvent(ev, side, nameById);
+    const isOurs = ev.teamCode === side;
     return {
       id: `ev-${match.id}-${index}`,
       category: "event",
       takeoverMinute,
-      labelKo,
+      labelKo: `${ev.minute}′ ${detailKo} ${kindKo}`,
       subKo: `이 시점 5분 전(${takeoverMinute}′)부터`,
       minute: ev.minute,
       emphasis,
+      teamCode: ev.teamCode,
+      isOurs,
+      kindKo,
+      icon,
+      detailKo,
     };
   });
 }
