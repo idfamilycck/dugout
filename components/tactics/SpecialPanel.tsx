@@ -38,7 +38,7 @@ function LabeledSelect({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[12px] font-bold text-ink">{label}</span>
+      <span className="text-[13px] font-bold text-ink">{label}</span>
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || undefined)}
@@ -97,7 +97,7 @@ export function SpecialPanel() {
       <section className="flex flex-col gap-3">
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-accent">맨마킹</h2>
-          <p className="mt-1 text-[10px] text-dim">우리 선수를 상대 위협 선수에게 밀착 배치합니다.</p>
+          <p className="mt-1 text-[13px] text-dim">우리 선수를 상대 위협 선수에게 밀착 배치합니다.</p>
         </div>
         <LabeledSelect
           label="우리 마커"
@@ -113,7 +113,7 @@ export function SpecialPanel() {
           placeholder="선택 안 함"
         />
         <label className="flex flex-col gap-1">
-          <span className="text-[12px] font-bold text-ink">상대 타깃 (위협 순)</span>
+          <span className="text-[13px] font-bold text-ink">상대 타깃 (위협 순)</span>
           <select
             value={special.manMark?.targetId ?? ""}
             onChange={(e) => {
@@ -135,7 +135,7 @@ export function SpecialPanel() {
           </select>
         </label>
         {special.manMark && (
-          <p className="rounded-panel border border-danger/30 bg-danger/10 px-3 py-2 text-[11px] text-danger">
+          <p className="rounded-panel border border-danger/30 bg-danger/10 px-3 py-2 text-[13px] text-danger">
             맨마킹 활성: 피치에 마킹 라인이 표시되고 상대 타깃의 기여도가 낮아집니다.
           </p>
         )}
@@ -146,7 +146,7 @@ export function SpecialPanel() {
         <div className="flex items-center justify-between rounded-panel border border-line bg-surface-2/50 px-3 py-2.5">
           <div>
             <span className="text-[13px] font-bold text-ink">코너킥 시 장신 수비수 전진</span>
-            <p className="text-[10px] text-dim">우리 코너에서 키 큰 수비수를 상대 골문 앞으로</p>
+            <p className="text-[13px] text-dim">우리 코너에서 키 큰 수비수를 상대 골문 앞으로</p>
           </div>
           <button
             type="button"

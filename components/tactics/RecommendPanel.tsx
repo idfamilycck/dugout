@@ -53,7 +53,7 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
       <div className="flex items-center justify-between">
         <div>
           <p className="eyebrow text-dim">AI 수석코치 전술</p>
-          <p className="mt-1 text-[11px] text-dim">수천 개 조합을 훑어 최적 세팅을 제안해요.</p>
+          <p className="mt-1 text-[13px] text-dim">수천 개 조합을 훑어 최적 세팅을 제안해요.</p>
         </div>
       </div>
 
@@ -80,9 +80,9 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
         <div className="flex flex-col gap-3">
           <div className="flex items-end justify-between rounded-panel border border-line bg-surface/50 p-3">
             <div>
-              <p className="text-[11px] text-dim">추천 세팅 예상 승률</p>
+              <p className="text-[13px] text-dim">추천 세팅 예상 승률</p>
               <p className="stat-num text-3xl text-gain">{recWinPct}%</p>
-              <p className="stat-num text-[11px] text-dim">
+              <p className="stat-num text-[13px] text-dim">
                 포메이션 {rec.instructions.formation} · {rec.evaluated.toLocaleString()}개 조합 검토
               </p>
             </div>
@@ -108,7 +108,7 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
                   className="flex items-start gap-2 rounded-panel border border-line bg-surface/40 px-3 py-2"
                 >
                   <RuleIcon iconKey={f.iconKey} className="mt-0.5 shrink-0 text-dim" />
-                  <span className="text-[11px] leading-snug text-ink">{f.textKo}</span>
+                  <span className="text-[13px] leading-snug text-ink">{f.textKo}</span>
                 </li>
               ))}
             </ul>
@@ -134,7 +134,7 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
             )}
           </button>
           {deltaPct !== undefined && deltaPct === 0 && (
-            <p className="text-center text-[11px] text-dim">
+            <p className="text-center text-[13px] text-dim">
               지금 세팅이 이미 최적에 가까워요. 그대로 두어도 좋아요.
             </p>
           )}

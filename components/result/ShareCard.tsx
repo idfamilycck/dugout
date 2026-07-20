@@ -224,7 +224,7 @@ export function ShareCard({ match, cf, shootout }: ShareCardProps) {
         </button>
       </div>
       {copied && (
-        <p className="mt-2 text-center text-[12px] text-accent" role="status">
+        <p className="mt-2 text-center text-[13px] text-accent" role="status">
           {copied}
         </p>
       )}

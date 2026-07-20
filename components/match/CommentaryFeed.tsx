@@ -51,7 +51,7 @@ export function CommentaryFeed({ events }: CommentaryFeedProps) {
     <div className="panel flex h-full flex-col rounded-panel">
       <div className="panel-head">
         <p className="eyebrow text-accent">실시간 중계</p>
-        <span className="text-[11px] text-dim">최신순</span>
+        <span className="text-[13px] text-dim">최신순</span>
       </div>
       <ul
         aria-live="polite"
@@ -76,7 +76,7 @@ export function CommentaryFeed({ events }: CommentaryFeedProps) {
               }`}
             >
               <span
-                className="stat-num mt-0.5 w-9 shrink-0 text-right text-[11px] text-dim"
+                className="stat-num mt-0.5 w-9 shrink-0 text-right text-[13px] text-dim"
                 aria-hidden
               >
                 {minuteLabel(e.minute)}

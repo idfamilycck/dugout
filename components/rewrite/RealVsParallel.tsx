@@ -64,7 +64,7 @@ function ScoreCard({
       }`}
     >
       <p className="eyebrow text-center text-dim">{label}</p>
-      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-dim">
+      <div className="mt-2 flex items-center gap-1.5 text-[13px] font-bold text-dim">
         <span>{meCode}</span>
         <span className="stat-num display text-3xl text-ink">
           {scoreFor}
@@ -107,12 +107,12 @@ function TimelineNote({ timeline }: { timeline: GoalTimeline }) {
 
       {listed.length > 0 && (
         <>
-          <p className="mt-3 text-[11px] text-dim">이 구간의 실제 골 기록</p>
+          <p className="mt-3 text-[13px] text-dim">이 구간의 실제 골 기록</p>
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
             {shown.map((g) => (
               <li
                 key={`${g.minute}-${g.playerName}-${g.conceded ? "a" : "f"}`}
-                className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]"
+                className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px]"
                 style={{
                   borderColor: g.conceded ? "var(--color-danger)" : "var(--color-gain)",
                   color: g.conceded ? "var(--color-danger)" : "var(--color-gain)",
@@ -125,7 +125,7 @@ function TimelineNote({ timeline }: { timeline: GoalTimeline }) {
               </li>
             ))}
             {hidden > 0 && (
-              <li className="rounded-full border border-line px-2 py-0.5 text-[11px] text-dim">
+              <li className="rounded-full border border-line px-2 py-0.5 text-[13px] text-dim">
                 외 <span className="tnum">{hidden}</span>골
               </li>
             )}
@@ -154,7 +154,7 @@ export function RealVsParallel({ compare, meCode, oppCode, timeline }: RealVsPar
     <section className="panel rounded-panel p-4">
       <div className="flex items-center justify-between">
         <p className="eyebrow text-accent">실제 역사 vs 평행세계</p>
-        <span className="text-[11px] text-dim">당신이 지휘봉을 잡았다면?</span>
+        <span className="text-[13px] text-dim">당신이 지휘봉을 잡았다면?</span>
       </div>
 
       <div className="mt-3 flex items-stretch gap-3">

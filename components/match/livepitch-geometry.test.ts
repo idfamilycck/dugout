@@ -20,6 +20,23 @@ describe("playerDots (라이브 피치 선수 좌표)", () => {
     for (const d of playerDots(opp, "opp")) expect(d.cx).toBeGreaterThan(VB_W / 2);
   });
 
+  // 회귀: 킥오프 전에도 dynamicDots를 쓰는 바람에 22명이 중앙선 근처 좁은 띠에
+  // 뭉쳐 서서 "포메이션이 아니라 뭉쳐 있는" 그림이 나왔다. 킥오프 대형은 playerDots다.
+  it("킥오프 대형(playerDots)은 중립 국면의 dynamicDots보다 진영을 넓게 쓴다", () => {
+    const spread = (dots: { cx: number }[]) =>
+      Math.max(...dots.map((d) => d.cx)) - Math.min(...dots.map((d) => d.cx));
+
+    const kickoff = [...playerDots(me, "me"), ...playerDots(opp, "opp")];
+    const neutral = [...dynamicDots(me, "me", 0.5), ...dynamicDots(opp, "opp", 0.5)];
+
+    expect(spread(kickoff)).toBeGreaterThan(spread(neutral));
+
+    // 킥오프에서는 두 팀이 각자 진영에 있어 서로 겹치지 않는다.
+    const meMax = Math.max(...playerDots(me, "me").map((d) => d.cx));
+    const oppMin = Math.min(...playerDots(opp, "opp").map((d) => d.cx));
+    expect(meMax).toBeLessThanOrEqual(oppMin);
+  });
+
   it("모든 점이 피치 라인(6px 여백) 안쪽에 있다", () => {
     for (const d of [...playerDots(me, "me"), ...playerDots(opp, "opp")]) {
       expect(d.cx).toBeGreaterThan(6);

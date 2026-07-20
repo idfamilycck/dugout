@@ -19,7 +19,7 @@ function DeltaChip({ label, value }: { label: string; value: number }) {
   const gain = value > 0;
   return (
     <span
-      className="stat-num inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px]"
+      className="stat-num inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[13px]"
       style={{
         color: gain ? "var(--color-gain)" : "var(--color-danger)",
         background: gain ? "rgba(59,227,138,0.12)" : "rgba(255,92,122,0.12)",
@@ -85,7 +85,7 @@ export function FactorCards({ rules }: FactorCardsProps) {
     return (
       <div className="panel rounded-panel p-5">
         <p className="eyebrow text-dim">전술 근거</p>
-        <p className="mt-3 rounded-panel border border-line bg-surface/50 p-3 text-[12px] leading-relaxed text-dim">
+        <p className="mt-3 rounded-panel border border-line bg-surface/50 p-3 text-[13px] leading-relaxed text-dim">
           지금은 승률을 크게 흔드는 요인이 없어요. 포메이션·지시·특수 전술을 바꾸면
           그 근거가 여기에 카드로 나타납니다.
         </p>
@@ -97,7 +97,7 @@ export function FactorCards({ rules }: FactorCardsProps) {
     <div className="panel rounded-panel p-5">
       <div className="flex items-center justify-between">
         <p className="eyebrow text-dim">전술 근거</p>
-        <span className="stat-num text-[11px] text-dim">{rules.length}개</span>
+        <span className="stat-num text-[13px] text-dim">{rules.length}개</span>
       </div>
       <ul className="mt-3 flex flex-col gap-2">
         {rules.map((r) => {
@@ -111,7 +111,7 @@ export function FactorCards({ rules }: FactorCardsProps) {
             >
               <RuleIcon iconKey={r.iconKey} size={18} className="mt-0.5 shrink-0 text-dim" />
               <div className="min-w-0 flex-1">
-                <p className="text-[12px] leading-snug text-ink">{r.textKo}</p>
+                <p className="text-[13px] leading-snug text-ink">{r.textKo}</p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   <DeltaChip label="공격" value={r.deltaAttack} />
                   <DeltaChip label="수비" value={r.deltaDefense} />

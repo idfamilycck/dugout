@@ -21,6 +21,13 @@ import {
 } from "./tactics-labels";
 import { ManMarkLine } from "./ManMarkLine";
 
+// 피치 슬롯 라벨용 짧은 이름: 서양식 이름은 성(마지막 토큰)만, 한글처럼 단일 토큰이면 그대로.
+// (라이브 피치의 shortName과 같은 규칙 — 두 피치가 같은 선수를 다르게 부르면 안 된다.)
+function lastNameOf(full: string): string {
+  const parts = full.trim().split(/\s+/);
+  return parts.length > 1 ? parts[parts.length - 1] : full;
+}
+
 interface PitchBoardProps {
   me: SideSetup;
   teamColor: string;
@@ -124,17 +131,20 @@ function Slot({
             />
           ) : (
             <span
-              className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed text-[11px] font-bold text-dim"
+              className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed text-[13px] font-bold text-dim"
               style={{ borderColor: "var(--color-line)" }}
             >
               {posShort}
             </span>
           )}
           <span className="flex flex-col items-center leading-tight">
-            <span className="max-w-[64px] truncate text-[10px] font-bold text-ink">
-              {player ? player.name : "-"}
+            {/* 칸이 좁아 성(마지막 토큰)만 쓴다. 전체 이름을 넣으면 "Lionel ···"처럼
+                앞부분만 남고 잘려서 오히려 누군지 알 수 없다. 한글 이름처럼 토큰이
+                하나면 그대로 나온다. 전체 이름은 위의 aria-label로 전달된다. */}
+            <span className="max-w-[76px] truncate text-[13px] font-bold text-ink">
+              {player ? lastNameOf(player.name) : "-"}
             </span>
-            <span className="flex items-center gap-1 text-[8px] font-semibold uppercase tracking-wide text-dim">
+            <span className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-dim">
               <span className="text-accent/90">{posShort}</span>
               <span className="truncate">{roleShort}</span>
             </span>
@@ -239,7 +249,7 @@ export function PitchBoard({
       </div>
 
       {/* 상대 골문 방향 힌트 */}
-      <p className="mt-3 text-center text-[11px] text-dim">
+      <p className="mt-3 text-center text-[13px] text-dim">
         {selected
           ? "배치할 위치를 탭하세요 · 다시 선택을 탭하면 취소"
           : "선수를 끌어다 옮기거나, 탭해서 위치를 골라 배치하세요"}

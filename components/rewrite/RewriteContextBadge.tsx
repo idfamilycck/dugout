@@ -1,4 +1,4 @@
-// components/rewrite/RewriteContextBadge.tsx
+﻿// components/rewrite/RewriteContextBadge.tsx
 //
 // 복기(rewrite) 모드 배지: "실제 경기 · {팀A} vs {팀B} · [OfficialBoard] 부터 지휘".
 // app/tactics/page.tsx와 app/match/page.tsx가 각자 렌더링하던 거의 동일한 마크업을
@@ -22,7 +22,7 @@ export function RewriteContextBadge({
 }: RewriteContextBadgeProps) {
   return (
     <span
-      className={`inline-flex max-w-full items-center gap-2 rounded-full border border-accent/40 bg-accent/10 py-1 pl-3 pr-1.5 text-[11px] font-bold text-accent ${className}`}
+      className={`inline-flex max-w-full items-center gap-2 rounded-full border border-accent/40 bg-accent/10 py-1 pl-3 pr-1.5 text-[13px] font-bold text-accent ${className}`}
     >
       <span className="truncate">
         실제 경기 · {meNameKo} vs {oppNameKo}

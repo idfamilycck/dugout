@@ -62,7 +62,7 @@ export function ProbTimeline({ timeline, events, interventions }: ProbTimelinePr
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="eyebrow text-accent">승률 타임라인</p>
-          <p className="mt-0.5 text-[10px] text-dim">
+          <p className="mt-0.5 text-[13px] text-dim">
             세로축 우리 승리 확률(%) · 가로축 경기 시간(분)
           </p>
         </div>

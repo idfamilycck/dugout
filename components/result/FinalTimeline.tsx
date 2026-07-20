@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 풀타임 승률 타임라인: 경기 화면의 ProbTimeline을 그대로 재사용(골 SoccerBall · 개입
 // Brain 마커)하고, 그 아래에 마커 범례와 "주요 장면"(골/개입) 라벨 목록을 붙여 복기
@@ -45,7 +45,7 @@ export function FinalTimeline({ match }: FinalTimelineProps) {
       />
 
       {/* 범례 */}
-      <div className="flex items-center gap-4 px-1 text-[11px] text-dim">
+      <div className="flex items-center gap-4 px-1 text-[13px] text-dim">
         <span className="flex items-center gap-1">
           <SoccerBall size={13} weight="bold" aria-hidden /> 골
         </span>
@@ -70,7 +70,7 @@ export function FinalTimeline({ match }: FinalTimelineProps) {
               key={`${m.minute}-${i}`}
               className="data-row flex items-center gap-2.5 px-2 py-2"
             >
-              <span className="stat-num w-9 shrink-0 text-right text-[11px] text-dim">{m.minute}′</span>
+              <span className="stat-num w-9 shrink-0 text-right text-[13px] text-dim">{m.minute}′</span>
               <m.Icon size={14} weight="bold" aria-hidden />
               <span className={`text-[13px] ${m.mine ? "text-ink" : "text-dim"}`}>{m.label}</span>
             </li>

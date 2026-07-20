@@ -61,7 +61,7 @@ export function MomentCards({ match, side }: MomentCardsProps) {
       {/* 진행 방식: 항상 존재하는 3개 프리셋 — 클린 승리 등 이벤트가 적은 경기에서도
           여기서 막다른 길 없이 진입할 수 있다. */}
       <div>
-        <p className="mb-3 text-[11px] font-black uppercase tracking-wide text-dim">진행 방식</p>
+        <p className="mb-3 text-[13px] font-black uppercase tracking-wide text-dim">진행 방식</p>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {presets.map((entry) => (
             <li key={entry.id}>
@@ -74,7 +74,7 @@ export function MomentCards({ match, side }: MomentCardsProps) {
                   <p className="text-sm font-black text-ink">{entry.labelKo}</p>
                   <OfficialBoard minute={entry.takeoverMinute} size="sm" />
                 </div>
-                {entry.subKo && <p className="text-[11px] leading-snug text-dim">{entry.subKo}</p>}
+                {entry.subKo && <p className="text-[13px] leading-snug text-dim">{entry.subKo}</p>}
               </button>
             </li>
           ))}
@@ -84,7 +84,7 @@ export function MomentCards({ match, side }: MomentCardsProps) {
       {/* 모든 순간: 이 경기에 기록된 모든 이벤트(득점/교체/카드)를 5분 전 진입점으로. */}
       {events.length > 0 && (
         <div>
-          <p className="mb-3 text-[11px] font-black uppercase tracking-wide text-dim">
+          <p className="mb-3 text-[13px] font-black uppercase tracking-wide text-dim">
             모든 순간 · 5분 전부터
           </p>
           <ul className="grid max-h-[420px] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
@@ -106,7 +106,7 @@ export function MomentCards({ match, side }: MomentCardsProps) {
                           : "rgba(255,255,255,0.18)",
                     }}
                   >
-                    <div className="flex items-center justify-between gap-2 text-[10px]">
+                    <div className="flex items-center justify-between gap-2 text-[13px]">
                       <OfficialBoard minute={entry.takeoverMinute} size="sm" label="부터 개입" />
                       <span
                         className={`shrink-0 rounded-full px-2 py-0.5 font-black ${
@@ -121,7 +121,7 @@ export function MomentCards({ match, side }: MomentCardsProps) {
                       <div className="flex min-w-0 items-center gap-1.5">
                         <EntryPointIcon iconKey={entry.iconKey} className="size-4 shrink-0" />
                         <FlagBadge code={entry.teamCode ?? ""} color1={team.color1} color2={team.color2} size={18} />
-                        <span className="truncate text-[11px] font-bold text-dim">{team.nameKo}</span>
+                        <span className="truncate text-[13px] font-bold text-dim">{team.nameKo}</span>
                       </div>
                     )}
 
@@ -129,7 +129,7 @@ export function MomentCards({ match, side }: MomentCardsProps) {
                       <span className="stat-num text-dim">{entry.minute}&apos;</span> {entry.detailKo}{" "}
                       <span className="text-dim">{entry.kindKo}</span>
                     </p>
-                    {entry.subKo && <p className="text-[11px] text-dim">{entry.subKo}</p>}
+                    {entry.subKo && <p className="text-[13px] text-dim">{entry.subKo}</p>}
                   </button>
                 </li>
               );

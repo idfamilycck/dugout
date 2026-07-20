@@ -98,22 +98,22 @@ function AnalysisPanel() {
           <summary className="cursor-pointer list-none">
             <span className="flex items-center justify-between">
               <span className="eyebrow text-dim">상세 보기 (계산 근거)</span>
-              <span className="text-[11px] text-dim">펼치기 ▾</span>
+              <span className="text-[13px] text-dim">펼치기 ▾</span>
             </span>
           </summary>
           <div className="mt-4 flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-panel border border-line bg-surface/40 p-3">
-                <p className="text-[10px] text-dim">우리 기대 득점 (λ)</p>
+                <p className="text-[13px] text-dim">우리 기대 득점 (λ)</p>
                 <p className="stat-num text-2xl text-gain">{wp.lambdaMe.toFixed(2)}</p>
               </div>
               <div className="rounded-panel border border-line bg-surface/40 p-3">
-                <p className="text-[10px] text-dim">상대 기대 득점 (λ)</p>
+                <p className="text-[13px] text-dim">상대 기대 득점 (λ)</p>
                 <p className="stat-num text-2xl text-danger">{wp.lambdaOpp.toFixed(2)}</p>
               </div>
             </div>
 
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-dim">
                   <th className="py-1 text-left font-bold">라인</th>
@@ -139,7 +139,7 @@ function AnalysisPanel() {
               </tbody>
             </table>
 
-            <p className="rounded-panel border border-line bg-surface/50 p-3 text-[11px] leading-relaxed text-dim">
+            <p className="rounded-panel border border-line bg-surface/50 p-3 text-[13px] leading-relaxed text-dim">
               라인별 전력으로 양 팀의 기대 득점(λ)을 구하고, 전술 근거가 이를 보정합니다.
               두 팀의 λ를 포아송 분포에 넣어 승·무·패 확률을 계산해요.
             </p>
@@ -400,7 +400,7 @@ export default function TacticsPage() {
               선발 {placedCount}/11 배치
             </p>
             {!canStart && (
-              <p className="text-[11px] text-danger">
+              <p className="text-[13px] text-danger">
                 {mode === "rewrite"
                   ? "최소 10명을 배치해야 경기를 시작할 수 있어요."
                   : "11명을 모두 배치해야 경기를 시작할 수 있어요."}

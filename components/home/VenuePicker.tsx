@@ -40,14 +40,14 @@ export function VenuePicker({ venueId, onSelect }: VenuePickerProps) {
               >
                 {selected && <span className="sr-only">선택됨</span>}
                 {selected && (
-                  <span aria-hidden className="absolute right-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-black text-accent-ink">
+                  <span aria-hidden className="absolute right-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[13px] font-black text-accent-ink">
                     선택됨
                   </span>
                 )}
                 <div className="flex items-start justify-between gap-1">
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-ink">{v.nameKo}</div>
-                    <div className="text-[11px] text-dim">{v.cityKo}</div>
+                    <div className="text-[13px] text-dim">{v.cityKo}</div>
                   </div>
                   <div className="flex gap-1 leading-none text-dim">
                     {traits.map((t) => (
@@ -58,7 +58,7 @@ export function VenuePicker({ venueId, onSelect }: VenuePickerProps) {
                     ))}
                   </div>
                 </div>
-                <div className="mt-auto flex items-center gap-3 border-t border-line pt-2 text-[11px] text-dim">
+                <div className="mt-auto flex items-center gap-3 border-t border-line pt-2 text-[13px] text-dim">
                   <span>
                     고도 <span className="stat-num text-ink">{v.altitude}</span>m
                   </span>

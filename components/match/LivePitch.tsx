@@ -14,7 +14,7 @@ import type { SideSetup } from "@/lib/types";
 import { teamById } from "@/lib/data/teams";
 import { playersOf } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
-import { dynamicDots, followBall, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
+import { dynamicDots, playerDots, followBall, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
 import { buildSceneChoreo } from "./livepitch-choreo";
 import { layoutLabels, LABEL_FONT_SIZE, LABEL_PRIORITY, type LabelCandidate } from "./livepitch-labels";
 
@@ -101,8 +101,18 @@ export function LivePitch({
       : 0.15
     : 0.5 + lean * 0.16 + (possession === "me" ? 0.06 : -0.06);
 
-  const dotsMe = useMemo(() => dynamicDots(meSetup, "me", tilt), [meSetup, tilt]);
-  const dotsOpp = useMemo(() => dynamicDots(oppSetup, "opp", tilt), [oppSetup, tilt]);
+  // 킥오프 전에는 동적 전형(dynamicDots) 대신 포메이션 그대로의 정적 배치를 쓴다.
+  // dynamicDots는 국면(tilt) 기준으로 최후방/최전방 라인을 잡는데, 중립(tilt=0.5)에서
+  // 양 팀이 전부 중앙선 근처 좁은 띠에 몰려 "포메이션이 아니라 뭉쳐 있는" 그림이 됐다.
+  // playerDots는 각 팀을 자기 진영에 포메이션 모양대로 세운다 = 킥오프 대형.
+  const dotsMe = useMemo(
+    () => (live ? dynamicDots(meSetup, "me", tilt) : playerDots(meSetup, "me")),
+    [meSetup, tilt, live]
+  );
+  const dotsOpp = useMemo(
+    () => (live ? dynamicDots(oppSetup, "opp", tilt) : playerDots(oppSetup, "opp")),
+    [oppSetup, tilt, live]
+  );
 
   // ── 장면 안무 ──
   const choreo = useMemo(() => {
@@ -123,10 +133,18 @@ export function LivePitch({
   const holder = chain.length > 0 ? chain[passStep % chain.length] : undefined;
 
   // 전원이 따라갈 공의 관심 지점: 안무 중엔 마지막 키프레임(결과 지점), 평상시엔 볼홀더.
-  const ballCx = choreo
-    ? choreo.ball.xs[choreo.ball.xs.length - 1]
-    : (holder?.cx ?? CX) + (possession === "me" ? 5 : -5);
-  const ballCy = choreo ? choreo.ball.ys[choreo.ball.ys.length - 1] : (holder?.cy ?? CY);
+  // 킥오프 전에는 볼홀더가 아니라 센터 스팟에 둔다 — 아직 아무도 공을 잡지 않았는데
+  // 골키퍼 앞에 공이 놓여 있으면 경기가 이미 진행 중인 것처럼 보인다.
+  const ballCx = !live
+    ? CX
+    : choreo
+      ? choreo.ball.xs[choreo.ball.xs.length - 1]
+      : (holder?.cx ?? CX) + (possession === "me" ? 5 : -5);
+  const ballCy = !live
+    ? CY
+    : choreo
+      ? choreo.ball.ys[choreo.ball.ys.length - 1]
+      : (holder?.cy ?? CY);
 
   const pulseSlot = choreo?.shooterSlot ?? choreo?.headerSlot;
   const holderSlot = holder?.slotId;
@@ -142,7 +160,10 @@ export function LivePitch({
     ]) {
       for (const d of dots) {
         const override = scene?.side === side ? choreo?.overrides[d.slotId] : undefined;
-        const follow = followBall(d, { cx: ballCx, cy: ballCy });
+        // 킥오프 전에는 공 방향으로 끌려가지도 않는다 — 포메이션 좌표 그대로 선다.
+        const follow = live
+          ? followBall(d, { cx: ballCx, cy: ballCy })
+          : { tx: d.cx, ty: d.cy };
         out.push({
           key: `${side}-${d.slotId}`,
           side,
@@ -154,7 +175,7 @@ export function LivePitch({
       }
     }
     return out;
-  }, [dotsMe, dotsOpp, scene?.side, choreo, ballCx, ballCy]);
+  }, [dotsMe, dotsOpp, scene?.side, choreo, ballCx, ballCy, live]);
 
   // ── 이름 라벨 배치 ──
   // 좌표가 바뀔 때만 O(n²) 충돌 검사를 돌린다(매 프레임 아님 — 애니메이션은 transform으로만 진행).
@@ -321,10 +342,10 @@ export function LivePitch({
             stroke="#101613"
             strokeWidth={1}
             initial={false}
-            animate={{
-              cx: (holder?.cx ?? CX) + (possession === "me" ? 5 : -5),
-              cy: holder?.cy ?? CY,
-            }}
+            // 위에서 이미 계산한 ballCx/ballCy를 그대로 쓴다. 여기서 볼홀더 좌표를
+            // 다시 계산하고 있어서, 킥오프 전 센터 스팟 처리가 선수 배치에만 먹고
+            // 공에는 안 먹었다(공만 골키퍼 앞에 남았다).
+            animate={{ cx: ballCx, cy: ballCy }}
             transition={{ duration: 0.75, ease: "easeInOut" }}
           />
         )}

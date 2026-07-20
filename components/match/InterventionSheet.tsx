@@ -86,7 +86,7 @@ function StaminaBar({ value }: { value: number }) {
       <div className="h-1.5 w-12 overflow-hidden rounded-full bg-surface-2">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
       </div>
-      <span className="stat-num text-[10px]" style={{ color }}>
+      <span className="stat-num text-[13px]" style={{ color }}>
         {pct}
       </span>
     </div>
@@ -257,7 +257,7 @@ export function InterventionSheet({
         <div className="panel-head">
           <div>
             <p className="eyebrow text-accent">작전 변경</p>
-            <p className="mt-0.5 text-[11px] text-dim">
+            <p className="mt-0.5 text-[13px] text-dim">
               변경 사항을 모아 한 번에 전달합니다 · 남은 교체 {remainingSubs}회
             </p>
           </div>
@@ -277,7 +277,7 @@ export function InterventionSheet({
           <section>
             <div className="mb-2 flex items-baseline justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-accent">선수 교체</h3>
-              <span className="stat-num text-[11px] text-dim">남은 교체 {remainingSubs}회</span>
+              <span className="stat-num text-[13px] text-dim">남은 교체 {remainingSubs}회</span>
             </div>
 
             {subs.length > 0 && (
@@ -285,7 +285,7 @@ export function InterventionSheet({
                 {subs.map((s, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between rounded-panel border border-accent/30 bg-accent/10 px-3 py-2 text-[12px]"
+                    className="flex items-center justify-between rounded-panel border border-accent/30 bg-accent/10 px-3 py-2 text-[13px]"
                   >
                     <span className="flex items-center gap-1.5 text-ink">
                       <ArrowsClockwise weight="bold" className="size-3.5 shrink-0" aria-hidden />
@@ -307,12 +307,12 @@ export function InterventionSheet({
 
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] font-bold text-dim">나가는 선수 (체력)</span>
+                <span className="text-[13px] font-bold text-dim">나가는 선수 (체력)</span>
                 <select
                   value={outId}
                   onChange={(e) => setOutId(e.target.value)}
                   disabled={remainingSubs <= 0}
-                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[13px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택</option>
                   {onPitch.map((p) => (
@@ -323,12 +323,12 @@ export function InterventionSheet({
                 </select>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] font-bold text-dim">투입할 선수</span>
+                <span className="text-[13px] font-bold text-dim">투입할 선수</span>
                 <select
                   value={inId}
                   onChange={(e) => setInId(e.target.value)}
                   disabled={remainingSubs <= 0}
-                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[13px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택</option>
                   {bench.map((p) => (
@@ -343,7 +343,7 @@ export function InterventionSheet({
               type="button"
               onClick={addSub}
               disabled={!outId || !inId || remainingSubs <= 0}
-              className="mt-2 w-full rounded-control border border-line bg-surface-2/60 py-2 text-[12px] font-bold text-ink transition-colors hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-2 w-full rounded-control border border-line bg-surface-2/60 py-2 text-[13px] font-bold text-ink transition-colors hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
             >
               + 교체 추가
             </button>
@@ -356,7 +356,7 @@ export function InterventionSheet({
                   className="flex items-center gap-2 rounded-lg bg-surface-2/40 px-2 py-1.5"
                 >
                   <PlayerAvatar name={p.name} number={jerseyOf(p.id)} size={22} ring="var(--color-line)" />
-                  <span className="min-w-0 flex-1 truncate text-[10px] text-ink">{p.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-ink">{p.name}</span>
                   <StaminaBar value={stamina[p.id] ?? 1} />
                 </div>
               ))}
@@ -371,10 +371,10 @@ export function InterventionSheet({
               return (
                 <div key={key}>
                   <div className="mb-1 flex items-center justify-between">
-                    <label htmlFor={`iv-${key}`} className="text-[12px] font-bold text-ink">
+                    <label htmlFor={`iv-${key}`} className="text-[13px] font-bold text-ink">
                       {label}
                     </label>
-                    <span className="stat-num text-[11px] text-accent">{ticks[value - 1]}</span>
+                    <span className="stat-num text-[13px] text-accent">{ticks[value - 1]}</span>
                   </div>
                   <input
                     id={`iv-${key}`}
@@ -399,7 +399,7 @@ export function InterventionSheet({
             <h3 className="text-xs font-bold uppercase tracking-wider text-accent">세부 지시</h3>
             {TOGGLES.map((tg) => (
               <div key={tg.key} className="flex items-center justify-between gap-2">
-                <span className="text-[12px] font-bold text-ink">{tg.label}</span>
+                <span className="text-[13px] font-bold text-ink">{tg.label}</span>
                 <div className="flex gap-1">
                   {tg.options.map((opt) => {
                     const active = (instructions[tg.key] as string) === opt.value;
@@ -411,7 +411,7 @@ export function InterventionSheet({
                         onClick={() =>
                           setInstr((s) => ({ ...s, [tg.key]: opt.value } as TeamInstructions))
                         }
-                        className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
+                        className={`rounded-lg border px-2.5 py-1.5 text-[13px] font-bold transition-colors ${
                           active
                             ? "border-accent bg-accent/15 text-accent"
                             : "border-line bg-surface-2/50 text-dim hover:border-white/20"
@@ -431,11 +431,11 @@ export function InterventionSheet({
             <h3 className="text-xs font-bold uppercase tracking-wider text-accent">맨마킹</h3>
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] font-bold text-dim">우리 마커</span>
+                <span className="text-[13px] font-bold text-dim">우리 마커</span>
                 <select
                   value={special.manMark?.markerId ?? ""}
                   onChange={(e) => setManMarker(e.target.value)}
-                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[13px] text-ink"
                 >
                   <option value="">선택 안 함</option>
                   {startersOf(meSetup, squad).map((p) => (
@@ -446,12 +446,12 @@ export function InterventionSheet({
                 </select>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] font-bold text-dim">상대 타깃 (위협순)</span>
+                <span className="text-[13px] font-bold text-dim">상대 타깃 (위협순)</span>
                 <select
                   value={special.manMark?.targetId ?? ""}
                   onChange={(e) => setManTarget(e.target.value)}
                   disabled={!special.manMark?.markerId}
-                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-control border border-line bg-surface-2 px-2 py-2 text-[13px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택 안 함</option>
                   {oppStarters.map((p, i) => (

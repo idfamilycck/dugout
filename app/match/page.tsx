@@ -231,11 +231,11 @@ export default function MatchPage() {
                 <Play weight="bold" className="size-5" aria-hidden />
               )}
             </button>
-            <span className="text-[11px] text-dim">주요 장면 자동 정지 · 나머지는 빠르게 진행돼요</span>
+            <span className="text-[13px] text-dim">주요 장면 자동 정지 · 나머지는 빠르게 진행돼요</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="hidden text-[11px] text-dim sm:inline">
+            <span className="hidden text-[13px] text-dim sm:inline">
               {match.finished
                 ? "경기가 종료됐습니다"
                 : scene
@@ -400,7 +400,7 @@ export default function MatchPage() {
                   </button>
                 </>
               )}
-              <Link href="/" className="mt-4 inline-block text-[11px] text-dim hover:text-ink">
+              <Link href="/" className="mt-4 inline-block text-[13px] text-dim hover:text-ink">
                 홈으로 나가기
               </Link>
             </motion.div>

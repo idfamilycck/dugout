@@ -78,7 +78,7 @@ export function Scoreboard({
       </div>
 
       {venue && (
-        <p className="mt-2 flex items-center justify-center gap-1 text-center text-[11px] text-dim">
+        <p className="mt-2 flex items-center justify-center gap-1 text-center text-[13px] text-dim">
           <Buildings size={13} weight="bold" aria-hidden />
           {venue.nameKo} · {venue.cityKo}
         </p>

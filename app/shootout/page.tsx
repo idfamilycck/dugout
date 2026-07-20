@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // 승부차기 화면 — 무승부로 끝난 경기에서만 진입한다.
 // 1) KickerOrder: 온피치 11명 중 5명 + 순서 지정 → 2) ShootoutStage: 킥 1개씩 재생.
@@ -74,7 +74,7 @@ export default function ShootoutPage() {
         <p className="stat-num text-sm text-dim">
           정규시간 {match.scoreMe} : {match.scoreOpp} 무승부
         </p>
-        <Link href="/" className="text-[11px] text-dim hover:text-ink">
+        <Link href="/" className="text-[13px] text-dim hover:text-ink">
           홈으로 나가기
         </Link>
       </div>

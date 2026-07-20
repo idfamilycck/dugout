@@ -55,10 +55,10 @@ export function RolePicker() {
                 }`}
               >
                 <span className="flex w-full items-center gap-1.5">
-                  <span className="stat-num text-[10px] text-accent">{s.position}</span>
-                  <span className="truncate text-[12px] font-bold text-ink">{p?.name ?? "-"}</span>
+                  <span className="stat-num text-[13px] text-accent">{s.position}</span>
+                  <span className="truncate text-[13px] font-bold text-ink">{p?.name ?? "-"}</span>
                 </span>
-                <span className="truncate text-[10px] text-dim">{ROLE_SHORT[roleId]}</span>
+                <span className="truncate text-[13px] text-dim">{ROLE_SHORT[roleId]}</span>
               </button>
             );
           })}
@@ -70,7 +70,7 @@ export function RolePicker() {
         <section>
           <div className="mb-2 flex items-baseline gap-2">
             <h2 className="text-xs font-bold uppercase tracking-wider text-accent">역할</h2>
-            <span className="text-[11px] text-dim">
+            <span className="text-[13px] text-dim">
               {player?.name ?? "빈 슬롯"} · {POSITION_KO[pos]}
             </span>
           </div>
@@ -93,14 +93,14 @@ export function RolePicker() {
                     <span className={`text-[13px] font-bold ${active ? "text-accent" : "text-ink"}`}>
                       {role.nameKo}
                     </span>
-                    {active && <span className="text-[10px] font-bold text-accent">● 현재</span>}
+                    {active && <span className="text-[13px] font-bold text-accent">● 현재</span>}
                   </div>
-                  <p className="mt-1 text-[11px] leading-snug text-dim">{role.descKo}</p>
+                  <p className="mt-1 text-[13px] leading-snug text-dim">{role.descKo}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {roleStats.map(([key, weight]) => (
                       <span
                         key={key}
-                        className="flex items-center gap-1 rounded-full border border-line bg-surface/60 px-2 py-0.5 text-[10px] text-dim"
+                        className="flex items-center gap-1 rounded-full border border-line bg-surface/60 px-2 py-0.5 text-[13px] text-dim"
                       >
                         <span>{STAT_LABELS[key]}</span>
                         <span className="text-dim/60">{Math.round(weight * 100)}%</span>

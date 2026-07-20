@@ -43,7 +43,7 @@ function ScoreCard({
       }`}
     >
       <p className="eyebrow text-center text-dim">{label}</p>
-      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-dim">
+      <div className="mt-2 flex items-center gap-1.5 text-[13px] font-bold text-dim">
         <span>{meCode}</span>
         <span className="stat-num display text-3xl text-ink">
           {me}<span className="px-1 text-dim">:</span>{opp}
@@ -67,7 +67,7 @@ export function CfCompare({ cf, match }: CfCompareProps) {
     <section className="panel rounded-panel p-4">
       <div className="flex items-center justify-between">
         <p className="eyebrow text-accent">평행세계 비교</p>
-        <span className="text-[11px] text-dim">개입이 없었다면?</span>
+        <span className="text-[13px] text-dim">개입이 없었다면?</span>
       </div>
 
       <div className="mt-3 flex items-stretch gap-3">

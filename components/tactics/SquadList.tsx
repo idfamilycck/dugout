@@ -73,7 +73,7 @@ function SortHeaderButton({
         type="button"
         data-keep-selection
         onClick={onClick}
-        className={`flex min-h-11 items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors sm:min-h-0 ${
+        className={`flex min-h-11 items-center gap-0.5 text-[13px] font-bold uppercase tracking-wide transition-colors sm:min-h-0 ${
           active ? "text-accent" : "text-dim hover:text-ink"
         } ${className ?? ""}`}
       >
@@ -123,7 +123,7 @@ function HeaderRow({ sortSlot, sortDir, statKey, statLabel, onToggle, onStatKeyC
             data-keep-selection
             value={statKey}
             onChange={(e) => onStatKeyChange(e.target.value as StatSortKey)}
-            className="h-11 rounded-control border border-line bg-surface-2 px-1 text-[10px] font-bold text-ink sm:h-6 sm:px-1.5"
+            className="h-11 rounded-control border border-line bg-surface-2 px-1 text-[13px] font-bold text-ink sm:h-6 sm:px-1.5"
           >
             {STAT_OPTIONS.map((o) => (
               <option key={o.key} value={o.key}>
@@ -136,7 +136,7 @@ function HeaderRow({ sortSlot, sortDir, statKey, statLabel, onToggle, onStatKeyC
             data-keep-selection
             onClick={() => onToggle("stat")}
             aria-label={`${statLabel} 기준 정렬`}
-            className={`flex h-11 w-6 shrink-0 items-center justify-center text-[11px] font-bold sm:h-6 ${
+            className={`flex h-11 w-6 shrink-0 items-center justify-center text-[13px] font-bold sm:h-6 ${
               sortSlot === "stat" ? "text-accent" : "text-dim hover:text-ink"
             }`}
           >
@@ -201,9 +201,9 @@ function Row({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-bold text-ink">{player.name}</span>
-          <span className="stat-num shrink-0 text-[11px] text-dim">{player.age}세</span>
+          <span className="stat-num shrink-0 text-[13px] text-dim">{player.age}세</span>
         </div>
-        <div className="text-[11px] text-dim">{POSITION_KO[primary]}</div>
+        <div className="text-[13px] text-dim">{POSITION_KO[primary]}</div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {posStats.map(([key, label], i) => {
@@ -280,7 +280,7 @@ export function SquadList({ me, teamColor, selected, onSelectPlayer }: SquadList
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider text-accent">선발 11</h2>
-          <span className="stat-num text-[11px] text-dim">{starters.length}/11</span>
+          <span className="stat-num text-[13px] text-dim">{starters.length}/11</span>
         </div>
         <ul className="flex flex-col gap-1.5">
           {starters.map((p) => (
@@ -304,7 +304,7 @@ export function SquadList({ me, teamColor, selected, onSelectPlayer }: SquadList
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider text-dim">벤치</h2>
-          <span className="stat-num text-[11px] text-dim">{bench.length}명</span>
+          <span className="stat-num text-[13px] text-dim">{bench.length}명</span>
         </div>
         <ul className="flex flex-col gap-1.5">
           {bench.map((p) => (

@@ -219,7 +219,7 @@ export default function ResultPage() {
           <tone.Icon size={22} weight="bold" className="mt-0.5 shrink-0" aria-hidden />
           <span>{hero.text}</span>
         </p>
-        <p className="mt-2 text-[12px] text-dim">
+        <p className="mt-2 text-[13px] text-dim">
           {rewriteCompare
             ? "실제 월드컵 역사의 정규시간 결과와, 당신이 지휘봉을 잡은 뒤의 결과를 비교합니다."
             : "같은 라인업으로 개입 없이 처음부터 다시 돌렸을 때와 비교한 승률 변화입니다."}
@@ -260,7 +260,7 @@ export default function ResultPage() {
         </button>
         {statsOpen && (
           <div className="flex flex-col gap-2.5 border-t border-line px-4 py-4">
-            <div className="flex items-center justify-between text-[11px] font-bold text-dim">
+            <div className="flex items-center justify-between text-[13px] font-bold text-dim">
               <span>{me?.code ?? "ME"}</span>
               <span>{opp?.code ?? "OPP"}</span>
             </div>
@@ -272,7 +272,7 @@ export default function ResultPage() {
                 <div key={row.key}>
                   <div className="flex items-center justify-between text-sm">
                     <span className="stat-num font-black text-ink">{m}</span>
-                    <span className="text-[12px] text-dim">{row.label}</span>
+                    <span className="text-[13px] text-dim">{row.label}</span>
                     <span className="stat-num font-black text-ink">{o}</span>
                   </div>
                   <div className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-surface-2">
@@ -329,7 +329,7 @@ export default function ResultPage() {
         >
           새 매치업 고르기
         </button>
-        <Link href="/" className="mt-1 text-center text-[11px] text-dim hover:text-ink">
+        <Link href="/" className="mt-1 text-center text-[13px] text-dim hover:text-ink">
           홈으로
         </Link>
       </div>

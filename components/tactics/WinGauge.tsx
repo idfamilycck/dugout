@@ -55,7 +55,7 @@ function DuelRow({ label, me, opp }: DuelRowProps) {
   const meWins = me >= opp;
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between text-[11px]">
+      <div className="flex items-center justify-between text-[13px]">
         <span className="stat-num text-ink">{Math.round(me)}</span>
         <span className="font-bold uppercase tracking-wide text-dim">{label}</span>
         <span className="stat-num text-dim">{Math.round(opp)}</span>
@@ -119,7 +119,7 @@ export function WinGauge({ wp, lines }: WinGaugeProps) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="eyebrow text-dim">라이브 승률 예측</p>
-          <p className="mt-1 text-[11px] text-dim">조작할 때마다 실시간으로 다시 계산돼요.</p>
+          <p className="mt-1 text-[13px] text-dim">조작할 때마다 실시간으로 다시 계산돼요.</p>
         </div>
         {delta !== null && delta !== 0 && (
           <span
@@ -178,15 +178,15 @@ export function WinGauge({ wp, lines }: WinGaugeProps) {
         <div className="mt-2 grid grid-cols-3 gap-2 text-center">
           <div>
             <div className="stat-num text-lg text-gain">{win ?? "--"}%</div>
-            <div className="text-[11px] text-dim">승리</div>
+            <div className="text-[13px] text-dim">승리</div>
           </div>
           <div>
             <div className="stat-num text-lg text-ink">{draw ?? "--"}%</div>
-            <div className="text-[11px] text-dim">무승부</div>
+            <div className="text-[13px] text-dim">무승부</div>
           </div>
           <div>
             <div className="stat-num text-lg text-danger">{loss ?? "--"}%</div>
-            <div className="text-[11px] text-dim">패배</div>
+            <div className="text-[13px] text-dim">패배</div>
           </div>
         </div>
       </div>
@@ -194,7 +194,7 @@ export function WinGauge({ wp, lines }: WinGaugeProps) {
       {/* 라인별 전력 대결 막대 */}
       {lines && (
         <div className="flex flex-col gap-3 rounded-panel border border-line bg-surface/40 p-3">
-          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[13px] font-bold uppercase tracking-wider">
             <span className="text-accent">우리</span>
             <span className="text-dim">라인별 전력</span>
             <span className="text-danger">상대</span>

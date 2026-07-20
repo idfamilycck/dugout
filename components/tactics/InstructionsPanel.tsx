@@ -102,7 +102,7 @@ export function InstructionsPanel() {
                 }`}
               >
                 <MiniShape id={id} active={active} />
-                <span className={`stat-num text-[11px] ${active ? "text-accent" : "text-dim"}`}>{id}</span>
+                <span className={`stat-num text-[13px] ${active ? "text-accent" : "text-dim"}`}>{id}</span>
               </button>
             );
           })}
@@ -120,7 +120,7 @@ export function InstructionsPanel() {
                 <label htmlFor={`slider-${key}`} className="text-[13px] font-bold text-ink">
                   {label}
                 </label>
-                <span className="stat-num text-[12px] text-accent">{ticks[value - 1]}</span>
+                <span className="stat-num text-[13px] text-accent">{ticks[value - 1]}</span>
               </div>
               <input
                 id={`slider-${key}`}
@@ -133,7 +133,7 @@ export function InstructionsPanel() {
                 className="touchline-range w-full"
                 aria-valuetext={ticks[value - 1]}
               />
-              <div className="mt-1 flex justify-between text-[10px] text-dim">
+              <div className="mt-1 flex justify-between text-[13px] text-dim">
                 {ticks.map((t) => (
                   <span key={t}>{t}</span>
                 ))}
@@ -150,7 +150,7 @@ export function InstructionsPanel() {
           <div key={tg.key}>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
               <span className="text-[13px] font-bold text-ink">{tg.label}</span>
-              <span className="text-[10px] text-dim">{tg.hint}</span>
+              <span className="text-[13px] text-dim">{tg.hint}</span>
             </div>
             <div className="flex gap-1.5">
               {tg.options.map((opt) => {
@@ -161,7 +161,7 @@ export function InstructionsPanel() {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setInstructions({ [tg.key]: opt.value } as Partial<TeamInstructions>)}
-                    className={`flex-1 rounded-control border py-2 text-[12px] font-bold transition-colors ${
+                    className={`flex-1 rounded-control border py-2 text-[13px] font-bold transition-colors ${
                       active ? "border-accent bg-accent/15 text-accent" : "border-line bg-surface-2/50 text-dim hover:border-white/20"
                     }`}
                   >
@@ -177,7 +177,7 @@ export function InstructionsPanel() {
         <div className="flex items-center justify-between rounded-panel border border-line bg-surface-2/50 px-3 py-2.5">
           <div>
             <span className="text-[13px] font-bold text-ink">오프사이드 트랩</span>
-            <p className="text-[10px] text-dim">라인을 끌어올려 상대를 걸리게 하기</p>
+            <p className="text-[13px] text-dim">라인을 끌어올려 상대를 걸리게 하기</p>
           </div>
           <button
             type="button"

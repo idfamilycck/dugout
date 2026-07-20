@@ -68,7 +68,7 @@ export function Coachmarks() {
           <button
             type="button"
             onClick={finish}
-            className="text-[12px] font-bold text-dim underline-offset-2 hover:text-ink hover:underline"
+            className="text-[13px] font-bold text-dim underline-offset-2 hover:text-ink hover:underline"
           >
             건너뛰기
           </button>

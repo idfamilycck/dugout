@@ -6,6 +6,7 @@
 // 표시하고, 대한민국 행은 굵은 글씨 + 배경 강조로 눈에 띄게 한다.
 
 import { FlagBadge } from "@/components/ui/FlagBadge";
+import { Reveal } from "@/components/ui/Reveal";
 import { teamDisplay } from "@/components/tournament/team-display";
 import type { GroupRow } from "@/lib/wc2026/standings";
 
@@ -35,8 +36,12 @@ export function GroupStandings({ standings }: GroupStandingsProps) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {groups.map((g) => (
-        <GroupTable key={g} group={g} rows={standings[g]} />
+      {/* 12개 조가 세로로 길게 이어지므로 스크롤에 맞춰 순서대로 들어오게 한다.
+          한 화면에 3개씩 보이므로 계단 간격은 행 단위로만 의미가 있다. */}
+      {groups.map((g, i) => (
+        <Reveal key={g} index={i % 3}>
+          <GroupTable group={g} rows={standings[g]} />
+        </Reveal>
       ))}
     </div>
   );
@@ -47,20 +52,28 @@ function GroupTable({ group, rows }: { group: string; rows: GroupRow[] }) {
     <div className="panel overflow-hidden rounded-panel">
       <div className="panel-head">
         <h3 className="text-sm font-black text-ink">{group}조</h3>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-dim">진출 2팀</span>
+        <span className="text-[13px] font-bold uppercase tracking-wider text-dim">진출 2팀</span>
       </div>
+      {/* 열이 9개(팀 + 8지표)라 카드 폭이 빠듯하다. 팀 이름 칸만 줄어들게 하고 숫자 칸은
+          고정 폭으로 잡아, 글자를 키운 뒤에도 "승점"이 잘려 나가지 않게 한다. */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[300px] text-[11px]">
+        <table className="w-full table-fixed text-[13px]">
+          <colgroup>
+            <col />
+            {COLUMNS.map((c) => (
+              <col key={c.key} className="w-[30px]" />
+            ))}
+          </colgroup>
           <caption className="sr-only">{group}조 순위표</caption>
           <thead>
             {/* .data-head — 본문보다 한 단계 어두운 열 머리. 12개 조가 세로로 이어질 때
                 머리와 몸통이 눌러붙어 보이던 문제를 없앤다. */}
             <tr className="data-head">
-              <th scope="col" className="px-2.5 py-1.5 text-left">
+              <th scope="col" className="px-2 py-1.5 text-left">
                 팀
               </th>
               {COLUMNS.map((col) => (
-                <th key={col.key} scope="col" className="px-1 py-1.5 text-center">
+                <th key={col.key} scope="col" className="px-0.5 py-1.5 text-center">
                   {col.label}
                 </th>
               ))}
@@ -98,7 +111,7 @@ function GroupTable({ group, rows }: { group: string; rows: GroupRow[] }) {
                     </div>
                   </th>
                   {COLUMNS.map((col) => (
-                    <td key={col.key} className="tnum px-1 py-1.5 text-center text-ink">
+                    <td key={col.key} className="tnum px-0.5 py-1.5 text-center text-ink">
                       {row[col.key] as number}
                     </td>
                   ))}

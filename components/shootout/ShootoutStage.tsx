@@ -208,7 +208,7 @@ export function ShootoutStage({ result, meSetup, oppSetup, onFinish }: ShootoutS
               />
               <div>
                 <p className="text-sm font-black text-ink">{activeName}</p>
-                <p className="text-[11px] text-dim">
+                <p className="text-[13px] text-dim">
                   {active.side === "me" ? me?.nameKo ?? "우리" : opp?.nameKo ?? "상대"} · {isSuddenDeath ? "서든데스" : `${Math.floor(activeIndex / 2) + 1}번째 키커`}
                 </p>
               </div>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 제4심판 보드 — 터치라인의 시그니처.
  *
  * 이 앱의 모든 진입점은 "몇 분부터 지휘할 것인가"로 수렴한다. 실제 경기에서 그
@@ -42,14 +42,14 @@ export function OfficialBoard({ minute, size = "md", label }: OfficialBoardProps
           }}
         />
         <span
-          className={`stat-num relative text-accent ${md ? "text-base" : "text-[11px]"}`}
+          className={`stat-num relative text-accent ${md ? "text-base" : "text-[13px]"}`}
           style={{ textShadow: "0 0 6px rgba(34,211,238,0.5)", letterSpacing: "0.02em" }}
         >
           {minute}′
         </span>
       </span>
       {label && (
-        <span className={`font-bold text-dim ${md ? "text-[11px]" : "text-[10px]"}`}>{label}</span>
+        <span className={`font-bold text-dim ${md ? "text-[13px]" : "text-[13px]"}`}>{label}</span>
       )}
     </span>
   );

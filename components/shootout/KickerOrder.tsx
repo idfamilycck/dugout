@@ -146,7 +146,7 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
                     ring={selected ? "var(--color-accent)" : teamColor}
                   />
                   {selected && (
-                    <span className="stat-num absolute -bottom-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] font-black text-accent-ink">
+                    <span className="stat-num absolute -bottom-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[13px] font-black text-accent-ink">
                       {idx + 1}
                     </span>
                   )}
@@ -154,8 +154,8 @@ export function KickerOrder({ meSetup, stamina, onConfirm }: KickerOrderProps) {
                 <div className="min-w-0 flex-1">
                   <span className="truncate text-sm font-bold text-ink">{p.name}</span>
                   <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="text-[11px] text-dim">체력</span>
-                    <span className="stat-num text-[11px] font-bold" style={{ color: staminaTone(st) }}>
+                    <span className="text-[13px] text-dim">체력</span>
+                    <span className="stat-num text-[13px] font-bold" style={{ color: staminaTone(st) }}>
                       {stPct}%
                     </span>
                   </div>

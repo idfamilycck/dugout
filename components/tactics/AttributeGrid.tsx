@@ -61,7 +61,7 @@ function clustersOf(player: Player): Cluster[] {
 function StatCell({ row }: { row: StatRow }) {
   return (
     <div className="flex items-center justify-between gap-2 py-0.5">
-      <dt className="text-[11px] text-dim">{row.label}</dt>
+      <dt className="text-[13px] text-dim">{row.label}</dt>
       <dd className="stat-num text-[13px]" style={{ color: attrColor(row.value) }}>
         {row.value}
         <span className="sr-only"> ({attrTierKo(row.value)})</span>
@@ -75,7 +75,7 @@ export function AttributeGrid({ player, className }: AttributeGridProps) {
     return (
       <div className={`panel rounded-panel p-4 ${className ?? ""}`}>
         <p className="eyebrow text-dim">선수 능력치</p>
-        <p className="mt-3 text-[12px] leading-relaxed text-dim">
+        <p className="mt-3 text-[13px] leading-relaxed text-dim">
           스쿼드에서 선수를 선택하면 전체 능력치가 여기에 표시돼요.
         </p>
       </div>
@@ -92,12 +92,12 @@ export function AttributeGrid({ player, className }: AttributeGridProps) {
           <p className="eyebrow text-dim">선수 능력치</p>
           <p className="mt-0.5 truncate text-sm font-bold text-ink">
             {player.name}
-            <span className="stat-num ml-1.5 text-[11px] font-normal text-dim">
+            <span className="stat-num ml-1.5 text-[13px] font-normal text-dim">
               #{jerseyOf(player.id)}
             </span>
           </p>
         </div>
-        <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[10px] font-bold text-dim">
+        <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[13px] font-bold text-dim">
           {POSITION_KO[primary]} · {player.age}세
         </span>
       </div>
@@ -105,7 +105,7 @@ export function AttributeGrid({ player, className }: AttributeGridProps) {
       <div className="mt-2 flex flex-col">
         {clusters.map((c) => (
           <section key={c.title} className="data-row py-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-accent">
+            <h3 className="text-[13px] font-bold uppercase tracking-wider text-accent">
               {c.title}
             </h3>
             <dl className="mt-1 grid grid-cols-2 gap-x-3">

@@ -84,7 +84,7 @@ export function CrisisBanner({ events, onIntervene }: CrisisBannerProps) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-danger">감독님, 지시가 필요합니다</p>
-                <p className="truncate text-[11px] text-ink/80">{text}</p>
+                <p className="truncate text-[13px] text-ink/80">{text}</p>
               </div>
               <button
                 type="button"

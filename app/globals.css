@@ -1,24 +1,39 @@
 @import "tailwindcss";
 
 /* ────────────────────────────────────────────────────────────
-   TOUCHLINE — 방송 중계 그래픽 + 감독의 작전실
-   네이비-슬레이트 UI 크롬 위에 일렉트릭 시안 액센트 하나만 절제해서 사용.
-   유리 = 초록/↑ · 불리 = 빨강/↓ 컨벤션을 앱 전역에서 공유한다.
+   TOUCHLINE — 경기장의 밤(stadium night)
+   중성 크롬을 차가운 네이비에서 그린 캐스트가 도는 near-black으로 리베이스했다.
+   같은 다크라도 "다크 SaaS 대시보드"가 아니라 "야간 경기장"으로 읽히게 하는 것이 목적.
+
+   색 역할은 셋으로 엄격히 나눈다. 섞어 쓰지 말 것:
+     1) accent(시안)  = 상호작용. 버튼·링크·포커스·선택 상태. 브랜드색.
+     2) gold          = 대회 단계 시맨틱. 우승·결승·트로피·수상. 절대 버튼에 쓰지 않는다.
+     3) attr 스케일, gain, danger = 데이터. 능력치 등급과 유리/불리.
    ──────────────────────────────────────────────────────────── */
 
 @theme {
-  /* UI 크롬(패널·배경)은 네이비-슬레이트, 실제 잔디는 --color-turf* 로 분리한다. */
-  --color-pitch: #0f1319;
-  --color-pitch-2: #141924;
-  --color-surface: #181e2a;
-  --color-surface-2: #212938;
-  --color-line: rgba(200, 225, 255, 0.1);
-  --color-ink: #eef2f8;
-  --color-dim: #8f9bb0;
+  /* 표면 단계. 이전에는 네 겹이 전부 비슷한 남색이라(#0f1319~#212938) 카드가 배경에서
+     떠오르지 않고 화면 전체가 한 덩어리로 뭉개져 보였다. 단계마다 확실히 벌린다. */
+  --color-pitch: #070C0A; /* 페이지 배경 */
+  --color-pitch-2: #0E1614; /* 교대 섹션 배경 · 표 머리 */
+  --color-surface: #17211D; /* 패널 */
+  --color-surface-2: #24322C; /* 패널 위 요소(칩·트랙·인풋) */
+  --color-raised: #31423A; /* 호버·선택된 행 */
+
+  /* 테두리를 0.10 -> 0.18로 올린다. 10%는 사실상 보이지 않아 패널 경계가 사라졌다. */
+  --color-line: rgba(196, 240, 214, 0.18);
+  --color-line-strong: rgba(196, 240, 214, 0.32);
+
+  --color-ink: #F3F8F5;
+  --color-dim: #9FB3AA; /* 보조 텍스트. 배경 대비 7.4:1 */
   --color-accent: #22d3ee;
   --color-accent-ink: #04222a;
   --color-danger: #ff5470;
   --color-gain: #34e08a;
+
+  /* 대회 단계 시맨틱. 우승·결승·트로피 표시 전용(상호작용 요소에는 쓰지 않는다). */
+  --color-gold: #F5C563;
+  --color-gold-ink: #2A1F06;
 
   /* FM식 능력치 색상 스케일 — 액센트가 아니라 데이터(선수 능력치)를 위한 시맨틱 색상. */
   --color-attr-elite: #34e08a;
@@ -27,9 +42,10 @@
   --color-attr-low: #fb923c;
   --color-attr-poor: #ff5470;
 
-  /* 실제 축구장(라이브 피치·작전 보드)만 이 초록을 쓴다 — UI 크롬과 분리. */
-  --color-turf: #10331f;
-  --color-turf-2: #0b2616;
+  /* 실제 축구장(라이브 피치·작전 보드). 크롬이 near-black으로 내려간 만큼 잔디는
+     한 단계 더 선명하게 올려 "화면 안의 진짜 경기장"으로 분리되게 한다. */
+  --color-turf: #175C33;
+  --color-turf-2: #0E3F22;
 
   /* 반경 락: 패널/카드 8px · 인풋/버튼 6px · 필(탭·칩·아바타)만 rounded-full 예외.
      FM식 데이터 도구 톤을 위해 이전(10/8)보다 한 단계 각지게 조였다. */
@@ -59,8 +75,10 @@ html {
 
 body {
   min-height: 100%;
+  /* 상단 스포트라이트: 야간 경기장 조명이 위에서 떨어지는 느낌.
+     시안 글로우가 아니라 아주 옅은 초록 확산광이라 색이 UI를 물들이지 않는다. */
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(34, 211, 238, 0.05), transparent 55%),
+    radial-gradient(130% 70% at 50% -12%, rgba(70, 200, 130, 0.07), transparent 60%),
     var(--color-pitch);
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -130,10 +148,31 @@ body {
   font-size: 0.75rem;
 }
 
-/* 카드 공통 — 그라디언트를 걷어낸 플랫 표면. FM26의 판때기 톤. */
+/* 카드 공통. 배경(#070C0A)과 패널(#17211D) 사이를 확실히 벌리고 위쪽 하이라이트를
+   1px 넣어 "떠 있는 판때기"로 읽히게 한다. 이전에는 배경과 색이 거의 같고 테두리도
+   10% 불투명도라 카드 경계가 보이지 않았다. */
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* 강조 패널 — 지금 주목해야 할 하나(선택된 카드, 결론 카드)에만 쓴다. */
+.panel-accent {
+  background: var(--color-surface);
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(34, 211, 238, 0.1);
+}
+
+/* 대회 단계 시맨틱: 우승·결승 등 트로피 맥락에만. 상호작용 요소에는 쓰지 않는다. */
+.tag-gold {
+  background: rgba(245, 197, 99, 0.14);
+  color: var(--color-gold);
+  border: 1px solid rgba(245, 197, 99, 0.35);
 }
 
 /* 데이터 숫자 기본값: 표 형태 스탯/분/스코어가 자릿수마다 흔들리지 않게 고정폭으로.
