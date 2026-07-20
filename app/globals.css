@@ -63,6 +63,11 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 한국어는 어절(띄어쓰기) 단위로 줄을 바꾼다. keep-all이 없으면 좁은 폭에서
+     "바로 지/휘하기"처럼 단어 중간이 잘려 가독성이 크게 떨어진다.
+     아주 긴 토큰(URL 등)만 예외적으로 끊도록 break-word를 함께 둔다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* 잔디 이랑(모잉 스트라이프) — 히어로/작전실 바탕용 방송 질감 */
