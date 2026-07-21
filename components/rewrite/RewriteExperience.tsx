@@ -16,6 +16,7 @@ import { wc2026Matches } from "@/lib/wc2026/data";
 import type { Wc2026Match } from "@/lib/wc2026/types";
 import { MatchBrowser } from "@/components/rewrite/MatchBrowser";
 import { MatchDetail } from "@/components/rewrite/MatchDetail";
+import { HowItWorks } from "@/components/rewrite/HowItWorks";
 import { Disclaimer } from "@/components/ui/Disclaimer";
 
 interface RewriteExperienceProps {
@@ -81,6 +82,11 @@ export function RewriteExperience({ showBackLink = false }: RewriteExperiencePro
               실제 2026 월드컵 경기에서 승부를 가른 결정적 순간을 골라, 그 시점부터
               직접 전술을 지휘해 결과를 바꿔보세요.
             </p>
+          </div>
+
+          {/* 이렇게 진행돼요(3단계) + 검증 근거 — 첫 화면 이해도. */}
+          <div className="mt-6">
+            <HowItWorks />
           </div>
         </div>
       </section>

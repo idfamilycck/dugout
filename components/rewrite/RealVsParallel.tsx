@@ -6,10 +6,11 @@
 // "실제 역사"라는 점이 다르다. 유리(결과 개선)=초록, 불리(결과 악화)=빨강,
 // 동일=중립.
 
-import { SoccerBall, ClockCounterClockwise } from "@phosphor-icons/react";
+import { SoccerBall, ClockCounterClockwise, SealCheck } from "@phosphor-icons/react";
 import type { RewriteCompare, ResultWord } from "./compare";
 import { resultRank } from "./compare";
 import type { GoalTimeline, RealGoal } from "./goal-timeline";
+import { ENGINE_VALIDATION } from "@/lib/wc2026/validation";
 
 interface RealVsParallelProps {
   compare: RewriteCompare;
@@ -191,6 +192,19 @@ export function RealVsParallel({ compare, meCode, oppCode, timeline }: RealVsPar
       </p>
 
       {timeline && <TimelineNote timeline={timeline} />}
+
+      {/* 신뢰 근거: 이 비교가 왜 믿을 만한지. "당신이 지휘했다면 바뀐다"는 주장은
+          엔진이 현실을 재현할 때만 의미가 있으므로, 그 재현율을 여기서 밝힌다. */}
+      <div className="mt-3 flex items-start gap-2 rounded-panel border border-line bg-surface-2/40 px-3.5 py-3">
+        <SealCheck size={16} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent" />
+        <p className="text-[13px] leading-relaxed text-dim">
+          이 엔진을 실제 2026 월드컵{" "}
+          <span className="tnum text-ink">{ENGINE_VALIDATION.matches}</span>경기에 무개입으로 돌리면
+          승부가 갈린 경기의 승자를{" "}
+          <span className="tnum font-bold text-accent">{ENGINE_VALIDATION.decisiveWinRatePct}%</span>{" "}
+          재현합니다. 그만큼 현실을 따라가는 모델이 위 평행세계를 계산했습니다.
+        </p>
+      </div>
     </section>
   );
 }
