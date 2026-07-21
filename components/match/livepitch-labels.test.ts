@@ -8,7 +8,7 @@ import {
   LABEL_PRIORITY,
   type LabelCandidate,
 } from "./livepitch-labels";
-import { dynamicDots, shiftTeamTowardBall, VB_H, VB_W } from "./livepitch-geometry";
+import { dynamicDots, VB_H } from "./livepitch-geometry";
 import { makeSetup } from "@/lib/engine/__testutils__";
 
 const FONT = LABEL_FONT_SIZE;
@@ -199,14 +199,15 @@ describe("layoutLabels + 실제 피치 좌표", () => {
   const me = makeSetup("kor");
   const opp = makeSetup("bra");
 
-  // 실제 렌더와 같은 방식으로 22명의 목표 좌표를 만든다.
-  function targetsAt(tilt: number, ball: { cx: number; cy: number }): LabelCandidate[] {
+  // 실제 렌더와 같은 방식으로 22명의 목표 좌표를 만든다. 앵커는 전형(dynamicDots)이
+  // 잡고, 공 쪽 팀 시프트는 쓰지 않는다(개별 wander는 라벨 배치와 무관한 미세 연출).
+  function targetsAt(tilt: number): LabelCandidate[] {
     const out: LabelCandidate[] = [];
     for (const [setup, side] of [
       [me, "me"],
       [opp, "opp"],
     ] as const) {
-      for (const d of shiftTeamTowardBall(dynamicDots(setup, side, tilt), ball)) {
+      for (const d of dynamicDots(setup, side, tilt)) {
         out.push(
           cand(
             `${side}-${d.slotId}`,
@@ -229,24 +230,18 @@ describe("layoutLabels + 실제 피치 좌표", () => {
       obstacles: cs.map((c) => ({ key: c.key, cx: c.cx, cy: c.cy })),
     });
 
-  const SCENARIOS = [0, 0.15, 0.35, 0.5, 0.65, 0.85, 1].flatMap((tilt) =>
-    [
-      { cx: VB_W / 2, cy: VB_H / 2 },
-      { cx: VB_W - 40, cy: 40 },
-      { cx: 40, cy: VB_H - 40 },
-    ].map((ball) => ({ tilt, ball }))
-  );
+  const SCENARIOS = [0, 0.15, 0.35, 0.5, 0.65, 0.85, 1];
 
   it("중원 밀집 국면들에서 표시된 라벨끼리 절대 겹치지 않는다", () => {
-    for (const { tilt, ball } of SCENARIOS) {
-      const cs = targetsAt(tilt, ball);
+    for (const tilt of SCENARIOS) {
+      const cs = targetsAt(tilt);
       expectNoOverlap(cs, layoutOf(cs));
     }
   });
 
   it("표시된 라벨이 다른 선수의 점을 덮지 않는다", () => {
-    for (const { tilt, ball } of SCENARIOS) {
-      const cs = targetsAt(tilt, ball);
+    for (const tilt of SCENARIOS) {
+      const cs = targetsAt(tilt);
       const layout = layoutOf(cs);
       for (const c of cs) {
         const p = layout.get(c.key);
@@ -266,13 +261,13 @@ describe("layoutLabels + 실제 피치 좌표", () => {
   });
 
   it("한산한 중립 국면에서는 대부분(과반)의 이름이 살아남는다", () => {
-    const cs = targetsAt(0.5, { cx: VB_W / 2, cy: VB_H / 2 });
+    const cs = targetsAt(0.5);
     expect(layoutOf(cs).size).toBeGreaterThan(cs.length / 2);
   });
 
   it("골키퍼 이름은 어떤 국면에서도 표시된다", () => {
     for (const tilt of [0, 0.5, 1]) {
-      const layout = layoutOf(targetsAt(tilt, { cx: VB_W / 2, cy: VB_H / 2 }));
+      const layout = layoutOf(targetsAt(tilt));
       expect(layout.has("me-gk")).toBe(true);
       expect(layout.has("opp-gk")).toBe(true);
     }

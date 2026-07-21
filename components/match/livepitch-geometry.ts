@@ -23,34 +23,10 @@ export interface PlayerDot {
   cy: number;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
-// ── 공 쪽으로 팀 전체가 "형태를 유지한 채" 함께 이동한다 ──
-// 예전 followBall은 선수를 "각자" 공으로 끌어당겨서, 공에 가까운 선수는 많이·먼
-// 선수는 적게 움직였다 → 라인 간격이 무너지며 공 주변에 뭉쳤다. 실제 축구는 팀이
-// 하나의 블록으로 공 쪽으로 슬라이드하며 수비·중원·공격 라인 간격을 유지한다.
-// 그래서 팀 공통 시프트 벡터(무게중심→공)를 구해 전원에 "동일하게" 적용한다.
-// 깊이(x) 전진/후퇴는 dynamicDots(tilt)가 이미 담당하므로 여기선 약하게만,
-// 좌우(y) 볼사이드 이동은 조금 더 준다. GK는 골문을 지켜야 하므로 소폭만 따라간다.
-export function shiftTeamTowardBall(
-  dots: PlayerDot[],
-  ball: { cx: number; cy: number }
-): PlayerDot[] {
-  const outfield = dots.filter((d) => d.slotId !== "gk");
-  if (outfield.length === 0) return dots;
-  const cx0 = outfield.reduce((s, d) => s + d.cx, 0) / outfield.length;
-  const cy0 = outfield.reduce((s, d) => s + d.cy, 0) / outfield.length;
-  const shiftX = clamp((ball.cx - cx0) * 0.08, -7, 7);
-  const shiftY = clamp((ball.cy - cy0) * 0.18, -14, 14);
-  return dots.map((d) => {
-    const gk = d.slotId === "gk";
-    return {
-      ...d,
-      cx: clamp(d.cx + shiftX * (gk ? 0.15 : 1), 10, VB_W - 10),
-      cy: clamp(d.cy + shiftY * (gk ? 0.3 : 1), 10, VB_H - 10),
-    };
-  });
-}
+// 선수 좌표계에 대한 주석: 공 쪽으로 팀 전체를 "함께" 미끄러뜨리는 방식은 쓰지
+// 않는다 — 22명이 한 덩어리로 움직여 "다같이 한번에" 이동하는 부자연스러움을 낳기
+// 때문이다. 대신 앵커는 전형(dynamicDots)이 잡고, 개별 생동감은 LivePitch의 선수별
+// wander(각자 고유 경로·주기의 유기적 방황)가 담당한다.
 
 export function playerDots(setup: SideSetup, side: "me" | "opp"): PlayerDot[] {
   const formation = FORMATIONS[setup.instructions.formation];

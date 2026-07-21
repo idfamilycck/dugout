@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { playerDots, dynamicDots, shiftTeamTowardBall, VB_W, VB_H } from "./livepitch-geometry";
+import { playerDots, dynamicDots, VB_W, VB_H } from "./livepitch-geometry";
 import { makeSetup } from "@/lib/engine/__testutils__";
 import { FORMATIONS } from "@/lib/data/formations";
 
@@ -91,44 +91,13 @@ describe("playerDots (라이브 피치 선수 좌표)", () => {
     }
   });
 
-  it("shiftTeamTowardBall: 팀이 공 쪽으로 이동하되 라인 간격(형태)을 보존한다", () => {
-    const dots = playerDots(me, "me");
-    const ball = { cx: 250, cy: 40 }; // 오른쪽 위 (상대 진영)
-    const shifted = shiftTeamTowardBall(dots, ball);
-    const byId = Object.fromEntries(dots.map((d) => [d.slotId, d]));
-    const sById = Object.fromEntries(shifted.map((d) => [d.slotId, d]));
-
-    // 무게중심이 공 쪽(+x, -y)으로 이동한다.
-    const c0 = dots.reduce((a, d) => ({ x: a.x + d.cx, y: a.y + d.cy }), { x: 0, y: 0 });
-    const c1 = shifted.reduce((a, d) => ({ x: a.x + d.cx, y: a.y + d.cy }), { x: 0, y: 0 });
-    expect(c1.x).toBeGreaterThan(c0.x);
-    expect(c1.y).toBeLessThan(c0.y);
-
-    // 형태 보존: 두 아웃필드 선수 사이의 상대 간격이 시프트 전후로 (거의) 같다.
-    // 개별 끌림(옛 followBall)이면 간격이 달라지지만, 팀 공통 시프트는 보존한다.
-    const gap0 = byId["cm_l"].cx - byId["cb1"].cx;
-    const gap1 = sById["cm_l"].cx - sById["cb1"].cx;
-    expect(gap1).toBeCloseTo(gap0, 5);
-    const wgap0 = byId["cm_l"].cy - byId["cb1"].cy;
-    const wgap1 = sById["cm_l"].cy - sById["cb1"].cy;
-    expect(wgap1).toBeCloseTo(wgap0, 5);
-  });
-
-  it("shiftTeamTowardBall: GK는 골문 근처에 머문다(소폭만 따라감)", () => {
-    const dots = playerDots(me, "me");
-    const gk0 = dots.find((d) => d.slotId === "gk")!;
-    const gk1 = shiftTeamTowardBall(dots, { cx: VB_W - 8, cy: 10 }).find((d) => d.slotId === "gk")!;
-    const outfieldMove = 3; // GK 이동은 아웃필드보다 훨씬 작아야 한다
-    expect(Math.abs(gk1.cx - gk0.cx)).toBeLessThan(outfieldMove);
-  });
-
-  it("shiftTeamTowardBall: 모든 점이 피치 경계 안에 머문다", () => {
-    for (const d of shiftTeamTowardBall(playerDots(me, "me"), { cx: VB_W - 8, cy: 10 })) {
-      expect(d.cx).toBeGreaterThan(6);
-      expect(d.cx).toBeLessThan(VB_W - 6);
-      expect(d.cy).toBeGreaterThan(6);
-      expect(d.cy).toBeLessThan(VB_H - 6);
-    }
+  it("dynamicDots: 전형이 세로로 펼쳐져 수비·중원·공격 라인 간격이 유지된다", () => {
+    // 앵커(전형)는 라인 구조를 잡는다. 개별 생동감(wander)은 LivePitch 렌더에서
+    // 각 선수에 얹히므로 여기서는 전형이 뭉치지 않고 펼쳐지는지만 본다.
+    const dots = Object.fromEntries(dynamicDots(me, "me", 0.5).map((d) => [d.slotId, d]));
+    expect(dots["st"].cx).toBeGreaterThan(dots["cm_l"].cx); // 공격이 중원보다 앞
+    expect(dots["cm_l"].cx).toBeGreaterThan(dots["cb1"].cx); // 중원이 수비보다 앞
+    expect(dots["cb1"].cx).toBeGreaterThan(dots["gk"].cx); // 수비가 GK보다 앞
   });
 
   it("같은 포메이션이면 opp 좌표는 me 좌표의 점대칭 미러다", () => {

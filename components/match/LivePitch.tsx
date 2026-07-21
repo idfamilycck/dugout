@@ -14,7 +14,7 @@ import type { SideSetup } from "@/lib/types";
 import { teamById } from "@/lib/data/teams";
 import { playersOf } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
-import { dynamicDots, playerDots, shiftTeamTowardBall, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
+import { dynamicDots, playerDots, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
 import { buildSceneChoreo } from "./livepitch-choreo";
 import { layoutLabels, LABEL_FONT_SIZE, LABEL_PRIORITY, type LabelCandidate } from "./livepitch-labels";
 
@@ -38,15 +38,52 @@ export interface ScenePlay {
   playerId?: string;
 }
 
-// 슬롯별 결정적 미세 움직임(제자리 흔들림) 파라미터 — 정지 순간에도 살아있는 느낌.
-function jitterOf(side: string, slotId: string): { ax: number; ay: number; dur: number } {
-  let h = 0;
-  for (const ch of `${side}-${slotId}`) h = (h * 31 + ch.charCodeAt(0)) % 997;
-  return {
-    ax: 0.8 + (h % 5) * 0.25,
-    ay: 0.8 + ((h >> 2) % 5) * 0.25,
-    dur: 2.2 + (h % 7) * 0.25,
+// 선수별 유기적 방황(wander): 각 선수가 "제각기" 제자리 근처에서 실시간으로
+// 자연스럽게 움직인다. 팀이 한꺼번에 같은 방향으로 미끄러지는 게 아니라, 개개인이
+// 고유의 진폭·속도·경로로 끊임없이 위치를 미세 조정하는 실제 축구의 움직임을 낸다.
+// 구조(수비/중원/공격 라인)는 앵커(dynamicDots)가 잡고, 이 방황이 개별 생동감을 준다.
+type Role = "gk" | "def" | "mid" | "att";
+function roleOf(slotId: string): Role {
+  const p = slotId.replace(/[_0-9].*$/, "");
+  if (p === "gk") return "gk";
+  if (p === "cb" || p === "fb") return "def";
+  if (p === "wg" || p === "st") return "att";
+  return "mid";
+}
+// 활동 반경(px): 중원이 가장 넓게 돌아다니고, 수비는 좁게, GK는 거의 제자리.
+const WANDER_AMP: Record<Role, number> = { gk: 3, def: 9, mid: 15, att: 13 };
+
+function wanderOf(side: string, slotId: string): {
+  xs: number[];
+  ys: number[];
+  times: number[];
+  dur: number;
+} {
+  // 선수별 고유 시드(FNV-1a → xorshift)로 각자 다른 방황 경로·주기를 만든다.
+  let h = 2166136261;
+  for (const ch of `${side}:${slotId}`) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 16777619);
+  }
+  const rand = () => {
+    h ^= h << 13;
+    h ^= h >>> 17;
+    h ^= h << 5;
+    return (h >>> 0) / 4294967296;
   };
+  const amp = WANDER_AMP[roleOf(slotId)];
+  const n = 5;
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    xs.push((rand() * 2 - 1) * amp);
+    ys.push((rand() * 2 - 1) * amp);
+  }
+  xs.push(xs[0]); // 경로를 닫아 매끄럽게 순환
+  ys.push(ys[0]);
+  const times = Array.from({ length: n + 1 }, (_, i) => i / n);
+  const dur = 4.5 + rand() * 4; // 4.5~8.5s, 선수마다 다른 주기 → 개별적으로 움직인다
+  return { xs, ys, times, dur };
 }
 
 /** 렌더용 선수 목표 좌표 — 점 배치와 라벨 충돌 검사가 같은 값을 쓰도록 한 번만 계산한다. */
@@ -159,19 +196,14 @@ export function LivePitch({
   // ── 렌더 목표 좌표(점) ──
   // 라벨 충돌 검사를 위해 각 선수의 최종 목표 좌표를 한 번만 계산해 둔다.
   // 점 좌표 자체는 기존과 동일 — 라벨 배치에만 쓰인다.
+  // 앵커(선수 목표 좌표)는 전형(dynamicDots)이 잡는다 — 수비/중원/공격 라인 구조.
+  // 팀 전체를 공 쪽으로 함께 미끄러뜨리지 않는다("다같이 한번에 움직인다"를 피함).
+  // 개별 생동감은 아래 렌더의 선수별 wander가 담당한다. 주인공/동료만 choreo로 이동.
   const targets = useMemo<Target[]>(() => {
     const out: Target[] = [];
-    const ball = { cx: ballCx, cy: ballCy };
-    // 볼사이드 시프트는 "평상시(idle)"에만 준다. 장면 중에는 dynamicDots(tilt)가 이미
-    // 전형을 전진/후퇴시키는데, 여기에 공 쪽 시프트까지 더하면 양 팀이 공 주변으로
-    // 이중 압축돼 라인이 섞인다. 장면 땐 tilt 전형 그대로 둬 수비·중원·공격 라인을
-    // 선명하게 유지하고, 주인공/동료만 choreo 오버라이드로 움직인다.
-    const place = (dots: PlayerDot[]) =>
-      live && !choreo ? shiftTeamTowardBall(dots, ball) : dots;
     for (const { dots, side } of [
-      // 킥오프 전에는 공 방향으로 움직이지 않는다 — 포메이션 좌표 그대로 선다.
-      { dots: place(dotsMe), side: "me" as const },
-      { dots: place(dotsOpp), side: "opp" as const },
+      { dots: dotsMe, side: "me" as const },
+      { dots: dotsOpp, side: "opp" as const },
     ]) {
       for (const d of dots) {
         const override = scene?.side === side ? choreo?.overrides[d.slotId] : undefined;
@@ -186,7 +218,7 @@ export function LivePitch({
       }
     }
     return out;
-  }, [dotsMe, dotsOpp, scene?.side, choreo, ballCx, ballCy, live]);
+  }, [dotsMe, dotsOpp, scene?.side, choreo]);
 
   // ── 이름 라벨 배치 ──
   // 좌표가 바뀔 때만 O(n²) 충돌 검사를 돌린다(매 프레임 아님 — 애니메이션은 transform으로만 진행).
@@ -257,7 +289,10 @@ export function LivePitch({
           const color = side === "me" ? meColor : oppColor;
           const isPulse = scene?.side === side && pulseSlot === d.slotId;
           const isHolder = live && !choreo && possession === side && d.slotId === holderSlot;
-          const jit = jitterOf(side, d.slotId);
+          const wan = wanderOf(side, d.slotId);
+          // 방황은 개별 생동감용 — 킥오프 전(정지)과 choreo에 가담 중인 주인공/동료
+          // (의도된 동선)에는 끄고, 그 외 선수만 각자 자연스럽게 움직인다.
+          const doWander = live && !t.involved;
           // 이름 라벨은 배치가 결정된 선수만 그린다(겹치면 숨기고 등번호로 식별).
           const label = labels.get(t.key);
           return (
@@ -267,20 +302,21 @@ export function LivePitch({
               animate={{ x: t.tx, y: t.ty }}
               transition={{ type: "spring", stiffness: t.involved ? 70 : 120, damping: 18 }}
             >
-              {/* 슬롯별 미세 흔들림 — 경기 중 정지 순간에도 제자리에서 살아 움직인다.
-                  킥오프 전(live=false)에는 완전히 멈춰 "아직 시작 안 함"을 분명히 한다. */}
+              {/* 선수별 유기적 방황 — 각자 고유의 경로·주기로 제자리 근처에서 실시간
+                  으로 자연스럽게 움직인다(팀이 한꺼번에가 아니라 개개인이). 킥오프 전
+                  (live=false)·choreo 가담 선수는 멈춰 의도된 동선을 방해하지 않는다. */}
               <motion.g
                 animate={
-                  live
-                    ? {
-                        x: [0, jit.ax, -jit.ax * 0.6, 0],
-                        y: [0, -jit.ay * 0.7, jit.ay, 0],
-                      }
-                    : { x: 0, y: 0 }
+                  doWander ? { x: wan.xs, y: wan.ys } : { x: 0, y: 0 }
                 }
                 transition={
-                  live
-                    ? { duration: jit.dur, repeat: Infinity, ease: "easeInOut" }
+                  doWander
+                    ? {
+                        duration: wan.dur,
+                        times: wan.times,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }
                     : { duration: 0.3 }
                 }
               >
