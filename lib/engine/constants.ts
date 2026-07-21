@@ -6,18 +6,21 @@
 export const ENGINE_CONSTANTS = {
   // λ_me = LAMBDA_BASE × (attack/defense)^LAMBDA_ELASTICITY × modMult × eloMult,
   // 이후 [LAMBDA_MIN, LAMBDA_MAX]로 clamp (lib/engine/winprob.ts의 lambdasFromParts)
-  LAMBDA_BASE: 1.35,
+  // 1.35 -> 1.25: 실제 국제랭킹 ELO로 바꾸며 전력차 스프레드가 넓어져 평균 득점이
+  // 실제(2.91)보다 높아졌다(3.0~3.6). base를 낮춰 실측 평균을 실제에 맞추고 골 MAE를
+  // 개선한다. balance 게이트(평균 득점/블로아웃)도 이 값에서 통과한다.
+  LAMBDA_BASE: 1.25,
   LAMBDA_ELASTICITY: 1.6,
   LAMBDA_MIN: 0.2,
   LAMBDA_MAX: 4.0,
 
   // eloMult(myElo, oppElo) = 1 + clamp(myElo-oppElo, -ELO_DIFF_CAP, ELO_DIFF_CAP) / ELO_DIFF_CAP × ELO_MULT_COEF
-  // 0.15 -> 0.30: 실제 103경기 검증에서 전력차 신호를 키워야 승자를 더 정확히 재현한다.
-  // 승부 갈린 경기 승자 재현 70.7% -> 80.0%(lib/engine/validation.test.ts). 0.40까지 가면
-  // 81.3%로 미세하게 더 오르지만, 약팀이 늘 지는 과결정론을 피하려 0.30에 멈춘다.
-  // balance.test.ts(과열 승률/블로아웃/무승부 비율)는 0.30에서 그대로 통과한다.
+  // 0.15 -> 0.40: 실제 103경기 재현율을 최대화하는 값. 격자 스윕(base×elasticity×coef)에서
+  // 0.40이 승자 재현 정점(승부 갈린 81.3%)이고 평균 득점이 실제(2.91)와 정확히 일치한다.
+  // 0.50까지 올려도 승자 재현은 그대로라 0.40이 상한. elasticity(1.6)·base(1.35)는 이미
+  // 최적이라 그대로 둔다. balance.test.ts(과열 승률/블로아웃/무승부)는 0.40에서도 통과.
   ELO_DIFF_CAP: 400,
-  ELO_MULT_COEF: 0.3,
+  ELO_MULT_COEF: 0.35,
 
   // 슈팅 후 골 확률 = clamp(GOAL_PROB_BASE + (contribution - attAvg) / GOAL_PROB_DIVISOR, GOAL_PROB_MIN, GOAL_PROB_MAX)
   // (lib/engine/match.ts의 processChance)

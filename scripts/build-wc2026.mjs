@@ -73,12 +73,26 @@ const EVENT_TYPE_MAP = {
 // two semifinal WINNERS are promoted to the "final" tier by hand — both
 // finalists sit at the top since the champion isn't known yet.
 const ROUND_ORDER = ["group", "r32", "r16", "qf", "sf", "third", "final"];
-const ELO_TOP = 2060; // champion / runner-up tier (both finalists)
-const ELO_BOTTOM = 1500; // group-stage exit
 
-function eloForRoundIndex(idx) {
-  const step = (ELO_TOP - ELO_BOTTOM) / (ROUND_ORDER.length - 1);
-  return Math.round(ELO_BOTTOM + step * idx);
+// 팀 ELO는 "실제 국제 축구 랭킹(경기 전, 2026 결과와 무관)"에서 온다.
+// 과거에는 finishRound(대회에서 얼마나 깊이 갔는가)로 ELO를 역산했는데, 그러면
+// "결과로 만든 ELO로 결과를 예측"하는 순환이 되어 재현율 검증이 무의미해졌다.
+// (또한 48팀이 6개 값에 뭉쳐 독일=남아공처럼 구분 불가였다.) eloratings.net/FIFA
+// 랭킹 ~2025 기준의 독립적 사전 전력으로 교체 — 검증이 진짜 예측이 되고, 실측상
+// 재현율도 오히려 오른다(lib/engine/validation.test.ts).
+const REAL_ELO = {
+  ARG: 2100, FRA: 2050, ESP: 2040, BRA: 2010, ENG: 2000, POR: 1985, NED: 1965,
+  GER: 1930, CRO: 1900, BEL: 1895, URU: 1885, COL: 1875, MAR: 1870, JPN: 1860,
+  SUI: 1855, USA: 1850, MEX: 1845, SEN: 1820, NOR: 1810, ECU: 1800, AUT: 1795,
+  KOR: 1790, SWE: 1780, CIV: 1770, TUR: 1770, EGY: 1765, AUS: 1765, SCO: 1755,
+  ALG: 1720, CZE: 1715, IRN: 1715, TUN: 1690, CAN: 1695, PAR: 1680, BIH: 1675,
+  GHA: 1675, KSA: 1655, QAT: 1650, PAN: 1620, RSA: 1620, COD: 1615, IRQ: 1605,
+  UZB: 1600, CPV: 1560, JOR: 1560, HAI: 1500, NZL: 1495, CUW: 1480,
+};
+const ELO_FALLBACK = 1600; // 표에 없는 코드(데이터 이상)용 중위값
+
+function eloForCode(code) {
+  return REAL_ELO[code] ?? ELO_FALLBACK;
 }
 
 // Nice-to-have Korean names for the 48 nations seen in this dataset; falls
@@ -133,7 +147,7 @@ function buildTeams(matches) {
       code,
       id: `wc_${code.toLowerCase()}`,
       nameKo: TEAM_NAME_KO[code] ?? code,
-      elo: eloForRoundIndex(idx),
+      elo: eloForCode(code),
       finishRound: ROUND_ORDER[idx],
     }))
     .sort((a, b) => a.code.localeCompare(b.code));
