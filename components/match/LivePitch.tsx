@@ -43,7 +43,8 @@ export interface ScenePlay {
 // 고유의 진폭·속도·경로로 끊임없이 위치를 미세 조정하는 실제 축구의 움직임을 낸다.
 // 구조(수비/중원/공격 라인)는 앵커(dynamicDots)가 잡고, 이 방황이 개별 생동감을 준다.
 // 활동 반경(px): 중원이 가장 넓게 돌아다니고, 수비는 좁게, GK는 거의 제자리.
-const WANDER_AMP: Record<Role, number> = { gk: 3, def: 8, mid: 12, att: 11 };
+// 이 개인 방황이 "지배적" 움직임이어야 군대식 동조가 깨진다 — 넉넉히 준다.
+const WANDER_AMP: Record<Role, number> = { gk: 3, def: 13, mid: 21, att: 18 };
 
 // 선수별 스프링 특성 — 목표(반응 배치)로 이동하는 속도·감쇠를 개인마다 다르게 해
 // 도착 시점을 흩뜨린다. 전원이 같은 스프링이면 공/전술 변화에 22명이 동시에 붙어
@@ -73,7 +74,7 @@ function wanderOf(side: string, slotId: string): {
     return (h >>> 0) / 4294967296;
   };
   const amp = WANDER_AMP[roleOf(slotId)];
-  const n = 5;
+  const n = 6;
   const xs: number[] = [];
   const ys: number[] = [];
   for (let i = 0; i < n; i++) {
@@ -82,8 +83,19 @@ function wanderOf(side: string, slotId: string): {
   }
   xs.push(xs[0]); // 경로를 닫아 매끄럽게 순환
   ys.push(ys[0]);
-  const times = Array.from({ length: n + 1 }, (_, i) => i / n);
-  const dur = 4.5 + rand() * 4; // 4.5~8.5s, 선수마다 다른 주기 → 개별적으로 움직인다
+  // 불규칙 타이밍: 구간마다 머무는 시간을 다르게(0.4~1.4) 해 "쉼→움직임"이 생기고,
+  // 선수마다 이 패턴이 달라 22명이 동시에 움직이지 않는다(군대식 동조 방지).
+  const gaps: number[] = [];
+  for (let i = 0; i < n; i++) gaps.push(0.4 + rand());
+  const total = gaps.reduce((s, g) => s + g, 0);
+  const times: number[] = [0];
+  let acc = 0;
+  for (let i = 0; i < n; i++) {
+    acc += gaps[i];
+    times.push(+(acc / total).toFixed(4));
+  }
+  times[times.length - 1] = 1;
+  const dur = 6 + rand() * 9; // 6~15s, 선수마다 크게 다른 주기 → 비동기적으로 움직인다
   return { xs, ys, times, dur };
 }
 

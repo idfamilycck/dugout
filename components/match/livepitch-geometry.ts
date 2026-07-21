@@ -111,11 +111,13 @@ export function dynamicDots(setup: SideSetup, side: "me" | "opp", tilt: number):
 // 민다. (3) 공: 깊이는 공 전진도를 따라 라인이 연속적으로 오르내리고, 좌우는 각자
 // 공 사이드로 붙되 포지션별·개인별로 반응 크기가 다르다. 여기에 렌더의 선수별 스프링
 // 지연·wander가 더해져 도착 시점·미세 동선까지 흩어져 개개인이 움직여 보인다.
-const LAT_GAIN: Record<Role, number> = { gk: 0.05, def: 0.26, mid: 0.34, att: 0.2 };
-const LAT_CAP: Record<Role, number> = { gk: 5, def: 15, mid: 19, att: 13 };
+// 공 반응은 "은은한 배경 바이어스"로만 준다 — 크게 주면 공 스텝마다 22명이 동시에
+// 같은 쪽으로 튀어 군대식으로 보인다. 지배적 움직임은 개인 wander가 담당한다.
+const LAT_GAIN: Record<Role, number> = { gk: 0.04, def: 0.15, mid: 0.19, att: 0.12 };
+const LAT_CAP: Record<Role, number> = { gk: 4, def: 9, mid: 11, att: 8 };
 // 깊이(공 쪽으로 개별 스텝): 공에 가까운 선수가 나가 압박/커버하는 개인 반응.
-const DEPTH_GAIN: Record<Role, number> = { gk: 0.02, def: 0.07, mid: 0.11, att: 0.07 };
-const DEPTH_CAP: Record<Role, number> = { gk: 4, def: 9, mid: 11, att: 10 };
+const DEPTH_GAIN: Record<Role, number> = { gk: 0.02, def: 0.05, mid: 0.07, att: 0.05 };
+const DEPTH_CAP: Record<Role, number> = { gk: 3, def: 6, mid: 8, att: 7 };
 
 export function reactiveDots(
   setup: SideSetup,
@@ -134,10 +136,10 @@ export function reactiveDots(
     0,
     1
   );
-  // 공 전진도에 팀 라인이 반응하되(공 움직임 반영), 스윙 폭을 줄여 22명이 한꺼번에
-  // 같은 방향으로 밀려가는 동조성을 낮춘다. 나머지는 아래 개인별 공-스텝이 담당한다.
-  const defLine = 34 + adv * 84; // 최후방 라인(34~118)
-  const attLine = 128 + adv * 118; // 최전방 라인(128~246)
+  // 공 전진도에 팀 라인이 반응하되(공 움직임 반영), 스윙 폭을 더 줄여 22명이 한꺼번에
+  // 같은 방향으로 밀려가는 동조성을 낮춘다. 개별 생동감은 렌더의 wander가 담당한다.
+  const defLine = 40 + adv * 62; // 최후방 라인(40~102)
+  const attLine = 132 + adv * 96; // 최전방 라인(132~228)
   const dots: PlayerDot[] = [];
   for (const slot of formation.slots) {
     const playerId = setup.lineup[slot.id];
