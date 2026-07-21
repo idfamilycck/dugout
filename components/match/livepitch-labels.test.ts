@@ -8,7 +8,7 @@ import {
   LABEL_PRIORITY,
   type LabelCandidate,
 } from "./livepitch-labels";
-import { dynamicDots, followBall, VB_H, VB_W } from "./livepitch-geometry";
+import { dynamicDots, shiftTeamTowardBall, VB_H, VB_W } from "./livepitch-geometry";
 import { makeSetup } from "@/lib/engine/__testutils__";
 
 const FONT = LABEL_FONT_SIZE;
@@ -206,14 +206,13 @@ describe("layoutLabels + 실제 피치 좌표", () => {
       [me, "me"],
       [opp, "opp"],
     ] as const) {
-      for (const d of dynamicDots(setup, side, tilt)) {
-        const t = followBall(d, ball);
+      for (const d of shiftTeamTowardBall(dynamicDots(setup, side, tilt), ball)) {
         out.push(
           cand(
             `${side}-${d.slotId}`,
             d.slotId === "gk" ? "골키퍼" : `${side}-${d.slotId}`,
-            t.tx,
-            t.ty,
+            d.cx,
+            d.cy,
             d.slotId === "gk" ? LABEL_PRIORITY.keeper : LABEL_PRIORITY.normal
           )
         );

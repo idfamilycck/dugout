@@ -14,7 +14,7 @@ import type { SideSetup } from "@/lib/types";
 import { teamById } from "@/lib/data/teams";
 import { playersOf } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
-import { dynamicDots, playerDots, followBall, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
+import { dynamicDots, playerDots, shiftTeamTowardBall, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
 import { buildSceneChoreo } from "./livepitch-choreo";
 import { layoutLabels, LABEL_FONT_SIZE, LABEL_PRIORITY, type LabelCandidate } from "./livepitch-labels";
 
@@ -161,22 +161,26 @@ export function LivePitch({
   // 점 좌표 자체는 기존과 동일 — 라벨 배치에만 쓰인다.
   const targets = useMemo<Target[]>(() => {
     const out: Target[] = [];
+    const ball = { cx: ballCx, cy: ballCy };
+    // 볼사이드 시프트는 "평상시(idle)"에만 준다. 장면 중에는 dynamicDots(tilt)가 이미
+    // 전형을 전진/후퇴시키는데, 여기에 공 쪽 시프트까지 더하면 양 팀이 공 주변으로
+    // 이중 압축돼 라인이 섞인다. 장면 땐 tilt 전형 그대로 둬 수비·중원·공격 라인을
+    // 선명하게 유지하고, 주인공/동료만 choreo 오버라이드로 움직인다.
+    const place = (dots: PlayerDot[]) =>
+      live && !choreo ? shiftTeamTowardBall(dots, ball) : dots;
     for (const { dots, side } of [
-      { dots: dotsMe, side: "me" as const },
-      { dots: dotsOpp, side: "opp" as const },
+      // 킥오프 전에는 공 방향으로 움직이지 않는다 — 포메이션 좌표 그대로 선다.
+      { dots: place(dotsMe), side: "me" as const },
+      { dots: place(dotsOpp), side: "opp" as const },
     ]) {
       for (const d of dots) {
         const override = scene?.side === side ? choreo?.overrides[d.slotId] : undefined;
-        // 킥오프 전에는 공 방향으로 끌려가지도 않는다 — 포메이션 좌표 그대로 선다.
-        const follow = live
-          ? followBall(d, { cx: ballCx, cy: ballCy })
-          : { tx: d.cx, ty: d.cy };
         out.push({
           key: `${side}-${d.slotId}`,
           side,
           dot: d,
-          tx: override ? override.cx : follow.tx,
-          ty: override ? override.cy : follow.ty,
+          tx: override ? override.cx : d.cx,
+          ty: override ? override.cy : d.cy,
           involved: !!override,
         });
       }

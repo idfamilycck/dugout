@@ -23,35 +23,33 @@ export interface PlayerDot {
   cy: number;
 }
 
-// ── 공 쪽으로 쏠림: 선수가 공 방향으로 살짝 이동하되 "라인은 유지"한다 ──
-// 예전엔 깊이(cx)와 좌우(cy)를 같은 강도로 끌어당겨, 공이 골문 근처로 가면 전원이
-// 그쪽으로 collapse하며 뭉쳐 다녔다(수비수가 공격 진영까지 딸려감). 실제 축구는
-// 공 "쪽(좌우)"으로 블록이 시프트하되 각자 깊이 라인은 지킨다. 그래서 깊이(kx)는
-// 아주 약하게(수비수는 뒤에, 공격수는 앞에 그대로), 좌우(ky)만 완만히 쏠리게 한다.
-// 팀 전체의 전진/후퇴(하프라인 넘나듦)는 dynamicDots(tilt)가 이미 담당한다.
-const FOLLOW: Record<string, { kx: number; ky: number; capx: number; capy: number }> = {
-  gk: { kx: 0.03, ky: 0.05, capx: 3, capy: 6 },
-  cb: { kx: 0.05, ky: 0.11, capx: 6, capy: 13 },
-  fb: { kx: 0.06, ky: 0.13, capx: 7, capy: 15 },
-  dm: { kx: 0.07, ky: 0.14, capx: 8, capy: 16 },
-  cm: { kx: 0.08, ky: 0.15, capx: 9, capy: 16 },
-  am: { kx: 0.09, ky: 0.15, capx: 10, capy: 16 },
-  wg: { kx: 0.07, ky: 0.13, capx: 9, capy: 15 },
-  st: { kx: 0.09, ky: 0.13, capx: 10, capy: 15 },
-};
-const FOLLOW_DEFAULT = { kx: 0.07, ky: 0.13, capx: 8, capy: 14 };
-
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-export function followBall(dot: PlayerDot, ball: { cx: number; cy: number }): { tx: number; ty: number } {
-  const prefix = dot.slotId.replace(/[_0-9].*$/, "");
-  const { kx, ky, capx, capy } = FOLLOW[prefix] ?? FOLLOW_DEFAULT;
-  const dx = clamp((ball.cx - dot.cx) * kx, -capx, capx);
-  const dy = clamp((ball.cy - dot.cy) * ky, -capy, capy);
-  return {
-    tx: clamp(dot.cx + dx, 10, VB_W - 10),
-    ty: clamp(dot.cy + dy, 10, VB_H - 10),
-  };
+// ── 공 쪽으로 팀 전체가 "형태를 유지한 채" 함께 이동한다 ──
+// 예전 followBall은 선수를 "각자" 공으로 끌어당겨서, 공에 가까운 선수는 많이·먼
+// 선수는 적게 움직였다 → 라인 간격이 무너지며 공 주변에 뭉쳤다. 실제 축구는 팀이
+// 하나의 블록으로 공 쪽으로 슬라이드하며 수비·중원·공격 라인 간격을 유지한다.
+// 그래서 팀 공통 시프트 벡터(무게중심→공)를 구해 전원에 "동일하게" 적용한다.
+// 깊이(x) 전진/후퇴는 dynamicDots(tilt)가 이미 담당하므로 여기선 약하게만,
+// 좌우(y) 볼사이드 이동은 조금 더 준다. GK는 골문을 지켜야 하므로 소폭만 따라간다.
+export function shiftTeamTowardBall(
+  dots: PlayerDot[],
+  ball: { cx: number; cy: number }
+): PlayerDot[] {
+  const outfield = dots.filter((d) => d.slotId !== "gk");
+  if (outfield.length === 0) return dots;
+  const cx0 = outfield.reduce((s, d) => s + d.cx, 0) / outfield.length;
+  const cy0 = outfield.reduce((s, d) => s + d.cy, 0) / outfield.length;
+  const shiftX = clamp((ball.cx - cx0) * 0.08, -7, 7);
+  const shiftY = clamp((ball.cy - cy0) * 0.18, -14, 14);
+  return dots.map((d) => {
+    const gk = d.slotId === "gk";
+    return {
+      ...d,
+      cx: clamp(d.cx + shiftX * (gk ? 0.15 : 1), 10, VB_W - 10),
+      cy: clamp(d.cy + shiftY * (gk ? 0.3 : 1), 10, VB_H - 10),
+    };
+  });
 }
 
 export function playerDots(setup: SideSetup, side: "me" | "opp"): PlayerDot[] {

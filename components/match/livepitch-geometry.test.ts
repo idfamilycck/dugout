@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { playerDots, dynamicDots, followBall, VB_W, VB_H } from "./livepitch-geometry";
+import { playerDots, dynamicDots, shiftTeamTowardBall, VB_W, VB_H } from "./livepitch-geometry";
 import { makeSetup } from "@/lib/engine/__testutils__";
 import { FORMATIONS } from "@/lib/data/formations";
 
@@ -91,37 +91,44 @@ describe("playerDots (라이브 피치 선수 좌표)", () => {
     }
   });
 
-  it("followBall: 모든 선수가 공 방향으로 끌려가되 라인별 강도가 다르다", () => {
+  it("shiftTeamTowardBall: 팀이 공 쪽으로 이동하되 라인 간격(형태)을 보존한다", () => {
     const dots = playerDots(me, "me");
-    const byId = Object.fromEntries(dots.map((d) => [d.slotId, d]));
     const ball = { cx: 250, cy: 40 }; // 오른쪽 위 (상대 진영)
-    const gk = followBall(byId["gk"], ball);
-    const mid = followBall(byId["cm_l"], ball);
-    // 방향: 둘 다 공 쪽(+x, -y 방향)으로 이동
-    expect(gk.tx).toBeGreaterThanOrEqual(byId["gk"].cx);
-    expect(mid.tx).toBeGreaterThan(byId["cm_l"].cx);
-    expect(mid.ty).toBeLessThan(byId["cm_l"].cy);
-    // 강도: 미드필더가 GK보다 훨씬 많이 따라간다
-    expect(mid.tx - byId["cm_l"].cx).toBeGreaterThan(gk.tx - byId["gk"].cx);
+    const shifted = shiftTeamTowardBall(dots, ball);
+    const byId = Object.fromEntries(dots.map((d) => [d.slotId, d]));
+    const sById = Object.fromEntries(shifted.map((d) => [d.slotId, d]));
+
+    // 무게중심이 공 쪽(+x, -y)으로 이동한다.
+    const c0 = dots.reduce((a, d) => ({ x: a.x + d.cx, y: a.y + d.cy }), { x: 0, y: 0 });
+    const c1 = shifted.reduce((a, d) => ({ x: a.x + d.cx, y: a.y + d.cy }), { x: 0, y: 0 });
+    expect(c1.x).toBeGreaterThan(c0.x);
+    expect(c1.y).toBeLessThan(c0.y);
+
+    // 형태 보존: 두 아웃필드 선수 사이의 상대 간격이 시프트 전후로 (거의) 같다.
+    // 개별 끌림(옛 followBall)이면 간격이 달라지지만, 팀 공통 시프트는 보존한다.
+    const gap0 = byId["cm_l"].cx - byId["cb1"].cx;
+    const gap1 = sById["cm_l"].cx - sById["cb1"].cx;
+    expect(gap1).toBeCloseTo(gap0, 5);
+    const wgap0 = byId["cm_l"].cy - byId["cb1"].cy;
+    const wgap1 = sById["cm_l"].cy - sById["cb1"].cy;
+    expect(wgap1).toBeCloseTo(wgap0, 5);
   });
 
-  it("followBall: 이동량이 캡을 넘지 않고 피치 경계 안에 머문다", () => {
-    for (const d of playerDots(me, "me")) {
-      const far = followBall(d, { cx: VB_W - 8, cy: 10 });
-      expect(Math.abs(far.tx - d.cx)).toBeLessThanOrEqual(18);
-      expect(Math.abs(far.ty - d.cy)).toBeLessThanOrEqual(18);
-      expect(far.tx).toBeGreaterThan(6);
-      expect(far.tx).toBeLessThan(VB_W - 6);
-      expect(far.ty).toBeGreaterThan(6);
-      expect(far.ty).toBeLessThan(VB_H - 6);
+  it("shiftTeamTowardBall: GK는 골문 근처에 머문다(소폭만 따라감)", () => {
+    const dots = playerDots(me, "me");
+    const gk0 = dots.find((d) => d.slotId === "gk")!;
+    const gk1 = shiftTeamTowardBall(dots, { cx: VB_W - 8, cy: 10 }).find((d) => d.slotId === "gk")!;
+    const outfieldMove = 3; // GK 이동은 아웃필드보다 훨씬 작아야 한다
+    expect(Math.abs(gk1.cx - gk0.cx)).toBeLessThan(outfieldMove);
+  });
+
+  it("shiftTeamTowardBall: 모든 점이 피치 경계 안에 머문다", () => {
+    for (const d of shiftTeamTowardBall(playerDots(me, "me"), { cx: VB_W - 8, cy: 10 })) {
+      expect(d.cx).toBeGreaterThan(6);
+      expect(d.cx).toBeLessThan(VB_W - 6);
+      expect(d.cy).toBeGreaterThan(6);
+      expect(d.cy).toBeLessThan(VB_H - 6);
     }
-  });
-
-  it("followBall: 공이 선수 위치와 같으면 제자리", () => {
-    const d = playerDots(me, "me")[3];
-    const same = followBall(d, { cx: d.cx, cy: d.cy });
-    expect(same.tx).toBeCloseTo(d.cx, 5);
-    expect(same.ty).toBeCloseTo(d.cy, 5);
   });
 
   it("같은 포메이션이면 opp 좌표는 me 좌표의 점대칭 미러다", () => {
