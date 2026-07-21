@@ -15,6 +15,7 @@ const OUT = path.join(process.cwd(), "docs", "screenshots");
 test.skip(!process.env.CAPTURE_DOCS, "CAPTURE_DOCS=1일 때만 실행");
 
 // 기존 자산과 같은 프레이밍: 1280x900 뷰포트 @2x = 2560x1800.
+// (Reveal/HeroIntro가 서버·첫 렌더를 최종 상태로 그리므로 캡처 공백은 없다.)
 test.use({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
 
 test.describe.configure({ mode: "serial" });
