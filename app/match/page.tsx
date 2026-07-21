@@ -54,6 +54,10 @@ export default function MatchPage() {
   const finished = useAppStore((s) => s.match?.finished ?? false);
 
   const [playing, setPlaying] = useState(false); // 새로고침/진입 시 항상 일시정지로 시작
+  // 재생을 한 번이라도 시작했는가. 라이브 피치의 "정지 대형 vs 동적 전형"을 가른다.
+  // "분 > 0"으로 판정하면 다시 쓰기 모드(경기 중간 시점부터 시작)에서는 재생 전에도
+  // 분이 이미 크므로 선수가 움직여버린다. 재생을 시작한 적 있는지가 올바른 신호다.
+  const [hasStarted, setHasStarted] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [halftime, setHalftime] = useState(false);
   const [scene, setScene] = useState<MatchEvent[] | null>(null);
@@ -155,6 +159,15 @@ export default function MatchPage() {
     }
   }, [match]);
 
+  // 재생을 처음 시작하면 라이브 상태로 못박는다(이후 일시정지해도 대형은 유지).
+  useEffect(() => {
+    if (playing && !hasStarted) {
+      // 재생 시작을 1회 기록하는 동기화라 setState가 맞다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHasStarted(true);
+    }
+  }, [playing, hasStarted]);
+
   // 하프타임 안내는 모달이므로 Escape로도 닫을 수 있어야 한다.
   useEffect(() => {
     if (!halftime) return;
@@ -203,6 +216,16 @@ export default function MatchPage() {
   // 렌더 중 파생시킨다(재생 루프 이펙트는 이미 finished를 조건에 포함해 정지한다).
   const isPlayingDisplay = playing && !match.finished;
 
+  // 스코어보드 표시 점수: 골 장면 재생 중, 공이 골문에 닿기 전까지는 이번 분의 골을
+  // 점수에 반영하지 않는다. 시뮬레이션은 분이 진행되는 즉시 점수를 올리지만 공은
+  // 2초에 걸쳐 골문으로 가므로, 그대로 두면 공이 중원에 있는데 스코어가 이미 바뀐다.
+  // goalArrived(공 도착) 순간에 스코어·플래시·자막이 함께 바뀌게 점수를 잡아둔다.
+  const pendingGoal = Boolean(scene && scenePrimary?.type === "goal" && !goalArrived);
+  const heldMe = pendingGoal ? scene!.filter((e) => e.type === "goal" && e.side === "me").length : 0;
+  const heldOpp = pendingGoal ? scene!.filter((e) => e.type === "goal" && e.side === "opp").length : 0;
+  const displayScoreMe = match.scoreMe - heldMe;
+  const displayScoreOpp = match.scoreOpp - heldOpp;
+
   return (
     <main id="main" className="flex flex-1 scroll-mt-14 flex-col pb-10">
       <h1 className="sr-only">경기 중계: 실시간 지휘</h1>
@@ -221,8 +244,8 @@ export default function MatchPage() {
         <Scoreboard
           meTeamId={match.me.teamId}
           oppTeamId={match.opp.teamId}
-          scoreMe={match.scoreMe}
-          scoreOpp={match.scoreOpp}
+          scoreMe={displayScoreMe}
+          scoreOpp={displayScoreOpp}
           minute={match.minute}
           venueId={match.venueId}
           finished={match.finished}
@@ -286,8 +309,9 @@ export default function MatchPage() {
               };
             })()}
             lean={attackLean(match.events)}
-            // 킥오프 전(0분)에는 피치를 완전히 정지시킨다.
-            live={match.minute > 0}
+            // 재생을 시작하기 전에는 포메이션 대형 그대로 정지시킨다.
+            // (다시 쓰기 모드는 minute이 이미 크므로 "minute>0"으로는 판정할 수 없다.)
+            live={hasStarted}
             goalArrived={goalArrived}
           />
           <SceneOverlay
