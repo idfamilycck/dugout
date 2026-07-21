@@ -104,42 +104,41 @@ export function dynamicDots(setup: SideSetup, side: "me" | "opp", tilt: number):
   return dots;
 }
 
-// ── 개별 반응 배치: 각 선수가 "자기 포지션 + 팀 전술 + 공 위치"에 따라 제각기
-//    목표 위치를 잡는다 ──
-// 팀 공통 tilt 하나로 22명을 한꺼번에 움직이지 않는다(그게 "다같이 움직인다"의 원인).
-// 대신 (1) 포지션: 포메이션 존이 기준. (2) 전술: 라인 높이·공격성·압박이 팀 전진도를
-// 민다. (3) 공: 깊이는 공 전진도를 따라 라인이 연속적으로 오르내리고, 좌우는 각자
-// 공 사이드로 붙되 포지션별·개인별로 반응 크기가 다르다. 여기에 렌더의 선수별 스프링
-// 지연·wander가 더해져 도착 시점·미세 동선까지 흩어져 개개인이 움직여 보인다.
-// 공 반응은 "은은한 배경 바이어스"로만 준다 — 크게 주면 공 스텝마다 22명이 동시에
-// 같은 쪽으로 튀어 군대식으로 보인다. 지배적 움직임은 개인 wander가 담당한다.
-const LAT_GAIN: Record<Role, number> = { gk: 0.04, def: 0.15, mid: 0.19, att: 0.12 };
-const LAT_CAP: Record<Role, number> = { gk: 4, def: 9, mid: 11, att: 8 };
+// ── 개별 반응 배치: "전술적 라인 국면(협응) + 개인 공 반응(제각각)"을 합친다 ──
+// (1) 라인 국면(tilt): 상대가 공격하면 우리 수비 라인이 우리 골문 쪽으로 내려앉고,
+//     우리가 공격하면 라인을 올린다 — 실제 축구의 팀 라인 유동. 라인은 협응 단위다.
+// (2) 개인 공 반응: 그 라인 위에서 각 선수가 공 사이드로 붙고, 가까운 선수는 공 쪽으로
+//     나가 압박/커버한다. 반응 크기는 포지션·개인마다 다르다.
+// (3) 전술: 라인 높이·공격성·압박이 라인 국면을 보정한다.
+// 여기에 렌더의 선수별 스프링 지연·wander가 더해져, 라인은 유동적으로 오르내리되
+// 개개인은 제각기 움직이는 "실제 축구 화면"이 된다.
+const LAT_GAIN: Record<Role, number> = { gk: 0.05, def: 0.2, mid: 0.26, att: 0.16 };
+const LAT_CAP: Record<Role, number> = { gk: 5, def: 12, mid: 15, att: 11 };
 // 깊이(공 쪽으로 개별 스텝): 공에 가까운 선수가 나가 압박/커버하는 개인 반응.
-const DEPTH_GAIN: Record<Role, number> = { gk: 0.02, def: 0.05, mid: 0.07, att: 0.05 };
-const DEPTH_CAP: Record<Role, number> = { gk: 3, def: 6, mid: 8, att: 7 };
+const DEPTH_GAIN: Record<Role, number> = { gk: 0.02, def: 0.07, mid: 0.1, att: 0.07 };
+const DEPTH_CAP: Record<Role, number> = { gk: 3, def: 8, mid: 10, att: 9 };
 
+// tilt: 0(우리 수세 — 라인 하강) ~ 1(우리 공세 — 라인 상승). me 기준, opp는 1-tilt.
 export function reactiveDots(
   setup: SideSetup,
   side: "me" | "opp",
+  tilt: number,
   ball: { cx: number; cy: number }
 ): PlayerDot[] {
   const formation = FORMATIONS[setup.instructions.formation];
   const attackRight = side === "me";
   const ins = setup.instructions;
-  // 공 전진도(내 공격 방향 기준) 0..1.
-  const rawAdv = attackRight ? ball.cx - DEPTH_X_MIN : VB_W - DEPTH_X_MIN - ball.cx;
-  const adv0 = clamp(rawAdv / (DEPTH_X_SPAN + 40), 0, 1);
-  // 전술: 높은 라인·공격성·압박이면 팀 라인을 더 전진시킨다(전술 특성 반영).
-  const adv = clamp(
-    adv0 + (ins.line - 2) * 0.07 + (ins.attacking - 2) * 0.05 + (ins.pressing - 2) * 0.04,
-    0,
-    1
+  // 라인 국면(전술 보정): 높은 라인·공격성·압박이면 더 전진, 아니면 하강.
+  const t0 = attackRight ? tilt : 1 - tilt;
+  const t = clamp(
+    t0 + (ins.line - 2) * 0.06 + (ins.attacking - 2) * 0.04 + (ins.pressing - 2) * 0.03,
+    0.05,
+    0.98
   );
-  // 공 전진도에 팀 라인이 반응하되(공 움직임 반영), 스윙 폭을 더 줄여 22명이 한꺼번에
-  // 같은 방향으로 밀려가는 동조성을 낮춘다. 개별 생동감은 렌더의 wander가 담당한다.
-  const defLine = 40 + adv * 62; // 최후방 라인(40~102)
-  const attLine = 132 + adv * 96; // 최전방 라인(132~228)
+  // 라인: 수세(t=0)면 최후방이 우리 골문 앞(18)까지 강하게 내려앉고, 공세(t=1)면
+  // 하프라인 너머(138)까지 올라간다 — 상대 공격/우리 공격에 라인이 확연히 유동한다.
+  const defLine = 18 + t * 120; // 최후방 라인 18~138
+  const attLine = 112 + t * 156; // 최전방 라인 112~268
   const dots: PlayerDot[] = [];
   for (const slot of formation.slots) {
     const playerId = setup.lineup[slot.id];
@@ -147,17 +146,15 @@ export function reactiveDots(
     const role = roleOf(slot.id);
     const g = 0.8 + unitSeed(`${side}:${slot.id}`) * 0.4; // 개인 반응 편차 0.8..1.2
 
-    // me-frame 기준 좌표 → 절대 좌표.
+    // me-frame 라인 좌표 → 절대 좌표.
     const cyBase = WIDTH_Y_MIN + (slot.x / 100) * WIDTH_Y_SPAN;
-    let cxMe: number;
-    if (role === "gk") cxMe = 13 + adv * 29;
-    else cxMe = defLine + Math.min(1, slot.y / 85) * (attLine - defLine);
+    const cxMe = role === "gk" ? 12 + t * 30 : defLine + Math.min(1, slot.y / 85) * (attLine - defLine);
     let ax = attackRight ? cxMe : VB_W - cxMe;
     let ay = attackRight ? cyBase : VB_H - cyBase;
 
-    // 좌우: 공 사이드로 개인 반응만큼(포지션별·개인별 편차).
+    // 개인 좌우: 공 사이드로 개인 반응만큼(포지션·개인 편차).
     ay = clamp(ay + clamp((ball.cy - ay) * LAT_GAIN[role] * g, -LAT_CAP[role], LAT_CAP[role]), 10, VB_H - 10);
-    // 깊이: 공 쪽으로 개별 스텝(가까운 선수가 더 나간다) — 라인 위에 개인차를 얹는다.
+    // 개인 깊이: 공 쪽으로 개별 스텝(가까운 선수가 더 나간다) — 협응 라인 위의 개인차.
     ax = clamp(ax + clamp((ball.cx - ax) * DEPTH_GAIN[role] * g, -DEPTH_CAP[role], DEPTH_CAP[role]), 10, VB_W - 10);
 
     dots.push({ slotId: slot.id, playerId, cx: ax, cy: ay });

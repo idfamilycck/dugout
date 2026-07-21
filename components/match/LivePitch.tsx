@@ -43,8 +43,9 @@ export interface ScenePlay {
 // 고유의 진폭·속도·경로로 끊임없이 위치를 미세 조정하는 실제 축구의 움직임을 낸다.
 // 구조(수비/중원/공격 라인)는 앵커(dynamicDots)가 잡고, 이 방황이 개별 생동감을 준다.
 // 활동 반경(px): 중원이 가장 넓게 돌아다니고, 수비는 좁게, GK는 거의 제자리.
-// 이 개인 방황이 "지배적" 움직임이어야 군대식 동조가 깨진다 — 넉넉히 준다.
-const WANDER_AMP: Record<Role, number> = { gk: 3, def: 13, mid: 21, att: 18 };
+// 협응 라인(reactiveDots)은 국면에 따라 오르내리고, 그 위에서 개인이 제각기 이 반경
+// 만큼 유동적으로 움직인다. 너무 크면 나폴대므로 적당히 — 라인 유동이 보이게 둔다.
+const WANDER_AMP: Record<Role, number> = { gk: 3, def: 7, mid: 11, att: 10 };
 
 // 선수별 스프링 특성 — 목표(반응 배치)로 이동하는 속도·감쇠를 개인마다 다르게 해
 // 도착 시점을 흩뜨린다. 전원이 같은 스프링이면 공/전술 변화에 22명이 동시에 붙어
@@ -150,6 +151,14 @@ export function LivePitch({
 
   const possession = lean >= 0 ? "me" : "opp";
 
+  // 라인 국면(tilt): 0(우리 수세 — 수비 라인 하강) ~ 1(우리 공세 — 라인 상승).
+  // 상대가 공격하면(장면 opp / lean<0) 우리 라인이 내려앉고, 우리가 공격하면 올라간다.
+  const tilt = scene
+    ? scene.side === "me"
+      ? 0.8
+      : 0.2
+    : Math.max(0.08, Math.min(0.92, 0.5 + lean * 0.3 + (possession === "me" ? 0.05 : -0.05)));
+
   // 기준 포메이션(존): 홀더 선택·안무 라우팅·킥오프 대형의 안정적 기준. 반응 배치가
   // 공에 의존하고, 공은 홀더/안무에 의존하므로, 순환을 끊기 위해 그 근거는 이 고정
   // 좌표에서 고른다(반응 배치는 마지막에 공으로부터 계산).
@@ -191,12 +200,12 @@ export function LivePitch({
   // 따라 "제각기" 목표를 잡는다(reactiveDots). 팀 공통 tilt로 한꺼번에 움직이지 않는다.
   const ball = { cx: ballCx, cy: ballCy };
   const dotsMe = useMemo(
-    () => (live ? reactiveDots(meSetup, "me", ball) : baseMe),
-    [meSetup, live, ballCx, ballCy, baseMe] // eslint-disable-line react-hooks/exhaustive-deps
+    () => (live ? reactiveDots(meSetup, "me", tilt, ball) : baseMe),
+    [meSetup, live, tilt, ballCx, ballCy, baseMe] // eslint-disable-line react-hooks/exhaustive-deps
   );
   const dotsOpp = useMemo(
-    () => (live ? reactiveDots(oppSetup, "opp", ball) : baseOpp),
-    [oppSetup, live, ballCx, ballCy, baseOpp] // eslint-disable-line react-hooks/exhaustive-deps
+    () => (live ? reactiveDots(oppSetup, "opp", tilt, ball) : baseOpp),
+    [oppSetup, live, tilt, ballCx, ballCy, baseOpp] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const pulseSlot = choreo?.shooterSlot ?? choreo?.headerSlot;

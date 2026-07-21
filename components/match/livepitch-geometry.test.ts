@@ -110,52 +110,59 @@ describe("playerDots (라이브 피치 선수 좌표)", () => {
   });
 });
 
-describe("reactiveDots (포지션·전술·공 기반 개별 배치)", () => {
+describe("reactiveDots (전술 라인 국면 + 개별 공 반응)", () => {
   const me = makeSetup("kor");
   const opp = makeSetup("bra");
   const mid = { cx: VB_W / 2, cy: VB_H / 2 };
 
-  it("공 위치와 무관하게 수비<중원<공격 깊이 순서(라인 구조)를 유지한다", () => {
-    const d = Object.fromEntries(reactiveDots(me, "me", mid).map((x) => [x.slotId, x]));
+  it("국면과 무관하게 수비<중원<공격 깊이 순서(라인 구조)를 유지한다", () => {
+    const d = Object.fromEntries(reactiveDots(me, "me", 0.5, mid).map((x) => [x.slotId, x]));
     expect(d["st"].cx).toBeGreaterThan(d["cm_l"].cx);
     expect(d["cm_l"].cx).toBeGreaterThan(d["cb1"].cx);
     expect(d["cb1"].cx).toBeGreaterThan(d["gk"].cx);
   });
 
-  it("공이 전진하면(상대 진영) 팀 라인이 앞으로 나간다", () => {
-    const back = Object.fromEntries(reactiveDots(me, "me", { cx: 40, cy: 90 }).map((x) => [x.slotId, x]));
-    const fwd = Object.fromEntries(reactiveDots(me, "me", { cx: 250, cy: 90 }).map((x) => [x.slotId, x]));
-    expect(fwd["cb1"].cx).toBeGreaterThan(back["cb1"].cx); // 수비 라인 전진
-    expect(fwd["st"].cx).toBeGreaterThan(back["st"].cx); // 공격 라인 전진
+  it("우리 공세(tilt↑)면 라인이 올라가고, 상대 공세(tilt↓)면 수비 라인이 내려앉는다", () => {
+    const defend = Object.fromEntries(reactiveDots(me, "me", 0.15, mid).map((x) => [x.slotId, x]));
+    const attack = Object.fromEntries(reactiveDots(me, "me", 0.85, mid).map((x) => [x.slotId, x]));
+    expect(attack["cb1"].cx).toBeGreaterThan(defend["cb1"].cx); // 수비 라인 상승
+    expect(attack["st"].cx).toBeGreaterThan(defend["st"].cx); // 공격 라인 상승
+    // 수세일 땐 수비 라인이 우리 골문 쪽(작은 cx)으로 확연히 내려앉는다
+    expect(defend["cb1"].cx).toBeLessThan(VB_W / 2);
+  });
+
+  it("opp는 미러 — 같은 tilt에서 우리가 공세면 상대 라인은 자기 진영으로 내려간다", () => {
+    const oppDots = Object.fromEntries(reactiveDots(opp, "opp", 0.85, mid).map((x) => [x.slotId, x]));
+    // 우리(me) 공세(tilt 0.85) = 상대는 수세 → 상대 수비 라인이 자기 골문(오른쪽) 쪽
+    expect(oppDots["cb1"].cx).toBeGreaterThan(VB_W / 2);
   });
 
   it("공 사이드(좌우)로 붙되 이동량이 선수마다 제각각이다(개별성)", () => {
-    // 공을 위(cy 작게)로 두면 선수들이 위(공 쪽)로 붙는다.
     const base = Object.fromEntries(playerDots(me, "me").map((x) => [x.slotId, x]));
-    const moves = reactiveDots(me, "me", { cx: 150, cy: 30 })
+    const moves = reactiveDots(me, "me", 0.5, { cx: 150, cy: 30 })
       .filter((d) => d.slotId !== "gk")
       .map((d) => base[d.slotId].cy - d.cy); // 위로 이동량(양수 = 공 쪽)
-    // 방향: 과반이 공 쪽(위)으로 이동
     expect(moves.filter((m) => m > 0).length).toBeGreaterThan(moves.length / 2);
-    // 개별성: 이동량이 포지션·개인 편차로 제각각(같은 값으로 뭉치지 않는다)
     expect(new Set(moves.map((m) => Math.round(m))).size).toBeGreaterThan(3);
   });
 
   it("높은 라인 전술이 팀을 더 전진시킨다", () => {
     const low = { ...me, instructions: { ...me.instructions, line: 1 as const } };
     const high = { ...me, instructions: { ...me.instructions, line: 3 as const } };
-    const lo = Object.fromEntries(reactiveDots(low, "me", mid).map((x) => [x.slotId, x]));
-    const hi = Object.fromEntries(reactiveDots(high, "me", mid).map((x) => [x.slotId, x]));
+    const lo = Object.fromEntries(reactiveDots(low, "me", 0.5, mid).map((x) => [x.slotId, x]));
+    const hi = Object.fromEntries(reactiveDots(high, "me", 0.5, mid).map((x) => [x.slotId, x]));
     expect(hi["cb1"].cx).toBeGreaterThan(lo["cb1"].cx);
   });
 
   it("모든 점이 피치 경계 안에 머문다", () => {
-    for (const ball of [mid, { cx: 20, cy: 20 }, { cx: VB_W - 20, cy: VB_H - 20 }]) {
-      for (const d of [...reactiveDots(me, "me", ball), ...reactiveDots(opp, "opp", ball)]) {
-        expect(d.cx).toBeGreaterThan(6);
-        expect(d.cx).toBeLessThan(VB_W - 6);
-        expect(d.cy).toBeGreaterThan(6);
-        expect(d.cy).toBeLessThan(VB_H - 6);
+    for (const tilt of [0.15, 0.5, 0.85]) {
+      for (const ball of [mid, { cx: 20, cy: 20 }, { cx: VB_W - 20, cy: VB_H - 20 }]) {
+        for (const d of [...reactiveDots(me, "me", tilt, ball), ...reactiveDots(opp, "opp", tilt, ball)]) {
+          expect(d.cx).toBeGreaterThan(6);
+          expect(d.cx).toBeLessThan(VB_W - 6);
+          expect(d.cy).toBeGreaterThan(6);
+          expect(d.cy).toBeLessThan(VB_H - 6);
+        }
       }
     }
   });
