@@ -14,7 +14,7 @@ import type { SideSetup } from "@/lib/types";
 import { teamById } from "@/lib/data/teams";
 import { playersOf } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
-import { dynamicDots, playerDots, VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
+import { reactiveDots, playerDots, roleOf, unitSeed, VB_W, VB_H, type PlayerDot, type Role } from "./livepitch-geometry";
 import { buildSceneChoreo } from "./livepitch-choreo";
 import { layoutLabels, LABEL_FONT_SIZE, LABEL_PRIORITY, type LabelCandidate } from "./livepitch-labels";
 
@@ -42,16 +42,17 @@ export interface ScenePlay {
 // 자연스럽게 움직인다. 팀이 한꺼번에 같은 방향으로 미끄러지는 게 아니라, 개개인이
 // 고유의 진폭·속도·경로로 끊임없이 위치를 미세 조정하는 실제 축구의 움직임을 낸다.
 // 구조(수비/중원/공격 라인)는 앵커(dynamicDots)가 잡고, 이 방황이 개별 생동감을 준다.
-type Role = "gk" | "def" | "mid" | "att";
-function roleOf(slotId: string): Role {
-  const p = slotId.replace(/[_0-9].*$/, "");
-  if (p === "gk") return "gk";
-  if (p === "cb" || p === "fb") return "def";
-  if (p === "wg" || p === "st") return "att";
-  return "mid";
-}
 // 활동 반경(px): 중원이 가장 넓게 돌아다니고, 수비는 좁게, GK는 거의 제자리.
-const WANDER_AMP: Record<Role, number> = { gk: 3, def: 9, mid: 15, att: 13 };
+const WANDER_AMP: Record<Role, number> = { gk: 3, def: 8, mid: 12, att: 11 };
+
+// 선수별 스프링 특성 — 목표(반응 배치)로 이동하는 속도·감쇠를 개인마다 다르게 해
+// 도착 시점을 흩뜨린다. 전원이 같은 스프링이면 공/전술 변화에 22명이 동시에 붙어
+// "다같이 움직인다"로 보인다.
+function springOf(side: string, slotId: string): { stiffness: number; damping: number } {
+  const u = unitSeed(`spring:${side}:${slotId}`);
+  const u2 = unitSeed(`damp:${side}:${slotId}`);
+  return { stiffness: 48 + u * 54, damping: 17 + u2 * 10 }; // 48~102 / 17~27
+}
 
 function wanderOf(side: string, slotId: string): {
   xs: number[];
@@ -137,33 +138,18 @@ export function LivePitch({
 
   const possession = lean >= 0 ? "me" : "opp";
 
-  // 국면: 장면 중엔 공격 측으로 기울되, 과하게 밀면 양 팀이 한 진영에 뭉친다.
-  // 0.72/0.28로 낮춰 공격 팀은 전진하되 수비 라인·상대 outlet이 세로로 남게 한다.
-  const tilt = scene
-    ? scene.side === "me"
-      ? 0.72
-      : 0.28
-    : 0.5 + lean * 0.16 + (possession === "me" ? 0.06 : -0.06);
+  // 기준 포메이션(존): 홀더 선택·안무 라우팅·킥오프 대형의 안정적 기준. 반응 배치가
+  // 공에 의존하고, 공은 홀더/안무에 의존하므로, 순환을 끊기 위해 그 근거는 이 고정
+  // 좌표에서 고른다(반응 배치는 마지막에 공으로부터 계산).
+  const baseMe = useMemo(() => playerDots(meSetup, "me"), [meSetup]);
+  const baseOpp = useMemo(() => playerDots(oppSetup, "opp"), [oppSetup]);
 
-  // 킥오프 전에는 동적 전형(dynamicDots) 대신 포메이션 그대로의 정적 배치를 쓴다.
-  // dynamicDots는 국면(tilt) 기준으로 최후방/최전방 라인을 잡는데, 중립(tilt=0.5)에서
-  // 양 팀이 전부 중앙선 근처 좁은 띠에 몰려 "포메이션이 아니라 뭉쳐 있는" 그림이 됐다.
-  // playerDots는 각 팀을 자기 진영에 포메이션 모양대로 세운다 = 킥오프 대형.
-  const dotsMe = useMemo(
-    () => (live ? dynamicDots(meSetup, "me", tilt) : playerDots(meSetup, "me")),
-    [meSetup, tilt, live]
-  );
-  const dotsOpp = useMemo(
-    () => (live ? dynamicDots(oppSetup, "opp", tilt) : playerDots(oppSetup, "opp")),
-    [oppSetup, tilt, live]
-  );
-
-  // ── 장면 안무 ──
+  // ── 장면 안무 ── (기준 좌표로 공 경로·오버라이드 위치를 라우팅)
   const choreo = useMemo(() => {
     if (!scene || !scene.choreo) return null;
-    const attackDots = scene.side === "me" ? dotsMe : dotsOpp;
+    const attackDots = scene.side === "me" ? baseMe : baseOpp;
     return buildSceneChoreo(scene.choreo, scene.side, attackDots, scene.playerId);
-  }, [scene, dotsMe, dotsOpp]);
+  }, [scene, baseMe, baseOpp]);
 
   // ── 평상시 패스 순환 ──
   const [passStep, setPassStep] = useState(0);
@@ -173,12 +159,11 @@ export function LivePitch({
     return () => clearInterval(id);
   }, [choreo]);
 
-  const chain = (possession === "me" ? dotsMe : dotsOpp).filter((d) => d.slotId !== "gk");
+  const chain = (possession === "me" ? baseMe : baseOpp).filter((d) => d.slotId !== "gk");
   const holder = chain.length > 0 ? chain[passStep % chain.length] : undefined;
 
-  // 전원이 따라갈 공의 관심 지점: 안무 중엔 마지막 키프레임(결과 지점), 평상시엔 볼홀더.
-  // 킥오프 전에는 볼홀더가 아니라 센터 스팟에 둔다 — 아직 아무도 공을 잡지 않았는데
-  // 골키퍼 앞에 공이 놓여 있으면 경기가 이미 진행 중인 것처럼 보인다.
+  // 공의 관심 지점: 안무 중엔 마지막 키프레임(결과 지점), 평상시엔 볼홀더.
+  // 킥오프 전에는 센터 스팟(아직 아무도 공을 안 잡음).
   const ballCx = !live
     ? CX
     : choreo
@@ -190,15 +175,41 @@ export function LivePitch({
       ? choreo.ball.ys[choreo.ball.ys.length - 1]
       : (holder?.cy ?? CY);
 
+  // ── 개별 반응 배치 ── 공이 정해진 뒤, 각 선수가 자기 포지션·팀 전술·공 위치에
+  // 따라 "제각기" 목표를 잡는다(reactiveDots). 팀 공통 tilt로 한꺼번에 움직이지 않는다.
+  const ball = { cx: ballCx, cy: ballCy };
+  const dotsMe = useMemo(
+    () => (live ? reactiveDots(meSetup, "me", ball) : baseMe),
+    [meSetup, live, ballCx, ballCy, baseMe] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const dotsOpp = useMemo(
+    () => (live ? reactiveDots(oppSetup, "opp", ball) : baseOpp),
+    [oppSetup, live, ballCx, ballCy, baseOpp] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   const pulseSlot = choreo?.shooterSlot ?? choreo?.headerSlot;
   const holderSlot = holder?.slotId;
 
-  // ── 렌더 목표 좌표(점) ──
-  // 라벨 충돌 검사를 위해 각 선수의 최종 목표 좌표를 한 번만 계산해 둔다.
-  // 점 좌표 자체는 기존과 동일 — 라벨 배치에만 쓰인다.
-  // 앵커(선수 목표 좌표)는 전형(dynamicDots)이 잡는다 — 수비/중원/공격 라인 구조.
-  // 팀 전체를 공 쪽으로 함께 미끄러뜨리지 않는다("다같이 한번에 움직인다"를 피함).
-  // 개별 생동감은 아래 렌더의 선수별 wander가 담당한다. 주인공/동료만 choreo로 이동.
+  // 선수별 wander·spring 파라미터를 (라인업이 그대로면) 한 번만 계산해 참조를 고정한다.
+  // 매 렌더마다 새 wander 배열을 만들면 framer가 키프레임을 재시작해 제자리 방황이
+  // 사실상 멈춘다(정지처럼 보임). 안정 참조여야 각 선수가 끊김 없이 개별적으로 방황한다.
+  const motionMap = useMemo(() => {
+    const m = new Map<string, { wander: ReturnType<typeof wanderOf>; spring: ReturnType<typeof springOf> }>();
+    for (const { dots, side } of [
+      { dots: baseMe, side: "me" as const },
+      { dots: baseOpp, side: "opp" as const },
+    ]) {
+      for (const d of dots) {
+        m.set(`${side}:${d.slotId}`, {
+          wander: wanderOf(side, d.slotId),
+          spring: springOf(side, d.slotId),
+        });
+      }
+    }
+    return m;
+  }, [baseMe, baseOpp]);
+
+  // ── 렌더 목표 좌표(점) ── 주인공/동료만 choreo 오버라이드, 나머지는 반응 배치.
   const targets = useMemo<Target[]>(() => {
     const out: Target[] = [];
     for (const { dots, side } of [
@@ -289,7 +300,8 @@ export function LivePitch({
           const color = side === "me" ? meColor : oppColor;
           const isPulse = scene?.side === side && pulseSlot === d.slotId;
           const isHolder = live && !choreo && possession === side && d.slotId === holderSlot;
-          const wan = wanderOf(side, d.slotId);
+          const mp = motionMap.get(`${side}:${d.slotId}`)!;
+          const wan = mp.wander; // 참조 고정 — 재시작 없이 계속 방황한다
           // 방황은 개별 생동감용 — 킥오프 전(정지)과 choreo에 가담 중인 주인공/동료
           // (의도된 동선)에는 끄고, 그 외 선수만 각자 자연스럽게 움직인다.
           const doWander = live && !t.involved;
@@ -300,7 +312,10 @@ export function LivePitch({
               key={t.key}
               initial={false}
               animate={{ x: t.tx, y: t.ty }}
-              transition={{ type: "spring", stiffness: t.involved ? 70 : 120, damping: 18 }}
+              transition={{
+                type: "spring",
+                ...(t.involved ? { stiffness: 70, damping: 18 } : mp.spring),
+              }}
             >
               {/* 선수별 유기적 방황 — 각자 고유의 경로·주기로 제자리 근처에서 실시간
                   으로 자연스럽게 움직인다(팀이 한꺼번에가 아니라 개개인이). 킥오프 전
