@@ -28,6 +28,12 @@ const impact = (r: AppliedRule) => r.deltaAttack + r.deltaDefense;
 // 모순이 생긴다. 리포트는 판단이 서는 것만 말해야 한다.
 const MEANINGFUL = 0.005;
 
+// "상대가 앞선 부분"에 실을 상대 규칙의 최소 효과. 내 카드보다 문턱을 높인다:
+// 상대 스쿼드에 "무난한"(효과가 미미한) 규칙까지 끌어오면 "짧은 패스 전개, 이 스쿼드에는
+// 무난합니다" 같은 중립 문구가 빨간 "상대가 앞선 부분" 카드에 실려 제목과 모순된다.
+// 상대가 확실히 앞선 것(≥1.5%p)만 담는다.
+const OPP_EDGE_MIN = 0.015;
+
 export function buildTacticsReview(
   match: MatchState,
   meMod: ModifierResult,
@@ -49,7 +55,7 @@ export function buildTacticsReview(
   const oppEdge =
     !won && hurt.length === 0
       ? oppMod.rules
-          .filter((r) => impact(r) >= MEANINGFUL && !myRuleIds.has(r.id))
+          .filter((r) => impact(r) >= OPP_EDGE_MIN && !myRuleIds.has(r.id))
           .sort((a, b) => impact(b) - impact(a))
           .slice(0, 3)
       : [];
