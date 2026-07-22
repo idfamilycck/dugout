@@ -41,8 +41,11 @@ export interface Formation { id: FormationId; nameKo: string; slots: FormationSl
 export interface TeamInstructions {
   formation: FormationId;
   pressing: 1 | 2 | 3; line: 1 | 2 | 3; attacking: 1 | 2 | 3; tempo: 1 | 2 | 3;
-  buildup: "short" | "direct"; focus: "left" | "center" | "right";
-  width: "wide" | "narrow"; marking: "zonal" | "man"; offsideTrap: boolean;
+  buildup: "short" | "balanced" | "direct"; focus: "left" | "center" | "right";
+  width: "narrow" | "balanced" | "wide"; marking: "zonal" | "balanced" | "man"; offsideTrap: boolean;
+  lineSpacing: 1 | 2 | 3;      // 라인간격: 1=압축 2=균형 3=분산
+  possession: 1 | 2 | 3;      // 점유율지향성: 1=낮음 2=중간 3=높음
+  transitionSpeed: 1 | 2 | 3; // 전환속도: 1=느림 2=보통 3=빠름
 }
 
 export interface SpecialInstructions {

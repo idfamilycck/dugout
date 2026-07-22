@@ -304,7 +304,7 @@ const BASELINE_DEFS: RuleDef[] = [
   },
 ];
 
-// 15개 보정 규칙. 각 규칙은 me 시점 조건(when)을 평가하고, 발동 시
+// 23개 보정 규칙. 각 규칙은 me 시점 조건(when)을 평가하고, 발동 시
 // deltaAttack/deltaDefense(effect)와 근거 카드 문구(textKo)를 만든다.
 export const RULE_DEFS: RuleDef[] = [
   ...BASELINE_DEFS,
@@ -458,6 +458,82 @@ export const RULE_DEFS: RuleDef[] = [
     effect: () => ({ da: 0.03, dd: 0 }),
     textKo: () => "빠른 템포로 상대를 몰아붙입니다 +3%",
     iconKey: () => "run",
+  },
+  {
+    id: "tempo_fatigue_risk",
+    // tempo_stamina의 반대급부. match.ts의 실시간 시뮬레이션은 highTempo일 때 체력
+    // 소모율을 1.15배로 늘리지만(decayOnPitch), recommend()가 쓰는 사전 승률 계산은
+    // 그 라이브 로직을 안 거치므로 여기서 별도 규칙으로 "90분 동안 유지되는 빠른
+    // 템포의 체력 대가"를 근사한다. da +3%와 대칭으로 맞춰(dd −3%) 빠른 템포가
+    // 상대와 무관하게 항상 이득인 공짜 보너스가 되지 않도록 한다.
+    when: (ctx) => ctx.me.instructions.tempo === 3,
+    effect: () => ({ da: 0, dd: -0.03 }),
+    textKo: () => "빠른 템포가 후반으로 갈수록 체력을 갉아먹습니다 −3%",
+    iconKey: () => "heat",
+  },
+  {
+    id: "compact_line_solidity",
+    // 압축은 공짜 보너스가 아니다: 수비 조직력을 얻는 만큼 라인 사이 공간이 좁아져
+    // 공격 전개 폭을 그대로 희생한다(da −4% / dd +4%, 1:1 등가교환). defenseMult는
+    // 상대 λ를, attackMult는 내 λ를 움직이는 구조라 크기를 맞추지 않으면 한쪽이
+    // 항상 이겨 lineSpacing=1이 상대와 무관하게 최선이 되어버린다(winprob.ts 참고).
+    // 1:1로 맞춰두면 실제로 유리한지는 두 팀의 λ 곡률(전력차)에 따라 매치업마다 달라진다.
+    when: (ctx) => ctx.me.instructions.lineSpacing === 1,
+    effect: () => ({ da: -0.04, dd: 0.04 }),
+    textKo: () => "압축된 라인 간격, 수비는 단단해지지만 공격 전개 공간을 그만큼 내줍니다 (수비+4%/공격−4%)",
+    iconKey: () => "shield",
+  },
+  {
+    id: "spread_line_gaps",
+    when: (ctx) => ctx.me.instructions.lineSpacing === 3 && ctx.oppAttDribblingAvg >= 78,
+    effect: () => ({ da: 0, dd: -0.05 }),
+    textKo: () => "벌어진 라인 사이 공간을 상대의 개인기가 파고듭니다 −5%",
+    iconKey: () => "warning",
+  },
+  {
+    id: "spread_line_space",
+    // 분산 라인의 반대급부: 빠른 공격진을 보유했을 때만 벌어진 공간을 실제로
+    // 활용할 수 있다(팀 구성에 좌우되는 상황부 보너스, 압축의 무조건 보너스와 대비).
+    when: (ctx) => ctx.me.instructions.lineSpacing === 3 && ctx.meAttPaceAvg >= 78,
+    effect: () => ({ da: 0.04, dd: 0 }),
+    textKo: () => "벌어진 라인 간격의 공간을 빠른 공격진이 파고듭니다 +4%",
+    iconKey: () => "swap",
+  },
+  {
+    id: "possession_control",
+    when: (ctx) => ctx.me.instructions.possession === 3 && ctx.me.instructions.buildup === "short",
+    effect: () => ({ da: 0.05, dd: 0 }),
+    textKo: () => "높은 점유율 지향과 짧은 빌드업이 경기를 지배합니다 +5%",
+    iconKey: () => "chart",
+  },
+  {
+    id: "possession_press_risk",
+    // 상대 압박이 "상"일 때만 걸리면 기본값(중)인 대부분의 매치업에서 전혀 발동하지
+    // 않아 possession_control(+5%)이 사실상 무조건 이득이 되어버린다. "중" 이상으로
+    // 넓히고, "중"(기본값) 상대에게는 possession_control의 +5%를 거의 상쇄하는 −5%를
+    // 줘서 평범한 상대에게는 순효과가 거의 0(매치업별 λ 곡률에 따라 갈림)이 되도록,
+    // "상" 상대에게는 순수 손해(−7%)가 되도록 한다.
+    when: (ctx) => ctx.me.instructions.possession === 3 && ctx.opp.instructions.pressing >= 2,
+    effect: (ctx) => (ctx.opp.instructions.pressing === 3 ? { da: 0, dd: -0.07 } : { da: 0, dd: -0.05 }),
+    textKo: (ctx) =>
+      ctx.opp.instructions.pressing === 3
+        ? "높은 점유율 지향이 상대의 강한 압박에 위험해집니다 −7%"
+        : "높은 점유율 지향이 상대의 압박에 위험해집니다 −5%",
+    iconKey: () => "warning",
+  },
+  {
+    id: "fast_transition_exploit",
+    when: (ctx) => ctx.me.instructions.transitionSpeed === 3 && ctx.opp.instructions.line === 3,
+    effect: () => ({ da: 0.06, dd: 0 }),
+    textKo: () => "빠른 전환이 상대의 높은 라인 뒷공간을 순식간에 노립니다 +6%",
+    iconKey: () => "bolt",
+  },
+  {
+    id: "slow_transition_control",
+    when: (ctx) => ctx.me.instructions.transitionSpeed === 1 && ctx.me.instructions.possession === 3,
+    effect: () => ({ da: 0, dd: 0.03 }),
+    textKo: () => "느린 전환으로 안정적인 점유를 유지합니다 +3%",
+    iconKey: () => "shield",
   },
 ];
 

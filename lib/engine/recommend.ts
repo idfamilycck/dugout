@@ -20,15 +20,16 @@ export interface Recommendation {
 }
 
 const FORMATION_IDS: FormationId[] = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "3-4-3", "5-4-1"];
-const PRESSING_OPTS = [1, 2, 3] as const;
 const LINE_OPTS = [1, 2, 3] as const;
 const ATTACKING_OPTS = [1, 2, 3] as const;
 const TEMPO_OPTS = [1, 2, 3] as const;
-const BUILDUP_OPTS = ["short", "direct"] as const;
-const FOCUS_OPTS = ["left", "center", "right"] as const;
-const WIDTH_OPTS = ["wide", "narrow"] as const;
-const MARKING_OPTS = ["zonal", "man"] as const;
+const BUILDUP_OPTS = ["short", "balanced", "direct"] as const;
 const OFFSIDE_TRAP_OPTS = [false, true] as const;
+const LINE_SPACING_OPTS = [1, 2, 3] as const;
+const POSSESSION_OPTS = [1, 2, 3] as const;
+const TRANSITION_SPEED_OPTS = [1, 2, 3] as const;
+// pressing/focus/width/marking은 탐색에서 제외한다(아래 큰 주석 참고) — 콤보 루프에서
+// 호출자의 현재 값을 그대로 candidateBase.instructions에서 물려받는다.
 
 function now(): number {
   // 브라우저/Node 모두 performance.now()를 우선 쓰고, 없으면 Date.now()로 대체한다.
@@ -37,8 +38,20 @@ function now(): number {
     : Date.now();
 }
 
-// 전술 조합(TeamInstructions) 전수 탐색: 포메이션 6종 × pressing/line/attacking/tempo(각 3)
-// × buildup/width/marking/offsideTrap(각 2) × focus(3) = 23,328개.
+// 전술 조합(TeamInstructions) 전수 탐색: 포메이션 6종 × line/attacking/tempo/buildup/
+// lineSpacing/possession/transitionSpeed(각 3) × offsideTrap(2) = 26,244개.
+//
+// 탐색 축 선정 기준(pressing/focus/width/marking을 뺀 이유): 이 엔진에서 TeamInstructions는
+// 오직 modifiers.ts의 RULE_DEFS를 통해서만 승률에 영향을 준다(라인업 능력치 계산은
+// instructions를 보지 않는다). pressing은 고지대·폭염 경기장이 아니면 어떤 규칙도 참조하지
+// 않아 평지 경기에서는 탐색해도 결과가 안 바뀌고, focus/width/marking은 델타가 ±2~3%로
+// 작다. 반대로 line/attacking/tempo/buildup/lineSpacing/possession/transitionSpeed는 규칙
+// 발동 빈도·델타가 커서 승률에 실질적 영향을 준다. 축 3개(lineSpacing/possession/
+// transitionSpeed)를 더 늘리고 싶다면, 다른 축을 하나 더 빼서 3^n을 같은 자릿수로 유지해야
+// 500ms 예산이 안전하다(3^8=6561부터 예산의 72%를 써서 CI 여유가 급격히 줄어든다).
+// 탐색에서 뺀 4개 값은 candidateBase.instructions(= 호출자의 현재 me.instructions)를 그대로
+// 물려받으므로, 사용자가 프리셋 등으로 미리 설정해 둔 값이 그대로 유지된 채 나머지 7개
+// 축만 최적화된다.
 //
 // 성능 설계 (중요, elapsedMs < 500ms 예산):
 // winProbability를 23,328번 그대로 호출하면(직접 벤치마크 확인) 약 8초가 걸린다. 병목은
@@ -76,7 +89,7 @@ function now(): number {
 // winDelta ≥ 0 보장: 탐색 후보는 모두 autoPlace가 만든 라인업에서 나오므로, 호출자가
 // 직접 짠 수동 라인업(me.lineup/me.roles)이 그 어떤 autoPlace 후보보다 강할 수도 있다.
 // 그런 역전을 막기 위해 me를 있는 그대로(lineup/roles/instructions 전부 원본) 마지막
-// 후보로 함께 평가한다(evaluated에도 포함, 총 23,329개). 이 "현재 설정" 후보가 이기면
+// 후보로 함께 평가한다(evaluated에도 포함, 총 26,245개). 이 "현재 설정" 후보가 이기면
 // 그대로 반환한다(winDelta = 0, topFactors는 현재 설정의 rules에서 계산) — 즉 recommend()
 // 는 호출자가 이미 가진 설정보다 절대 더 나쁜 winProb을 추천하지 않는다.
 export function recommend(me: SideSetup, opp: SideSetup, venueId: string): Recommendation {
@@ -124,55 +137,59 @@ export function recommend(me: SideSetup, opp: SideSetup, venueId: string): Recom
     const ctxMeBase = buildCtx(candidateBase, opp, venue, meTeam, oppTeam, h2hMe);
     const ctxOppBase = buildCtx(opp, candidateBase, venue, oppTeam, meTeam, h2hOpp);
 
-    for (const pressing of PRESSING_OPTS) {
-      for (const line of LINE_OPTS) {
-        for (const attacking of ATTACKING_OPTS) {
-          for (const tempo of TEMPO_OPTS) {
-            for (const buildup of BUILDUP_OPTS) {
-              for (const focus of FOCUS_OPTS) {
-                for (const width of WIDTH_OPTS) {
-                  for (const marking of MARKING_OPTS) {
-                    for (const offsideTrap of OFFSIDE_TRAP_OPTS) {
-                      const instructions: TeamInstructions = {
-                        formation,
-                        pressing,
-                        line,
-                        attacking,
-                        tempo,
-                        buildup,
-                        focus,
-                        width,
-                        marking,
-                        offsideTrap,
-                      };
+    for (const line of LINE_OPTS) {
+      for (const attacking of ATTACKING_OPTS) {
+        for (const tempo of TEMPO_OPTS) {
+          for (const buildup of BUILDUP_OPTS) {
+            for (const lineSpacing of LINE_SPACING_OPTS) {
+              for (const possession of POSSESSION_OPTS) {
+                for (const transitionSpeed of TRANSITION_SPEED_OPTS) {
+                  for (const offsideTrap of OFFSIDE_TRAP_OPTS) {
+                    // pressing/focus/width/marking은 탐색 대상에서 제외한다(파일 상단 큰
+                    // 주석 참고) — 호출자가 이미 설정한 값을 그대로 유지해, 이 네 값은
+                    // "현재 설정" 후보(아래 evaluated++ 블록)를 통해서만 승률에 반영된다.
+                    const instructions: TeamInstructions = {
+                      formation,
+                      pressing: me.instructions.pressing,
+                      line,
+                      attacking,
+                      tempo,
+                      buildup,
+                      focus: me.instructions.focus,
+                      width: me.instructions.width,
+                      marking: me.instructions.marking,
+                      offsideTrap,
+                      lineSpacing,
+                      possession,
+                      transitionSpeed,
+                    };
 
-                      const modMe = evaluateModifiers({
-                        ...ctxMeBase,
-                        me: { ...ctxMeBase.me, instructions },
-                      });
-                      const modOpp = evaluateModifiers({
-                        ...ctxOppBase,
-                        opp: { ...ctxOppBase.opp, instructions },
-                      });
+                    const modMe = evaluateModifiers({
+                      ...ctxMeBase,
+                      me: { ...ctxMeBase.me, instructions },
+                    });
+                    const modOpp = evaluateModifiers({
+                      ...ctxOppBase,
+                      opp: { ...ctxOppBase.opp, instructions },
+                    });
 
-                      const { lambdaMe, lambdaOpp } = lambdasFromParts(
-                        meLines,
-                        oppLines,
-                        modMe,
-                        modOpp,
-                        meTeam,
-                        oppTeam
-                      );
-                      const { win } = outcomeProbs(lambdaMe, lambdaOpp);
-                      evaluated++;
+                    const { lambdaMe, lambdaOpp } = lambdasFromParts(
+                      meLines,
+                      oppLines,
+                      modMe,
+                      modOpp,
+                      meTeam,
+                      oppTeam
+                    );
+                    const { win } = outcomeProbs(lambdaMe, lambdaOpp);
+                    evaluated++;
 
-                      if (win > bestWin) {
-                        bestWin = win;
-                        bestInstructions = instructions;
-                        bestLineup = lineup;
-                        bestRoles = roles;
-                        bestRules = modMe.rules;
-                      }
+                    if (win > bestWin) {
+                      bestWin = win;
+                      bestInstructions = instructions;
+                      bestLineup = lineup;
+                      bestRoles = roles;
+                      bestRules = modMe.rules;
                     }
                   }
                 }

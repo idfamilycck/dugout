@@ -1,11 +1,12 @@
 ﻿"use client";
 
 // 전술 패널 탭 1: 팀 지시.
-// 포메이션 6종(미니 도형) + 슬라이더 4종(압박/수비라인/공격성향/템포) + 토글 5종.
+// 포메이션 6종(미니 도형) + 기본 전술 프리셋 7종 + 슬라이더 7종 + 토글 5종.
 // 모든 변경은 setInstructions(partial)로 즉시 스토어에 반영 → 승률·근거가 실시간 갱신된다.
 
 import { useAppStore } from "@/lib/store";
 import { FORMATIONS } from "@/lib/data/formations";
+import { TACTIC_PRESETS } from "@/lib/data/presets";
 import type { FormationId, TeamInstructions } from "@/lib/types";
 
 const FORMATION_IDS: FormationId[] = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "3-4-3", "5-4-1"];
@@ -23,12 +24,17 @@ function MiniShape({ id, active }: { id: FormationId; active: boolean }) {
   );
 }
 
-type SliderKey = "pressing" | "line" | "attacking" | "tempo";
+type SliderKey =
+  | "pressing" | "line" | "attacking" | "tempo"
+  | "lineSpacing" | "possession" | "transitionSpeed";
 const SLIDERS: { key: SliderKey; label: string; ticks: [string, string, string] }[] = [
   { key: "pressing", label: "압박 강도", ticks: ["약하게", "보통", "강하게"] },
   { key: "line", label: "수비 라인", ticks: ["낮게", "보통", "높게"] },
   { key: "attacking", label: "공격 성향", ticks: ["안정적", "균형", "공격적"] },
   { key: "tempo", label: "경기 템포", ticks: ["느리게", "보통", "빠르게"] },
+  { key: "lineSpacing", label: "라인 간격", ticks: ["압축", "균형", "분산"] },
+  { key: "possession", label: "점유율 지향성", ticks: ["낮음", "중간", "높음"] },
+  { key: "transitionSpeed", label: "전환 속도", ticks: ["느리게", "보통", "빠르게"] },
 ];
 
 interface ToggleDef<K extends keyof TeamInstructions> {
@@ -45,6 +51,7 @@ const TOGGLES: ToggleDef<"buildup" | "focus" | "width" | "marking">[] = [
     hint: "공을 어떻게 전개할지",
     options: [
       { value: "short", label: "짧은 패스" },
+      { value: "balanced", label: "균형" },
       { value: "direct", label: "롱볼" },
     ],
   },
@@ -63,8 +70,9 @@ const TOGGLES: ToggleDef<"buildup" | "focus" | "width" | "marking">[] = [
     label: "폭",
     hint: "좌우로 얼마나 넓게 벌릴지",
     options: [
-      { value: "wide", label: "넓게" },
       { value: "narrow", label: "좁게" },
+      { value: "balanced", label: "균형" },
+      { value: "wide", label: "넓게" },
     ],
   },
   {
@@ -73,6 +81,7 @@ const TOGGLES: ToggleDef<"buildup" | "focus" | "width" | "marking">[] = [
     hint: "지역을 지킬지 사람을 붙일지",
     options: [
       { value: "zonal", label: "지역 방어" },
+      { value: "balanced", label: "균형" },
       { value: "man", label: "대인 방어" },
     ],
   },
@@ -103,6 +112,37 @@ export function InstructionsPanel() {
               >
                 <MiniShape id={id} active={active} />
                 <span className={`stat-num text-[13px] ${active ? "text-accent" : "text-dim"}`}>{id}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 기본 전술 프리셋 */}
+      <section>
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-accent">기본 전술</h2>
+        <div className="flex flex-col gap-1.5">
+          {TACTIC_PRESETS.map((preset) => {
+            const active = (Object.keys(preset.values) as (keyof typeof preset.values)[]).every(
+              (k) => instructions[k] === preset.values[k]
+            );
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setInstructions(preset.values)}
+                className={`rounded-2xl border px-3 py-2.5 text-left transition-colors ${
+                  active ? "border-accent bg-accent/15" : "border-line bg-surface-2/50 hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-[13px] font-bold ${active ? "text-accent" : "text-ink"}`}>
+                    {preset.nameKo}
+                  </span>
+                  {active && <span className="text-[10px] font-bold text-accent">● 현재</span>}
+                </div>
+                <p className="mt-1 text-[11px] leading-snug text-dim">{preset.descKo}</p>
               </button>
             );
           })}
