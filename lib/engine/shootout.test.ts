@@ -30,6 +30,9 @@ const DEFAULT_INSTRUCTIONS: TeamInstructions = {
   width: "wide",
   marking: "zonal",
   offsideTrap: false,
+  lineSpacing: 2,
+  possession: 2,
+  transitionSpeed: 2,
 };
 
 function makePlayer(id: string, teamId: string, overrides: Partial<Player> = {}): Player {
