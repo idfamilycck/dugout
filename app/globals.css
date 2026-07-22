@@ -2,22 +2,38 @@
 
 /* ────────────────────────────────────────────────────────────
    TOUCHLINE — 방송 중계 그래픽 + 감독의 작전실
-   다크 피치 그린 위에 형광 라임 액센트 하나만 절제해서 사용.
+   네이비-슬레이트 UI 크롬 위에 일렉트릭 시안 액센트 하나만 절제해서 사용.
    유리 = 초록/↑ · 불리 = 빨강/↓ 컨벤션을 앱 전역에서 공유한다.
    ──────────────────────────────────────────────────────────── */
 
 @theme {
-  --color-pitch: #06170d;
-  --color-pitch-2: #0a1f13;
-  --color-surface: #0e2417;
-  --color-surface-2: #163020;
-  --color-line: rgba(224, 255, 233, 0.1);
-  --color-ink: #eaf4ec;
-  --color-dim: #83998d;
-  --color-accent: #c8ff3c;
-  --color-accent-ink: #08160a;
-  --color-danger: #ff5c7a;
-  --color-gain: #3be38a;
+  /* UI 크롬(패널·배경)은 네이비-슬레이트, 실제 잔디는 --color-turf* 로 분리한다. */
+  --color-pitch: #0f1319;
+  --color-pitch-2: #141924;
+  --color-surface: #181e2a;
+  --color-surface-2: #212938;
+  --color-line: rgba(200, 225, 255, 0.1);
+  --color-ink: #eef2f8;
+  --color-dim: #8f9bb0;
+  --color-accent: #22d3ee;
+  --color-accent-ink: #04222a;
+  --color-danger: #ff5470;
+  --color-gain: #34e08a;
+
+  /* FM식 능력치 색상 스케일 — 액센트가 아니라 데이터(선수 능력치)를 위한 시맨틱 색상. */
+  --color-attr-elite: #34e08a;
+  --color-attr-good: #a3e635;
+  --color-attr-mid: #fbbf24;
+  --color-attr-low: #fb923c;
+  --color-attr-poor: #ff5470;
+
+  /* 실제 축구장(라이브 피치·작전 보드)만 이 초록을 쓴다 — UI 크롬과 분리. */
+  --color-turf: #10331f;
+  --color-turf-2: #0b2616;
+
+  /* 반경 락: 패널/카드 10px · 인풋/버튼 8px · 필(탭·칩·아바타)만 rounded-full 예외. */
+  --radius-panel: 10px;
+  --radius-control: 8px;
 
   --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Apple SD Gothic Neo",
     "Noto Sans KR", "Malgun Gothic", sans-serif;
@@ -41,13 +57,17 @@ html {
 body {
   min-height: 100%;
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(200, 255, 60, 0.06), transparent 55%),
-    radial-gradient(90% 60% at 50% 0%, rgba(59, 227, 138, 0.05), transparent 60%),
+    radial-gradient(120% 80% at 50% -10%, rgba(34, 211, 238, 0.05), transparent 55%),
     var(--color-pitch);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 한국어는 어절(띄어쓰기) 단위로 줄을 바꾼다. keep-all이 없으면 좁은 폭에서
+     "바로 지/휘하기"처럼 단어 중간이 잘려 가독성이 크게 떨어진다.
+     아주 긴 토큰(URL 등)만 예외적으로 끊도록 break-word를 함께 둔다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* 잔디 이랑(모잉 스트라이프) — 히어로/작전실 바탕용 방송 질감 */
@@ -74,11 +94,11 @@ body {
   line-height: 0.92;
 }
 
-/* 방송 자막 하단 3분할(lower-third)의 라임 탭 */
-.lime-tab {
+/* 방송 자막 하단 3분할(lower-third)의 시안 탭 */
+.accent-tab {
   position: relative;
 }
-.lime-tab::before {
+.accent-tab::before {
   content: "";
   position: absolute;
   left: 0;
@@ -104,18 +124,42 @@ body {
   border: 1px solid var(--color-line);
 }
 
-/* 조작→반응 1:1: 마지막 조작으로 바뀐 근거 카드가 딱 한 번 라임으로 번쩍인다.
+/* 데이터 숫자 기본값: 표 형태 스탯/분/스코어가 자릿수마다 흔들리지 않게 고정폭으로. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* FM 스타일 데이터 로우: 카드 대신 헤어라인으로 구분되는 리스트(스쿼드·중계·이벤트). */
+.data-row {
+  border-bottom: 1px solid var(--color-line);
+}
+.data-row:last-child {
+  border-bottom: 0;
+}
+
+/* 패널 헤더 공통 레이아웃: 제목 + 보조 액션을 한 줄에. */
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+/* 조작→반응 1:1: 마지막 조작으로 바뀐 근거 카드가 딱 한 번 시안으로 번쩍인다.
    키를 remount해 재생하며, prefers-reduced-motion에서는 위 미디어쿼리가 무력화한다. */
 @keyframes touchline-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(200, 255, 60, 0);
-    background-color: rgba(200, 255, 60, 0.16);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+    background-color: rgba(34, 211, 238, 0.16);
   }
   35% {
-    box-shadow: 0 0 0 3px rgba(200, 255, 60, 0.55);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.55);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(200, 255, 60, 0);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
     background-color: transparent;
   }
 }
@@ -133,7 +177,7 @@ body {
   animation: touchline-spin 0.7s linear infinite;
 }
 
-/* 전술 슬라이더: 라임 액센트 썸 + 표면색 트랙 */
+/* 전술 슬라이더: 시안 액센트 썸 + 표면색 트랙 */
 .touchline-range {
   accent-color: var(--color-accent);
   height: 6px;

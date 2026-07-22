@@ -5,6 +5,7 @@
 // 일괄 반영한다. 동기 CPU 작업이라 스피너가 먼저 그려지도록 다음 프레임에 실행한다.
 
 import { useState } from "react";
+import { Lightning, CheckCircle } from "@phosphor-icons/react";
 import { useAppStore } from "@/lib/store";
 import { recommend, type Recommendation } from "@/lib/engine/recommend";
 
@@ -47,7 +48,7 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
     rec && currentWin !== undefined ? Math.round(rec.winProb * 100) - Math.round(currentWin * 100) : undefined;
 
   return (
-    <div className="panel flex flex-col gap-4 rounded-3xl p-5">
+    <div className="panel flex flex-col gap-4 rounded-[10px] p-5">
       <div className="flex items-center justify-between">
         <div>
           <p className="eyebrow text-dim">AI 추천 전술</p>
@@ -67,13 +68,16 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
             분석 중…
           </>
         ) : (
-          <>⚡ 추천 전술 보기</>
+          <>
+            <Lightning weight="bold" className="size-4" aria-hidden />
+            추천 전술 보기
+          </>
         )}
       </button>
 
       {rec && !loading && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-end justify-between rounded-2xl border border-line bg-surface/50 p-3">
+          <div className="flex items-end justify-between rounded-[10px] border border-line bg-surface/50 p-3">
             <div>
               <p className="text-[11px] text-dim">추천 세팅 예상 승률</p>
               <p className="stat-num text-3xl text-gain">{recWinPct}%</p>
@@ -100,7 +104,7 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
               {rec.topFactors.map((f) => (
                 <li
                   key={f.id}
-                  className="flex items-start gap-2 rounded-xl border border-line bg-surface/40 px-3 py-2"
+                  className="flex items-start gap-2 rounded-[10px] border border-line bg-surface/40 px-3 py-2"
                 >
                   <span className="text-base leading-none" aria-hidden>
                     {f.icon}
@@ -115,17 +119,24 @@ export function RecommendPanel({ currentWin }: RecommendPanelProps) {
             type="button"
             onClick={apply}
             disabled={applied}
-            className={`rounded-full border py-2.5 text-sm font-bold transition-colors ${
+            className={`flex items-center justify-center gap-1.5 rounded-full border py-2.5 text-sm font-bold transition-colors ${
               applied
                 ? "border-line bg-surface-2 text-dim"
                 : "border-accent bg-accent/10 text-accent hover:bg-accent/20"
             }`}
           >
-            {applied ? "✓ 적용됨" : "이 전술 적용하기"}
+            {applied ? (
+              <>
+                <CheckCircle weight="bold" className="size-4" aria-hidden />
+                적용됨
+              </>
+            ) : (
+              "이 전술 적용하기"
+            )}
           </button>
           {deltaPct !== undefined && deltaPct === 0 && (
             <p className="text-center text-[11px] text-dim">
-              지금 세팅이 이미 최적에 가까워요 — 그대로 두어도 좋아요.
+              지금 세팅이 이미 최적에 가까워요. 그대로 두어도 좋아요.
             </p>
           )}
         </div>

@@ -4,22 +4,23 @@
 // 건너뛰기/다음/시작 버튼. 딤 배경 + 스포트라이트 톤의 카드.
 
 import { useEffect, useState } from "react";
+import { Hand, TrendUp, FlagCheckered, type Icon } from "@phosphor-icons/react";
 
 const STORAGE_KEY = "touchline-onboarding";
 
-const STEPS = [
+const STEPS: { Icon: Icon; title: string; body: string }[] = [
   {
-    icon: "🖐️",
+    Icon: Hand,
     title: "선수를 끌어 배치하세요",
     body: "스쿼드에서 선수를 피치로 드래그하거나, 탭해서 자리를 골라 배치할 수 있어요.",
   },
   {
-    icon: "📈",
+    Icon: TrendUp,
     title: "승률 변동을 확인하세요",
     body: "라인업·전술을 바꿀 때마다 오른쪽 '분석'에서 승률과 그 근거가 실시간으로 움직여요.",
   },
   {
-    icon: "🏁",
+    Icon: FlagCheckered,
     title: "준비되면 경기 시작",
     body: "11명을 모두 배치하면 하단의 '경기 시작' 버튼이 열립니다. 감독석에서 지휘해 보세요.",
   },
@@ -30,7 +31,11 @@ export function Coachmarks() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // localStorage(브라우저 API, 서버에는 없음)를 마운트 후에만 읽어야 SSR과
+    // 클라이언트 첫 렌더가 항상 "닫힘"으로 일치해 하이드레이션 불일치가 없다.
+    // 렌더 중 lazy useState 초기값으로 옮기면 서버/클라이언트 결과가 갈릴 수 있다.
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
     } catch {
       // localStorage 접근 불가 환경에서는 조용히 표시하지 않는다.
@@ -57,7 +62,7 @@ export function Coachmarks() {
       aria-modal="true"
       aria-labelledby="coach-title"
     >
-      <div className="panel w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+      <div className="panel w-full max-w-sm rounded-[10px] p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <span className="eyebrow text-accent">작전실 안내 {step + 1}/{STEPS.length}</span>
           <button
@@ -70,9 +75,7 @@ export function Coachmarks() {
         </div>
 
         <div className="mt-5 flex flex-col items-center text-center">
-          <span className="text-4xl" aria-hidden>
-            {cur.icon}
-          </span>
+          <cur.Icon size={40} weight="bold" className="text-accent" aria-hidden />
           <h2 id="coach-title" className="display mt-3 text-2xl text-ink">
             {cur.title}
           </h2>
@@ -84,7 +87,7 @@ export function Coachmarks() {
           {STEPS.map((_, i) => (
             <span
               key={i}
-              className="h-1.5 rounded-full transition-all"
+              className="h-1.5 rounded-full transition-[width,background-color]"
               style={{
                 width: i === step ? 20 : 8,
                 background: i === step ? "var(--color-accent)" : "var(--color-surface-2)",

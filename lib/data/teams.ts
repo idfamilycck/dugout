@@ -19,6 +19,15 @@ export const TEAMS: Team[] = [
   { id: "mex", nameKo: "멕시코", code: "MEX", elo: 1710, fifaRank: 15, form: 6, styleTags: ["점유", "개인기"], color1: "#006847", color2: "#CE1126" },
 ];
 
+// 런타임 등록 레지스트리(예: WC2026 로더). teamById는 이 레지스트리를 먼저
+// 확인하고, 없으면 기존 TEAMS 배열로 폴백한다. 기존 팀(kor/bra 등)의 동작은
+// 변경되지 않는다.
+const extraTeams: Record<string, Team> = {};
+
+export function registerTeam(team: Team): void {
+  extraTeams[team.id] = team;
+}
+
 export function teamById(id: string): Team | undefined {
-  return TEAMS.find((t) => t.id === id);
+  return extraTeams[id] ?? TEAMS.find((t) => t.id === id);
 }

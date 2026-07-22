@@ -4,6 +4,7 @@
 // 시각은 전·후반 추가시간을 45+ / 90+ 로 표기한다(엔진은 전반 추가시간을 만들지 않으므로
 // 실질적으로 90+만 등장하지만, 표기 규칙은 양쪽 모두 지원해 둔다).
 
+import { Buildings } from "@phosphor-icons/react";
 import { FlagBadge } from "@/components/ui/FlagBadge";
 import { teamById } from "@/lib/data/teams";
 import { venueById } from "@/lib/data/venues";
@@ -38,7 +39,7 @@ export function Scoreboard({
   const venue = venueById(venueId);
 
   return (
-    <div className="panel rounded-3xl px-4 py-3 sm:px-6 sm:py-4">
+    <div className="panel rounded-[10px] px-4 py-3 sm:px-6 sm:py-4">
       <div className="flex items-center justify-center gap-4 sm:gap-8">
         {/* 우리 팀 */}
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
@@ -77,8 +78,9 @@ export function Scoreboard({
       </div>
 
       {venue && (
-        <p className="mt-2 text-center text-[11px] text-dim">
-          🏟 {venue.nameKo} · {venue.cityKo}
+        <p className="mt-2 flex items-center justify-center gap-1 text-center text-[11px] text-dim">
+          <Buildings size={13} weight="bold" aria-hidden />
+          {venue.nameKo} · {venue.cityKo}
         </p>
       )}
     </div>

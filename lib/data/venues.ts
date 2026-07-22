@@ -11,6 +11,15 @@ export const VENUES: Venue[] = [
   { id: "atlanta", nameKo: "애틀랜타 경기장", cityKo: "애틀랜타", altitude: 320, avgTempC: 31, dome: true, capacity: 71000 },
 ];
 
+// 런타임 등록 레지스트리(예: WC2026 로더). venueById는 이 레지스트리를 먼저
+// 확인하고, 없으면 기존 VENUES 배열로 폴백한다. 기존 경기장 조회 동작은
+// 변경되지 않는다.
+const extraVenues: Record<string, Venue> = {};
+
+export function registerVenue(venue: Venue): void {
+  extraVenues[venue.id] = venue;
+}
+
 export function venueById(id: string): Venue | undefined {
-  return VENUES.find((v) => v.id === id);
+  return extraVenues[id] ?? VENUES.find((v) => v.id === id);
 }

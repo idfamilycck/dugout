@@ -7,8 +7,13 @@
 // 문제가 없다) — "./store"만 동적 import로 지연시켜 스텁 설치 이후에 평가되게 한다.
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { playersOf } from "@/lib/data/players";
+import { teamById } from "@/lib/data/teams";
+import { venueById } from "@/lib/data/venues";
 import { recommend } from "@/lib/engine/recommend";
 import { winProbability } from "@/lib/engine/winprob";
+import { registerWc2026 } from "@/lib/wc2026/register";
+import { wc2026Matches, wc2026MatchById } from "@/lib/wc2026/data";
+import { extractMoments } from "@/lib/wc2026/moments";
 
 // runShootout이 실제로 어떤 me/opp 레퍼런스를 simulateShootout에 넘기는지 직접 검증하기
 // 위해 spy로 감싼다(vi.fn(actual)는 실구현을 그대로 호출하면서 호출 인자를 기록한다).
@@ -54,6 +59,17 @@ const { useAppStore } = await import("./store");
 // .mock/.mockClear가 안 보이므로 필요).
 const simulateShootoutMock = vi.mocked((await import("./engine/shootout")).simulateShootout);
 
+// 헬퍼: wc2026Matches()를 순회해 원정팀(away) 관점으로 concede 순간이 존재하는 첫
+// 경기의 id를 반환한다 (lib/engine/rewrite.test.ts의 pickMatchWithConcede()와 동일한
+// 패턴 — startRewrite는 임의의 side/moment로 호출 가능하므로 실점 경기 하나면 충분).
+function firstConcedeMatchId(): string {
+  for (const m of wc2026Matches()) {
+    const moments = extractMoments(m, m.away);
+    if (moments.some((d) => d.kind === "concede")) return m.id;
+  }
+  throw new Error("no match with a concede moment found");
+}
+
 describe("store", () => {
   beforeEach(() => {
     sessionStorageStub.clear();
@@ -61,11 +77,29 @@ describe("store", () => {
     simulateShootoutMock.mockClear();
   });
 
+  // 회귀 테스트(C1: 콜드 리로드 크래시): 이 파일의 다른 테스트들과 달리
+  // registerWc2026()을 이 테스트 안에서 직접 호출하지 않는다 — 검증 대상은 "store.ts를
+  // import하기만 해도" WC2026 데이터(teamById/playersOf/venueById)가 등록되는지다.
+  // sessionStorage에 persist된 rewrite 상태(mode:"rewrite", match.venueId:"wc_default",
+  // me.teamId:"wc_kor")는 새로고침 후에도 살아남지만, registerWc2026()이 채우는
+  // 인메모리 맵은 모듈 top-level `done` 플래그와 함께 페이지 풀로드마다 리셋된다.
+  // lib/store.ts 모듈 스코프에 있는 registerWc2026() 호출이 이 상황을 막아준다.
+  // 주의: 이 테스트는 반드시 describe 블록의 "첫 번째" it이어야 한다 — 아래의
+  // "startRewrite" 등 다른 테스트가 먼저 실행되며 registerWc2026()을 명시적으로
+  // 호출해버리면 idempotent guard(done 플래그)가 이미 true가 되어, store.ts의
+  // 모듈 스코프 호출을 지워도(회귀가 일어나도) 이 테스트가 우연히 그린으로 남는다.
+  it("cold reload 회귀: store 모듈을 import하는 것만으로 WC2026 데이터가 등록돼 있다", () => {
+    expect(venueById("wc_default")).toBeDefined();
+    expect(venueById("wc_default")?.id).toBe("wc_default");
+    expect(teamById("wc_kor")).toBeDefined();
+    expect(playersOf("wc_kor").length).toBeGreaterThan(0);
+  });
+
   it("startQuick 후 me/opp 라인업 11개 채워짐", () => {
     useAppStore.getState().startQuick();
     const { me, opp, setup } = useAppStore.getState();
-    expect(setup.myTeamId).toBe("kor");
-    expect(setup.oppTeamId).toBe("bra");
+    expect(setup.myTeamId).toBe("wc_kor");
+    expect(setup.oppTeamId).toBe("wc_bra");
     expect(setup.venueId).toBe("metlife");
     expect(me).toBeDefined();
     expect(opp).toBeDefined();
@@ -111,13 +145,102 @@ describe("store", () => {
     expect(after.instructions.tempo).toBe(before.instructions.tempo);
   });
 
-  it("persist: 스토어 조작 후 sessionStorage 'touchline-v1'에 상태 존재", () => {
+  it("persist: 스토어 조작 후 sessionStorage 'touchline-v2'에 상태 존재", () => {
     useAppStore.getState().startQuick();
-    const raw = sessionStorageStub.getItem("touchline-v1");
+    const raw = sessionStorageStub.getItem("touchline-v2");
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw!);
-    expect(parsed.state.setup.myTeamId).toBe("kor");
+    expect(parsed.state.setup.myTeamId).toBe("wc_kor");
     expect(parsed.state.me).toBeDefined();
+  });
+
+  it("startRewrite: rewrite 모드 진입 + match 초기화", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const { startRewrite } = useAppStore.getState();
+    const side = wc2026MatchById(id)!.away;
+    const moment = extractMoments(wc2026MatchById(id)!, side)[0];
+    startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
+    const s = useAppStore.getState();
+    expect(s.mode).toBe("rewrite");
+    expect(s.match?.minute).toBe(moment.takeoverMinute);
+    expect(s.me?.teamId).toBe(`wc_${side.toLowerCase()}`);
+    expect(s.rewriteContext).toEqual({
+      matchId: id,
+      side,
+      momentId: moment.id,
+      takeoverMinute: moment.takeoverMinute,
+      endMinute: undefined,
+    });
+  });
+
+  it("persist name이 touchline-v2 (startRewrite 후에도 v2 키에 저장)", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    const moment = extractMoments(wc2026MatchById(id)!, side)[0];
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
+
+    const raw = sessionStorageStub.getItem("touchline-v2");
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw!);
+    expect(parsed.state.mode).toBe("rewrite");
+    expect(parsed.state.rewriteContext.matchId).toBe(id);
+    // v1 키는 더 이상 쓰이지 않는다
+    expect(sessionStorageStub.getItem("touchline-v1")).toBeNull();
+  });
+
+  it("startQuick/selectMatchup/reset은 mode를 free로 되돌리고 rewriteContext를 비운다", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    const moment = extractMoments(wc2026MatchById(id)!, side)[0];
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
+    expect(useAppStore.getState().mode).toBe("rewrite");
+
+    useAppStore.getState().startQuick();
+    expect(useAppStore.getState().mode).toBe("free");
+    expect(useAppStore.getState().rewriteContext).toBeUndefined();
+
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
+    expect(useAppStore.getState().mode).toBe("rewrite");
+    useAppStore.getState().selectMatchup("kor", "jpn", "sofi");
+    expect(useAppStore.getState().mode).toBe("free");
+    expect(useAppStore.getState().rewriteContext).toBeUndefined();
+
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
+    expect(useAppStore.getState().mode).toBe("rewrite");
+    useAppStore.getState().reset();
+    expect(useAppStore.getState().mode).toBe("free");
+    expect(useAppStore.getState().rewriteContext).toBeUndefined();
+  });
+
+  it("rewrite 모드에서 beginMatch는 takeoverMinute을 보존하고 편집된 me를 match에 반영한다", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    const moment = extractMoments(wc2026MatchById(id)!, side)[0];
+    useAppStore.getState().startRewrite(id, side, { id: moment.id, takeoverMinute: moment.takeoverMinute });
+
+    const takeoverMinute = useAppStore.getState().rewriteContext!.takeoverMinute;
+    const takeoverScoreMe = useAppStore.getState().match!.scoreMe;
+    const takeoverScoreOpp = useAppStore.getState().match!.scoreOpp;
+    expect(useAppStore.getState().match!.minute).toBe(takeoverMinute);
+
+    // 작전실에서 지시사항을 편집(예: 프레싱 강도 변경)한다.
+    const editedPressing = useAppStore.getState().me!.instructions.pressing === 3 ? 1 : 3;
+    useAppStore.getState().setInstructions({ pressing: editedPressing });
+    expect(useAppStore.getState().me!.instructions.pressing).toBe(editedPressing);
+
+    useAppStore.getState().beginMatch();
+
+    const s = useAppStore.getState();
+    // beginMatch가 initMatch(0분 재시작)를 호출하지 않았다면 minute/score가 그대로다.
+    expect(s.match!.minute).toBe(takeoverMinute);
+    expect(s.match!.scoreMe).toBe(takeoverScoreMe);
+    expect(s.match!.scoreOpp).toBe(takeoverScoreOpp);
+    // 편집한 지시사항이 match.me에 반영됐다.
+    expect(s.match!.me.instructions.pressing).toBe(editedPressing);
   });
 
   it("beginMatch가 경기를 초기화하고 tickMinute이 분/probTimeline을 진행시킨다", () => {
@@ -136,6 +259,41 @@ describe("store", () => {
     expect(s.match!.probTimeline[1].minute).toBe(1);
   });
 
+  it("rewrite 모드 + endMinute=45(전반전 프리셋): tickMinute이 45분에서 강제 종료하고 90분까지 가지 않는다", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    useAppStore.getState().startRewrite(id, side, { id: "preset-first", takeoverMinute: 0, endMinute: 45 });
+    expect(useAppStore.getState().rewriteContext?.endMinute).toBe(45);
+    expect(useAppStore.getState().match!.minute).toBe(0);
+
+    // 90분을 채울 수 있는 횟수만큼 틱해도 45분에서 멈춰야 한다.
+    for (let i = 0; i < 90 && !useAppStore.getState().match!.finished; i++) {
+      useAppStore.getState().tickMinute();
+    }
+
+    const s = useAppStore.getState();
+    expect(s.match!.finished).toBe(true);
+    expect(s.match!.minute).toBe(45);
+    expect(s.match!.events.at(-1)).toMatchObject({ minute: 45, type: "fulltime" });
+  });
+
+  it("rewrite 모드 + endMinute=undefined(풀경기 프리셋): 자연 종료(halftime 지나 90분 근처)까지 진행된다", () => {
+    registerWc2026();
+    const id = firstConcedeMatchId();
+    const side = wc2026MatchById(id)!.away;
+    useAppStore.getState().startRewrite(id, side, { id: "preset-full", takeoverMinute: 0 });
+    expect(useAppStore.getState().rewriteContext?.endMinute).toBeUndefined();
+
+    for (let i = 0; i < 200 && !useAppStore.getState().match!.finished; i++) {
+      useAppStore.getState().tickMinute();
+    }
+
+    const s = useAppStore.getState();
+    expect(s.match!.finished).toBe(true);
+    expect(s.match!.minute).toBeGreaterThan(45); // 45분에서 멈추지 않고 정규종료까지 감
+  });
+
   it("intervene로 교체 시 match.me.lineup/subsUsedMe/개입 이력이 현재 분으로 반영된다", () => {
     useAppStore.getState().startQuick();
     useAppStore.getState().beginMatch();
@@ -144,7 +302,7 @@ describe("store", () => {
     let s = useAppStore.getState();
     const outId = s.match!.me.lineup["st"];
     const onPitch = new Set(Object.values(s.match!.me.lineup));
-    const benchId = playersOf("kor")
+    const benchId = playersOf("wc_kor")
       .map((p) => p.id)
       .find((id) => !onPitch.has(id))!;
 
@@ -219,8 +377,15 @@ describe("store", () => {
 
     let s = useAppStore.getState();
     const startingGk = s.match!.me.lineup["gk"];
-    expect(startingGk).toBe("kor_01"); // autoPlace가 골키퍼 능력치가 더 높은 선수를 선발
-    const backupGk = "kor_02";
+    // wc_kor 스쿼드는 실제 2026 WC 라인업 데이터에서 파생되므로 kor_01 같은 고정
+    // id를 가정할 수 없다 — 대신 현재 라인업에 없는 벤치 선수 하나를 골라 GK 슬롯에
+    // 교체 투입한다(이 테스트는 GK 실력이 아니라 "교체가 live 로스터에 반영되는지"를
+    // 검증하는 메커니즘 테스트이므로 포지션 일치는 요구되지 않는다 — applyIntervention도
+    // 포지션을 검사하지 않는다).
+    const onPitch = new Set(Object.values(s.match!.me.lineup));
+    const backupGk = playersOf("wc_kor")
+      .map((p) => p.id)
+      .find((id) => !onPitch.has(id))!;
     expect(Object.values(s.match!.me.lineup)).not.toContain(backupGk);
 
     // 60분 GK 교체

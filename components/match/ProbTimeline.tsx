@@ -1,9 +1,15 @@
 "use client";
 
 // 승률 타임라인: 자체 SVG 라인차트. x=경기 시각(0~95분), y=우리 승률(0~100%).
-// 단일 라인 1개(§4.6). 골 ⚽ · 개입 🧠 마커 + 현재 분 커서. 유리(초록)/불리(빨강)
+// 단일 라인 1개(§4.6). 골 SoccerBall · 개입 Brain 마커 + 현재 분 커서. 유리(초록)/불리(빨강)
 // 색 규칙을 따르되 수치 라벨을 항상 병기한다(색만으로 정보 전달 금지).
+//
+// 마커는 Phosphor 아이콘 컴포넌트를 SVG 안에 그대로 중첩한다 — Phosphor 아이콘은
+// 자신도 <svg viewBox="0 0 256 256">인 컴포넌트이고, SVG는 <svg> 안에 <svg>를 중첩하는
+// 것이 표준(중첩 svg는 새 뷰포트를 연다)이라 x/y/size prop만으로 부모 좌표계에 배치할
+// 수 있다(IconBase가 나머지 prop을 그대로 루트 svg 엘리먼트에 스프레드한다).
 
+import { SoccerBall, Brain } from "@phosphor-icons/react";
 import type { MatchEvent, Intervention } from "@/lib/engine/match";
 
 const W = 320;
@@ -52,7 +58,7 @@ export function ProbTimeline({ timeline, events, interventions }: ProbTimelinePr
   const y50 = yOf(0.5);
 
   return (
-    <div className="panel flex flex-col rounded-3xl p-4">
+    <div className="panel flex flex-col rounded-[10px] p-4">
       <div className="flex items-center justify-between">
         <p className="eyebrow text-accent">승률 타임라인</p>
         <span
@@ -107,7 +113,7 @@ export function ProbTimeline({ timeline, events, interventions }: ProbTimelinePr
         <path d={areaPath} fill={lineColor} opacity={0.1} />
         <path d={linePath} fill="none" stroke={lineColor} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 
-        {/* 개입 🧠 마커 (세로 점선) */}
+        {/* 개입 마커 (세로 점선 + Brain 아이콘) */}
         {interventions.map((iv, i) => (
           <g key={`iv-${i}-${iv.minute}`}>
             <line
@@ -120,23 +126,26 @@ export function ProbTimeline({ timeline, events, interventions }: ProbTimelinePr
               strokeDasharray="2 2"
               opacity={0.6}
             />
-            <text x={xOf(iv.minute)} y={PAD_T - 3} textAnchor="middle" fontSize="11">
-              🧠
-            </text>
+            <Brain
+              x={xOf(iv.minute) - 5.5}
+              y={PAD_T - 14}
+              size={11}
+              weight="bold"
+              color="var(--color-accent)"
+            />
           </g>
         ))}
 
-        {/* 골 ⚽ 마커 */}
+        {/* 골 마커(SoccerBall 아이콘) */}
         {goals.map((g, i) => (
-          <text
+          <SoccerBall
             key={`goal-${i}-${g.minute}`}
-            x={xOf(g.minute)}
-            y={yOf(winAt(g.minute)) - 6}
-            textAnchor="middle"
-            fontSize="12"
-          >
-            ⚽
-          </text>
+            x={xOf(g.minute) - 6}
+            y={yOf(winAt(g.minute)) - 18}
+            size={12}
+            weight="bold"
+            color="var(--color-ink)"
+          />
         ))}
 
         {/* 현재 분 커서 */}

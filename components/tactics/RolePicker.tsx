@@ -50,13 +50,13 @@ export function RolePicker() {
                 type="button"
                 aria-pressed={active}
                 onClick={() => setActiveSlot(s.id)}
-                className={`flex flex-col items-start rounded-xl border px-2.5 py-1.5 text-left transition-colors ${
+                className={`flex flex-col items-start rounded-[10px] border px-2.5 py-1.5 text-left transition-colors ${
                   active ? "border-accent bg-accent/15" : "border-line bg-surface-2/50 hover:border-white/20"
                 }`}
               >
                 <span className="flex w-full items-center gap-1.5">
                   <span className="stat-num text-[10px] text-accent">{s.position}</span>
-                  <span className="truncate text-[12px] font-bold text-ink">{p?.name ?? "—"}</span>
+                  <span className="truncate text-[12px] font-bold text-ink">{p?.name ?? "-"}</span>
                 </span>
                 <span className="truncate text-[10px] text-dim">{ROLE_SHORT[roleId]}</span>
               </button>
@@ -85,7 +85,7 @@ export function RolePicker() {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setRole(slot.id, roleId)}
-                  className={`rounded-2xl border px-3 py-2.5 text-left transition-colors ${
+                  className={`rounded-[10px] border px-3 py-2.5 text-left transition-colors ${
                     active ? "border-accent bg-accent/15" : "border-line bg-surface-2/50 hover:border-white/20"
                   }`}
                 >

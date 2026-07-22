@@ -330,7 +330,19 @@ export const PLAYERS: Player[] = [
 // 않으므로(전부 .find()/.filter()/스프레드로만 소비) 캐시 공유가 안전하다.
 const PLAYERS_BY_TEAM = new Map<string, Player[]>();
 
+// 런타임 등록 레지스트리(예: WC2026 로더). playersOf는 이 레지스트리를 먼저
+// 확인하고, 없으면 기존 PLAYERS/캐시 경로로 폴백한다. 기존 팀(kor/bra 등)의
+// 동작은 변경되지 않는다.
+const extraPlayers: Record<string, Player[]> = {};
+
+export function registerPlayers(teamId: string, players: Player[]): void {
+  extraPlayers[teamId] = players;
+}
+
 export function playersOf(teamId: string): Player[] {
+  const registered = extraPlayers[teamId];
+  if (registered) return registered;
+
   let cached = PLAYERS_BY_TEAM.get(teamId);
   if (!cached) {
     cached = PLAYERS.filter((p) => p.teamId === teamId);

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { Play, Pause, Brain } from "@phosphor-icons/react";
 import { useAppStore } from "@/lib/store";
 import { Scoreboard, minuteLabel } from "@/components/match/Scoreboard";
 import { LivePitch } from "@/components/match/LivePitch";
@@ -17,6 +18,7 @@ import { CommentaryFeed } from "@/components/match/CommentaryFeed";
 import { ProbTimeline } from "@/components/match/ProbTimeline";
 import { CrisisBanner } from "@/components/match/CrisisBanner";
 import { InterventionSheetPortal } from "@/components/match/InterventionSheet";
+import { RewriteContextBadge } from "@/components/rewrite/RewriteContextBadge";
 import { SceneOverlay } from "@/components/match/SceneOverlay";
 import {
   sceneEventsAt,
@@ -43,6 +45,8 @@ export default function MatchPage() {
   const match = useAppStore((s) => s.match);
   const tickMinute = useAppStore((s) => s.tickMinute);
   const intervene = useAppStore((s) => s.intervene);
+  const mode = useAppStore((s) => s.mode);
+  const rewriteContext = useAppStore((s) => s.rewriteContext);
 
   const hasMatch = useAppStore((s) => Boolean(s.match));
   const finished = useAppStore((s) => s.match?.finished ?? false);
@@ -66,6 +70,8 @@ export default function MatchPage() {
   useEffect(() => {
     const p = useAppStore.persist;
     if (!p || p.hasHydrated()) {
+      // zustand persist(sessionStorage) 재수화 여부를 확인하는 외부 시스템 동기화라 setState가 맞다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHydrated(true);
       return;
     }
@@ -105,6 +111,8 @@ export default function MatchPage() {
     sceneSeenRef.current = m;
     const evs = sceneEventsAt(match.events, m);
     if (!shouldStopScene(evs)) return;
+    // 외부 스토어(zustand)의 분 진행을 감지해 로컬 장면 커서를 동기화하는 것이라 setState가 맞다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setScene(evs);
     if (sceneTimerRef.current) clearTimeout(sceneTimerRef.current);
     sceneTimerRef.current = setTimeout(() => setScene(null), sceneDurationMs(evs));
@@ -138,19 +146,26 @@ export default function MatchPage() {
     const halftimeIsLatest = lastEvent?.type === "halftime";
     if ((halftimeIsLatest || match.minute === 45) && match.events.some((e) => e.type === "halftime")) {
       halftimeHandledRef.current = true;
+      // 외부 스토어(zustand)의 분 진행에서 하프타임을 감지해 한 번만 정지시키는 동기화라 setState가 맞다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlaying(false);
       setHalftime(true);
     }
   }, [match]);
 
-  // 종료 시 정지.
+  // 하프타임 안내는 모달이므로 Escape로도 닫을 수 있어야 한다.
   useEffect(() => {
-    if (finished) setPlaying(false);
-  }, [finished]);
+    if (!halftime) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setHalftime(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [halftime]);
 
   if (!match) {
     return (
-      <main className="flex flex-1 items-center justify-center px-5 py-24 text-center">
+      <main id="main" className="flex flex-1 scroll-mt-14 items-center justify-center px-5 py-24 text-center">
         <p className="text-sm text-dim">경기 정보를 불러오는 중…</p>
       </main>
     );
@@ -171,13 +186,24 @@ export default function MatchPage() {
   };
 
   const isDraw = match.scoreMe === match.scoreOpp;
+  // 종료된 경기는 재생 버튼이 비활성화되지만, 표시용 아이콘/라벨은 항상 "정지"로
+  // 렌더 중 파생시킨다(재생 루프 이펙트는 이미 finished를 조건에 포함해 정지한다).
+  const isPlayingDisplay = playing && !match.finished;
 
   return (
-    <main className="flex flex-1 flex-col pb-10">
-      <h1 className="sr-only">경기 중계 — 실시간 지휘</h1>
+    <main id="main" className="flex flex-1 scroll-mt-14 flex-col pb-10">
+      <h1 className="sr-only">경기 중계: 실시간 지휘</h1>
       <CrisisBanner events={match.events} onIntervene={openSheet} />
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-5 sm:px-5">
+        {mode === "rewrite" && rewriteContext && (
+          <RewriteContextBadge
+            className="w-fit self-start"
+            meNameKo={teamById(match.me.teamId)?.nameKo ?? "우리 팀"}
+            oppNameKo={teamById(match.opp.teamId)?.nameKo ?? "상대 팀"}
+            takeoverMinute={rewriteContext.takeoverMinute}
+          />
+        )}
         {/* 스코어보드 */}
         <Scoreboard
           meTeamId={match.me.teamId}
@@ -190,16 +216,20 @@ export default function MatchPage() {
         />
 
         {/* 컨트롤 */}
-        <div className="panel flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3">
+        <div className="panel flex flex-wrap items-center justify-between gap-3 rounded-[10px] px-4 py-3">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setPlaying((p) => !p)}
               disabled={match.finished}
-              aria-label={playing ? "일시정지" : "재생"}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-lg text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+              aria-label={isPlayingDisplay ? "일시정지" : "재생"}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
             >
-              {playing ? "⏸" : "▶"}
+              {isPlayingDisplay ? (
+                <Pause weight="bold" className="size-5" aria-hidden />
+              ) : (
+                <Play weight="bold" className="size-5" aria-hidden />
+              )}
             </button>
             <span className="text-[11px] text-dim">주요 장면 자동 정지 · 나머지는 빠르게 진행돼요</span>
           </div>
@@ -218,9 +248,10 @@ export default function MatchPage() {
               type="button"
               onClick={openSheet}
               disabled={match.finished}
-              className="rounded-full border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-bold text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-bold text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              🧠 작전 변경
+              <Brain weight="bold" className="size-4" aria-hidden />
+              작전 변경
             </button>
           </div>
         </div>
@@ -255,7 +286,7 @@ export default function MatchPage() {
 
         {/* 중계 + 승률 타임라인 */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <CommentaryFeed events={match.events} meTeamId={match.me.teamId} />
+          <CommentaryFeed events={match.events} />
           <ProbTimeline
             timeline={match.probTimeline}
             events={match.events}
@@ -273,14 +304,19 @@ export default function MatchPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="absolute inset-0 bg-black/60" onClick={() => setHalftime(false)} />
+            <button
+              type="button"
+              aria-label="하프타임 안내 닫기"
+              onClick={() => setHalftime(false)}
+              className="absolute inset-0 m-0 cursor-default appearance-none border-0 bg-black/60 p-0"
+            />
             <motion.div
               initial={{ scale: 0.92, y: 12 }}
               animate={{ scale: 1, y: 0 }}
-              className="panel relative w-full max-w-sm rounded-3xl p-6 text-center"
+              className="panel relative w-full max-w-sm overscroll-contain rounded-[10px] p-6 text-center"
             >
               <p className="eyebrow text-accent">하프타임</p>
-              <h2 className="display mt-2 text-2xl text-ink">전반 종료</h2>
+              <h2 className="display mt-2 text-balance text-2xl text-ink">전반 종료</h2>
               <p className="mt-3 text-sm text-dim">작전을 지시할 좋은 타이밍입니다.</p>
               <div className="mt-6 flex gap-2">
                 <button
@@ -318,7 +354,7 @@ export default function MatchPage() {
             <motion.div
               initial={{ scale: 0.92, y: 14 }}
               animate={{ scale: 1, y: 0 }}
-              className="panel relative w-full max-w-sm rounded-3xl p-6 text-center"
+              className="panel relative w-full max-w-sm rounded-[10px] p-6 text-center"
             >
               <p className="eyebrow text-accent">경기 종료</p>
               <div className="stat-num display mt-3 text-5xl text-ink">

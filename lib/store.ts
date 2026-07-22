@@ -15,6 +15,22 @@ import type {
   SpecialInstructions,
   TeamInstructions,
 } from "./types";
+import { registerWc2026 } from "@/lib/wc2026/register";
+import { wc2026MatchById } from "@/lib/wc2026/data";
+import { fromRealState } from "@/lib/engine/rewrite";
+
+// 콜드 리로드(F5) 대응: rewrite 상태(mode:"rewrite", rewriteContext, wc_kor/wc_default를
+// 참조하는 match)는 sessionStorage에 persist되어 새로고침 후에도 살아남지만,
+// registerWc2026()이 채우는 인메모리 맵(teamById/playersOf/venueById)은 모듈 top-level
+// `done` 플래그와 함께 페이지 풀로드마다 초기화된다. 지금까지는 app/rewrite/page.tsx와
+// startRewrite()에서만 호출돼서, /tactics·/match·/result를 새로고침하면 이 store 모듈은
+// import되지만 그 두 호출부는 거치지 않아 WC 데이터가 비어 있는 채로 venueById("wc_default")
+// 등이 undefined를 반환 → 렌더 중 throw로 이어졌다(백서 C1). rewrite 상태를 가질 수 있는
+// 모든 라우트가 이 store 모듈을 import하므로, 여기 모듈 스코프에서 한 번 호출해두면 어떤
+// 진입점/새로고침이든 WC 데이터가 항상 등록돼 있음을 보장한다. registerWc2026()은
+// idempotent(done 플래그)이고 JSON import + Map 쓰기만 하므로 window/document/sessionStorage에
+// 의존하지 않아 정적 빌드/SSR 중 모듈 평가 시점에 호출해도 안전하다.
+registerWc2026();
 
 const DEFAULT_INSTRUCTIONS: TeamInstructions = {
   formation: "4-3-3",
@@ -55,6 +71,14 @@ export interface AppSetup {
   seed: number;
 }
 
+export interface RewriteContext {
+  matchId: string;
+  side: string;
+  momentId: string;
+  takeoverMinute: number;
+  endMinute?: number; // 지정 시 그 분에서 세션이 강제 종료된다(전반전/후반전 프리셋).
+}
+
 export interface AppState {
   setup: AppSetup;
   me?: SideSetup;
@@ -62,9 +86,16 @@ export interface AppState {
   match?: MatchState;
   shootout?: ShootoutResult;
   onboardingDone: boolean;
+  mode: "free" | "rewrite";
+  rewriteContext?: RewriteContext;
 
   startQuick: () => void;
   selectMatchup: (my: string, opp: string, venue: string) => void;
+  startRewrite: (
+    matchId: string,
+    side: string,
+    entry: { id: string; takeoverMinute: number; endMinute?: number }
+  ) => void;
   movePlayer: (slotId: string, playerId: string) => void;
   setInstructions: (i: Partial<TeamInstructions>) => void;
   setRole: (slotId: string, role: RoleId) => void;
@@ -106,15 +137,22 @@ export const useAppStore = create<AppState>()(
       match: undefined,
       shootout: undefined,
       onboardingDone: false,
+      mode: "free",
+      rewriteContext: undefined,
 
+      // 실제 2026 월드컵 48개국(wc2026TeamList)이 홈 화면 매치업 대상이므로, 퀵스타트도
+      // 가상의 16개 고정 팀(kor/bra) 대신 실제 wc_kor/wc_bra를 쓴다. registerWc2026()이
+      // 모듈 로드 시 이미 호출돼 wc_kor/wc_bra의 팀/선수 데이터가 등록돼 있다.
       startQuick: () => {
         const seed = Date.now() % 1e9;
         set({
-          setup: { myTeamId: "kor", oppTeamId: "bra", venueId: "metlife", seed },
-          me: buildSideSetup("kor", "4-3-3"),
-          opp: buildSideSetup("bra", "4-3-3"),
+          setup: { myTeamId: "wc_kor", oppTeamId: "wc_bra", venueId: "metlife", seed },
+          me: buildSideSetup("wc_kor", "4-3-3"),
+          opp: buildSideSetup("wc_bra", "4-3-3"),
           match: undefined,
           shootout: undefined,
+          mode: "free",
+          rewriteContext: undefined,
         });
       },
 
@@ -128,6 +166,42 @@ export const useAppStore = create<AppState>()(
           opp: buildSideSetup(opp, "4-3-3"),
           match: undefined,
           shootout: undefined,
+          mode: "free",
+          rewriteContext: undefined,
+        });
+      },
+
+      // 실제 WC2026 경기의 진입점(프리셋 또는 이벤트 5분 전, lib/wc2026/entry-points.ts)
+      // 하나를 골라 그 시점(entry.takeoverMinute)부터 유저가 개입할 수 있는 rewrite
+      // 모드로 진입한다. entry가 이미 takeoverMinute(및 필요 시 endMinute)을 들고
+      // 있으므로 여기서 다시 moments를 조회해 해석할 필요가 없다. registerWc2026()은
+      // idempotent라 매번 호출해도 안전하다 — /tactics, /match 등 어느 진입점에서
+      // startRewrite를 불러도 wc2026 팀/선수/경기장이 엔진 데이터에 등록돼 있음을 보장한다.
+      startRewrite: (matchId, side, entry) => {
+        registerWc2026();
+        const match = wc2026MatchById(matchId);
+        if (!match) return;
+        const seed = Date.now() % 1e9;
+        const st = fromRealState(match, side, { takeoverMinute: entry.takeoverMinute }, seed);
+        set({
+          mode: "rewrite",
+          rewriteContext: {
+            matchId,
+            side,
+            momentId: entry.id,
+            takeoverMinute: entry.takeoverMinute,
+            endMinute: entry.endMinute,
+          },
+          me: st.me,
+          opp: st.opp,
+          match: st,
+          shootout: undefined,
+          setup: {
+            myTeamId: st.me.teamId,
+            oppTeamId: st.opp.teamId,
+            venueId: st.venueId,
+            seed,
+          },
         });
       },
 
@@ -189,15 +263,44 @@ export const useAppStore = create<AppState>()(
       },
 
       beginMatch: () => {
-        const { me, opp, setup } = get();
+        const { me, opp, setup, mode, match } = get();
         if (!me || !opp || !setup.venueId) return;
+        if (mode === "rewrite") {
+          // rewrite 모드: startRewrite가 이미 fromRealState로 takeoverMinute 시점의
+          // match를 만들어뒀다. initMatch로 재초기화(0분부터)하면 그 상태가 사라지므로,
+          // 대신 유저가 방금 작전실에서 편집한 me(전술/라인업)만 기존 match에 얹는다.
+          // minute/score/이벤트 이력은 그대로 유지된다 — λ는 다음 5분 경계/개입에서
+          // 재계산되므로 즉시 반영되지 않아도 무방하다.
+          if (!match) return;
+          set({ match: { ...match, me }, shootout: undefined });
+          return;
+        }
         set({ match: initMatch(me, opp, setup.venueId, setup.seed), shootout: undefined });
       },
 
+      // rewrite 모드의 endMinute(전반전/후반전 프리셋)에 도달하면 정규 종료(90분)를
+      // 기다리지 않고 세션을 강제 종료한다. simulateMinute 자체(순수 엔진)는 이 개념을
+      // 모르므로, 매 분 진행 뒤 스토어 레벨에서 이 wrapper가 종료 여부를 판단하고
+      // synthetic fulltime 이벤트를 붙인다 — 엔진 파일은 수정하지 않는다.
       tickMinute: () => {
-        const match = get().match;
-        if (!match) return;
-        set({ match: simulateMinute(match) });
+        const { match, mode, rewriteContext } = get();
+        if (!match || match.finished) return;
+        const next = simulateMinute(match);
+        const end = mode === "rewrite" ? rewriteContext?.endMinute : undefined;
+        if (end != null && next.minute >= end && !next.finished) {
+          set({
+            match: {
+              ...next,
+              finished: true,
+              events: [
+                ...next.events,
+                { minute: next.minute, type: "fulltime", side: "me", textKo: "🏁 세션 종료" },
+              ],
+            },
+          });
+          return;
+        }
+        set({ match: next });
       },
 
       intervene: (iv) => {
@@ -244,6 +347,8 @@ export const useAppStore = create<AppState>()(
           opp: undefined,
           match: undefined,
           shootout: undefined,
+          mode: "free",
+          rewriteContext: undefined,
           // onboardingDone은 의도적으로 유지한다: reset()은 매치업/경기 세션을
           // 새로 시작하기 위한 것이지, "온보딩을 다시 봐야 하는가"라는 앱 차원의
           // 영속적 설정과는 별개다.
@@ -251,7 +356,10 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: "touchline-v1",
+      // v1 -> v2: mode/rewriteContext 필드 추가로 스키마가 바뀌어 persist 버전을
+      // 올린다. 마이그레이션 없이 키 이름만 바꿔 v1 세션 스토리지는 자연히
+      // 버려진다(세션 스토리지라 탭 종료 시 어차피 사라지는 값이라 손실 영향 적음).
+      name: "touchline-v2",
       storage: createJSONStorage(getSessionStorage),
     }
   )

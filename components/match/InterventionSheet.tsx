@@ -10,8 +10,9 @@
 // 슬롯 재배치가 불가능해 온피치 인원이 어긋나기 때문이다(엔진 applyIntervention은
 // autoPlace를 다시 돌리지 않음).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ArrowsClockwise, X } from "@phosphor-icons/react";
 import { FORMATIONS } from "@/lib/data/formations";
 import { playersOf } from "@/lib/data/players";
 import { jerseyOf } from "@/components/tactics/tactics-labels";
@@ -185,6 +186,52 @@ export function InterventionSheet({
     onSubmit(iv);
   };
 
+  // 다이얼로그 접근성: Escape로 닫기 + 포커스를 시트 안에 가두고, 열릴 때 시트로
+  // 옮긴 뒤 닫히면 트리거로 되돌린다. 의존성 없이 keydown 리스너 + 포커스 가능
+  // 요소 스캔만으로 구현한다.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+
+    const focusable = (): HTMLElement[] =>
+      panel
+        ? Array.from(
+            panel.querySelectorAll<HTMLElement>(
+              'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+          ).filter((el) => el.offsetParent !== null)
+        : [];
+
+    (focusable()[0] ?? panel)?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <motion.div
@@ -195,17 +242,19 @@ export function InterventionSheet({
         onClick={onClose}
       />
       <motion.div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="작전 변경"
+        tabIndex={-1}
         initial={{ y: "100%", opacity: 0.6 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", stiffness: 260, damping: 30 }}
-        className="panel relative flex max-h-[88vh] w-full max-w-lg flex-col rounded-t-3xl sm:rounded-3xl"
+        className="panel relative flex max-h-[88vh] w-full max-w-lg flex-col rounded-t-[10px] sm:rounded-[10px]"
       >
         {/* 헤더 */}
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <div className="panel-head">
           <div>
             <p className="eyebrow text-accent">작전 변경</p>
             <p className="mt-0.5 text-[11px] text-dim">
@@ -223,7 +272,7 @@ export function InterventionSheet({
         </div>
 
         {/* 본문 */}
-        <div className="flex flex-col gap-6 overflow-y-auto px-5 py-5">
+        <div className="flex flex-col gap-6 overflow-y-auto overscroll-contain px-5 py-5">
           {/* 교체 */}
           <section>
             <div className="mb-2 flex items-baseline justify-between">
@@ -236,10 +285,11 @@ export function InterventionSheet({
                 {subs.map((s, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-[12px]"
+                    className="flex items-center justify-between rounded-[10px] border border-accent/30 bg-accent/10 px-3 py-2 text-[12px]"
                   >
-                    <span className="text-ink">
-                      🔄 {nameOf(s.out)} <span className="text-dim">→</span>{" "}
+                    <span className="flex items-center gap-1.5 text-ink">
+                      <ArrowsClockwise weight="bold" className="size-3.5 shrink-0" aria-hidden />
+                      {nameOf(s.out)} <span className="text-dim">→</span>{" "}
                       <span className="font-bold text-accent">{nameOf(s.in)}</span>
                     </span>
                     <button
@@ -248,7 +298,7 @@ export function InterventionSheet({
                       aria-label="교체 취소"
                       className="text-dim hover:text-danger"
                     >
-                      ✕
+                      <X weight="bold" className="size-3.5" aria-hidden />
                     </button>
                   </li>
                 ))}
@@ -262,7 +312,7 @@ export function InterventionSheet({
                   value={outId}
                   onChange={(e) => setOutId(e.target.value)}
                   disabled={remainingSubs <= 0}
-                  className="rounded-xl border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택</option>
                   {onPitch.map((p) => (
@@ -278,7 +328,7 @@ export function InterventionSheet({
                   value={inId}
                   onChange={(e) => setInId(e.target.value)}
                   disabled={remainingSubs <= 0}
-                  className="rounded-xl border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택</option>
                   {bench.map((p) => (
@@ -293,7 +343,7 @@ export function InterventionSheet({
               type="button"
               onClick={addSub}
               disabled={!outId || !inId || remainingSubs <= 0}
-              className="mt-2 w-full rounded-xl border border-line bg-surface-2/60 py-2 text-[12px] font-bold text-ink transition-colors hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-2 w-full rounded-[8px] border border-line bg-surface-2/60 py-2 text-[12px] font-bold text-ink transition-colors hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
             >
               + 교체 추가
             </button>
@@ -385,7 +435,7 @@ export function InterventionSheet({
                 <select
                   value={special.manMark?.markerId ?? ""}
                   onChange={(e) => setManMarker(e.target.value)}
-                  className="rounded-xl border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink"
+                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink"
                 >
                   <option value="">선택 안 함</option>
                   {startersOf(meSetup, squad).map((p) => (
@@ -401,7 +451,7 @@ export function InterventionSheet({
                   value={special.manMark?.targetId ?? ""}
                   onChange={(e) => setManTarget(e.target.value)}
                   disabled={!special.manMark?.markerId}
-                  className="rounded-xl border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
+                  className="rounded-[8px] border border-line bg-surface-2 px-2 py-2 text-[12px] text-ink disabled:opacity-50"
                 >
                   <option value="">선택 안 함</option>
                   {oppStarters.map((p, i) => (

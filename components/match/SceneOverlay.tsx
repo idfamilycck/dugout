@@ -31,10 +31,10 @@ export function SceneOverlay({ sceneEvents, attribution }: SceneOverlayProps) {
           aria-live="polite"
         >
           <div
-            className="rounded-2xl border px-4 py-3 backdrop-blur-md"
+            className="rounded-[10px] border px-4 py-3 backdrop-blur-md"
             style={{
               background: "rgba(6, 22, 14, 0.82)",
-              borderColor: primary.side === "me" ? "rgba(200,255,60,0.4)" : "rgba(255,90,120,0.4)",
+              borderColor: primary.side === "me" ? "rgba(34,211,238,0.4)" : "rgba(255,90,120,0.4)",
             }}
           >
             <div className="flex flex-wrap items-center gap-2">

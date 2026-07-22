@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Siren, X } from "@phosphor-icons/react";
 import type { MatchEvent } from "@/lib/engine/match";
 
 interface CrisisBannerProps {
@@ -69,9 +70,9 @@ export function CrisisBanner({ events, onIntervene }: CrisisBannerProps) {
           className="fixed inset-x-0 top-0 z-40 px-3 pt-3"
           role="alert"
         >
-          <div className="mx-auto flex w-full max-w-3xl items-center gap-3 rounded-2xl border border-danger/50 bg-danger/15 px-4 py-3 backdrop-blur-md">
-            <span className="text-xl" aria-hidden>
-              🚨
+          <div className="mx-auto flex w-full max-w-3xl items-center gap-3 rounded-[10px] border border-danger/50 bg-danger/15 px-4 py-3 backdrop-blur-md">
+            <span aria-hidden>
+              <Siren size={22} weight="bold" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold text-danger">감독님, 지시가 필요합니다</p>
@@ -90,7 +91,7 @@ export function CrisisBanner({ events, onIntervene }: CrisisBannerProps) {
               aria-label="배너 닫기"
               className="shrink-0 rounded-full px-2 py-1 text-dim hover:text-ink"
             >
-              ✕
+              <X size={16} weight="bold" aria-hidden />
             </button>
           </div>
         </motion.div>

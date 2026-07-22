@@ -7,7 +7,6 @@
 import type { MatchEventType } from "@/lib/engine/match";
 import { VB_W, VB_H, type PlayerDot } from "./livepitch-geometry";
 
-const CX = VB_W / 2;
 const CY = VB_H / 2;
 
 export interface BallPath {

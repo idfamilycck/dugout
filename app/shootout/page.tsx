@@ -26,6 +26,8 @@ export default function ShootoutPage() {
   useEffect(() => {
     const p = useAppStore.persist;
     if (!p || p.hasHydrated()) {
+      // zustand persist(sessionStorage) 재수화 여부를 확인하는 외부 시스템 동기화라 setState가 맞다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHydrated(true);
       return;
     }
@@ -40,14 +42,14 @@ export default function ShootoutPage() {
 
   if (!hydrated || !match) {
     return (
-      <main className="flex flex-1 items-center justify-center px-5 py-24 text-center">
+      <main id="main" className="flex flex-1 scroll-mt-14 items-center justify-center px-5 py-24 text-center">
         <p className="text-sm text-dim">승부차기를 준비하는 중…</p>
       </main>
     );
   }
   if (!validDraw) {
     return (
-      <main className="flex flex-1 items-center justify-center px-5 py-24 text-center">
+      <main id="main" className="flex flex-1 scroll-mt-14 items-center justify-center px-5 py-24 text-center">
         <p className="text-sm text-dim">홈으로 이동합니다…</p>
       </main>
     );
@@ -66,7 +68,7 @@ export default function ShootoutPage() {
   const effectivePhase = shootout ? "stage" : phase;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6 sm:px-5">
+    <main id="main" className="mx-auto flex w-full max-w-md flex-1 scroll-mt-14 flex-col gap-4 px-4 py-6 sm:px-5">
       <h1 className="sr-only">승부차기</h1>
       <div className="flex items-center justify-between">
         <p className="stat-num text-sm text-dim">
